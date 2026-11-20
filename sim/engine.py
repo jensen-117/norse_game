@@ -213,7 +213,8 @@ class Unit:
         self.natural_fit = None
         self.horn = False
         self.body = {}
-        self.stages = {k: 0 for k in ["ATK", "DEF", "MAT", "MDF", "ACC", "EVA", "SPD"]}
+        self.stages = {k: 0 for k in ["ATK", "DEF", "MAT", "MDF", "ACC", "EVA", "SPD"]}   # each stat's own stacks
+        self.pushed = set()       # stats pushed this round: they don't step toward zero at its end
         self.status = {}          # name -> dict(rounds=..., ...)
         self.defending = False
         self.bide = None          # (action, target) wound up last round, fires this round (Bid- moves)
@@ -248,11 +249,22 @@ class Unit:
         self.maxhp *= self.b("HP"); self.hp = self.maxhp
 
     def stage(self, stat):
-        return clamp(self.stages[stat] + status_stat(self, stat), -5, 5)
+        return clamp(self.stages[stat] + status_stat(self, stat), -STACK_CAP, STACK_CAP)
 
     def has_flag(self, flag):
-        """Does any status this unit carries set this flag (no_orders, blocks_mp, breaks_bide...)?"""
-        return any(STATUSES.get(s, {}).get(flag) for s in self.status)
+        """Does any status this unit carries set this flag (no_orders, blocks_mp, breaks_bide...)? A flag of "sure"
+        holds only while the status's next roll is certain (a fresh freeze: no orders; a thawing one: orders)."""
+        for s, inst in self.status.items():
+            v = STATUSES.get(s, {}).get(flag)
+            if v == "sure": v = STATUSES[s]["fade"][inst.get("step", 0)] >= 1.0
+            if v: return True
+        return False
+
+    def counter_name(self, stat):
+        """The name a stat's counter shows (Blinded 2, Quick 1), or None at zero or for an unnamed stat."""
+        n = self.stage(stat)
+        name = STAT_NAMES[stat][0 if n < 0 else 1] if n else None
+        return f"{name} {abs(n)}" if name else None
 
     silenced = property(lambda s: s.has_flag("blocks_mp"))
 
@@ -590,15 +602,33 @@ class Battle:
         return h * (ALL_POWER_MULT if a["all"] else 1)
 
     # ------------------------------------------------------------ statuses
-    def apply_status(self, src, tgt, status, chance):
+    def push(self, t, stat, n):
+        """Move a stat's counter n stacks (up and down cancel), capped; it holds this round."""
+        t.stages[stat] = clamp(t.stages[stat] + n, -STACK_CAP, STACK_CAP); t.pushed.add(stat)
+
+    def capped(self, t, status):
+        """Is a counter status already as deep as it goes on t (Blinded 3)? Then landing it again does nothing."""
+        if status not in COUNTER_OF: return status in t.status
+        stat, sign = COUNTER_OF[status]
+        return t.stage(stat) * sign >= STACK_CAP
+
+    def apply_status(self, src, tgt, status, chance, stacks=1):
         if not tgt.alive or self.rng.random() >= chance: return False
+        if STATUSES.get(status, {}).get("boss_immune") and getattr(tgt, "rank", None) == "Drott":
+            self.emit("immune", f"      {tgt.name} shrugs off {status}.", unit=tgt.name, status=status); return False
+        if status in COUNTER_OF:                        # a named counter: Blinded is ACC down
+            stat, sign = COUNTER_OF[status]
+            self.push(tgt, stat, sign * stacks)
+            src.stats["statuses"] += 1
+            shown = tgt.counter_name(stat) or STAT_NAMES[stat][0 if sign < 0 else 1] or status
+            self.emit("status", f"      {tgt.name} is {shown}!", unit=tgt.name, status=STAT_NAMES[stat][0 if sign < 0 else 1] or status,
+                      stat=stat, stacks=tgt.stage(stat), src=src.name)
+            return True
         if status == "Death":
             tgt.hp = 0
             src.stats["statuses"] += 1
             self.emit("status", f"      {tgt.name} is struck down by Helvad!", unit=tgt.name, status="Death", src=src.name)
             return True
-        elif status == "AccDown":
-            tgt.stages["ACC"] = clamp(tgt.stages["ACC"] - 1, -5, 5)
         else:
             row = STATUSES.get(status, dict(duration=STATUS_DURATION, reapply="refuse"))
             if row["reapply"] == "refuse" and status in tgt.status: return False
@@ -607,6 +637,7 @@ class Battle:
                 pool, n = row["pick"]; inst["stats"] = [self.rng.choice(pool) for _ in range(n)]
             d = row["duration"]
             inst["rounds"] = UNTIL_USED if d is None else self.rng.randint(*d) if isinstance(d, tuple) else d
+            if "fade" in row: inst["step"] = 0
             tgt.status[status] = inst
         src.stats["statuses"] += 1
         self.emit("status", f"      {tgt.name} is {status}!", unit=tgt.name, status=status, src=src.name)
@@ -748,8 +779,15 @@ class Battle:
     def skips(self, u):
         """Does a status take this action away (the net, ice, a stun)? Checked in SKIP_ORDER; the first that fires wins."""
         for s in SKIP_ORDER:
-            sk = STATUSES[s].get("skip")
+            row = STATUSES[s]; sk = row.get("skip")
             if s not in u.status or not sk: continue
+            if "fade" in row:                         # Frozen: sure, then 50%, then 20%; a failed roll thaws it
+                inst = u.status[s]; ch = row["fade"][inst["step"]]
+                if ch < 1.0 and self.rng.random() >= ch:
+                    del u.status[s]; self.emit("thaw", "    " + row["thaw"].format(name=u.name), unit=u.name, status=s); continue
+                inst["step"] += 1
+                if inst["step"] >= len(row["fade"]): del u.status[s]
+                self.emit("skip", "    " + sk["line"].format(name=u.name), unit=u.name, why=s); return True
             if sk["chance"] < 1.0 and self.rng.random() >= sk["chance"]: continue
             if sk["used_up"]: del u.status[s]
             self.emit("skip", "    " + sk["line"].format(name=u.name), unit=u.name, why=s); return True
@@ -862,10 +900,10 @@ class Battle:
                       unit=u.name, move=a["name"], element=a["element"], targets=healed)
             return
         if a["kind"] == "stat":
-            n = TIERS.index(a["tier"])
+            n = STACKS_BY_TIER.get(a["tier"], 1)
             changes = [(a["stat"], a["direction"])] + list(a.get("also") or [])
             for t in tgts:
-                for st, d in changes: t.stages[st] = clamp(t.stages[st] + d * n, -5, 5)
+                for st, d in changes: self.push(t, st, d * n)
             self.emit("stat", f"    {u.name} casts {self.shown(u, a)} on {', '.join(t.name for t in tgts)}.{tag}", unit=u.name, move=a["name"], shown=self.shown(u, a), stat=a["stat"], direction=a["direction"], also=[list(c) for c in changes[1:]] or None, targets=[t.name for t in tgts])
             return
         if a["kind"] == "cleanse":
@@ -883,8 +921,9 @@ class Battle:
                     self.emit("covered", f"      {c.name} takes it for {tgts[0].name}!", unit=c.name, instead_of=tgts[0].name); c.stats["covered"] += 1
                     tgts = [c]
             for t in tgts:
+                stacks = STACKS_BY_TIER.get(a["tier"], 1)
                 if a.get("sure"):
-                    self.apply_status(u, t, a["status"], 1.0); continue
+                    self.apply_status(u, t, a["status"], 1.0, stacks); continue
                 res = self.roll(u, t)
                 if res == "crit" and CRIT_EARNS_BONUS and not bonus: self.eligible.add(u)
                 if res == "graze":
@@ -894,7 +933,7 @@ class Battle:
                     chance = HELVAD_CHANCE * self.wil_ratio(u, t) * aff
                 else:
                     chance = STATUS_LINE_CHANCE[a["tier"]] * self.wil_ratio(u, t)
-                if self.apply_status(u, t, a["status"], chance) and not t.alive:
+                if self.apply_status(u, t, a["status"], chance, stacks) and not t.alive:
                     self.downed(t)
             return
         # damage
@@ -1119,7 +1158,7 @@ class Battle:
                             s = self.expected_damage(u, f, a) * self.reach_mult(u, a, f)
                         if f.affinity(a["element"]) == "weak": s *= 1.5     # tempo value
                         if s >= f.hp: s *= 1.3
-                        if a["status"] and a["status"] not in f.status: s += 0.4 * ref
+                        if a["status"] and not self.capped(f, a["status"]): s += 0.4 * ref
                         s *= AI_MANNER_VALUE.get((a.get("parts") or {}).get("manner"), 1.0)
                         options.append((s - cost_pen, a, f))
             elif a["kind"] == "heal":
@@ -1132,7 +1171,7 @@ class Battle:
                     options.append((1.2 * s - cost_pen, a, x))
             elif a["kind"] == "status":
                 for f in self.foes(u):
-                    if a["status"] in f.status: continue
+                    if self.capped(f, a["status"]): continue
                     if a["status"] == "Bound":
                         if f.has_flag("no_orders") or f in getattr(self, "bind_claims", ()) or f.state != "up": continue
                         options.append((self.bind_value(u, f, ref) - cost_pen, a, f)); continue
@@ -1141,7 +1180,7 @@ class Battle:
             elif a["kind"] == "stat":
                 pool = self.allies(u) if a["direction"] > 0 else self.foes(u)
                 for x in pool:
-                    if abs(x.stages[a["stat"]]) >= 2: continue
+                    if x.stage(a["stat"]) * a["direction"] >= STACK_CAP: continue   # already as far as it goes
                     options.append((0.8 * ref - cost_pen, a, x))
             elif a["kind"] == "cleanse":
                 def burden(x): return len(x.status) + sum(-v for v in x.stages.values() if v < 0)
@@ -1200,7 +1239,7 @@ class Battle:
             if t is not None:
                 if t.affinity(a["element"]) == "weak": return "weak", f"{t.name} is weak to {a['element']}"
                 if self.expected_damage(u, t, a) >= t.hp: return "finish", f"{t.name} is nearly down"
-                if a["status"] and a["status"] not in t.status: return "rider", f"to leave {t.name} {a['status']}"
+                if a["status"] and not self.capped(t, a["status"]): return "rider", f"to leave {t.name} {a['status']}"
                 if USE_BOARD and getattr(t, "cell", ("front",))[0] == "rear": return "reach", f"{t.name} stands behind the line"
             return ("sweep" if a["all"] or a.get("shape") else "strike"), "its strongest blow"
         return "act", ""
@@ -1441,6 +1480,10 @@ class Battle:
 
     def end_round(self):
         if USE_DYING: self.tick_breaths()
+        for u in self.units:      # counters nobody pushed this round step toward zero
+            for st, v in u.stages.items():
+                if v and st not in u.pushed: u.stages[st] = v - 1 if v > 0 else v + 1
+            u.pushed = set()
         for u in self.units:      # only numbered rounds tick durations
             for s in list(u.status):
                 u.status[s]["rounds"] -= 1

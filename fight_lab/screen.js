@@ -823,7 +823,7 @@ const Screen = (() => {
   const fxFor = el => HIT_FX[el] || (FX["burst:" + el] ? "burst:" + el : "burst:Martial");
   const NARRATE = new Set(["act", "transform", "hit", "absorb", "heal", "stat", "status", "resist", "defend", "cover", "covered", "move", "windup", "bide_lost",
     "paint", "skip", "silenced", "tick", "down", "reform", "crawl", "pile", "scatter", "reassemble", "dying", "breath", "dead", "revive",
-    "stabilised", "item", "mp", "fled", "flee_failed", "retarget", "fizzle", "shatter", "flurry", "cleanse"]);
+    "stabilised", "item", "mp", "fled", "flee_failed", "retarget", "fizzle", "shatter", "flurry", "cleanse", "immune", "thaw"]);
   async function play(r) {
     busy = true; mode = "menu"; pending = null; inspectCard = null; confirmInfo = null; acted = 0; trackOff = 0;
     skipping = false; speedF = speedOf();

@@ -385,6 +385,18 @@ PROTECT_GROUP = 3
 FEAR_GROUP = -1
 SPEED_GROUP_BY_KIND = {"defend": 3, "cover": 3, "taunt": 3, "move": 1}
 
+# ---------------------------------------------------------------- stat counters and status shapes (pillars Part 5c)
+# One counter per stat, -STACK_CAP..+STACK_CAP: its own stacks plus its sources (statuses that also touch the stat),
+# capped in total. Up and down cancel. A counter nobody pushed this round moves one step toward zero at its end.
+# The named statuses ARE the counters: Blinded 2 is ACC at -2. MAT and MDF have no names yet.
+STACK_CAP = 3
+STAT_NAMES = {"ATK": ("Feeble", "Mighty"), "DEF": ("Sundered", "Fortified"), "ACC": ("Blinded", "Keen"),
+              "EVA": ("Marked", "Nimble"), "SPD": ("Slowed", "Quick"), "MAT": (None, None), "MDF": (None, None)}
+COUNTER_OF = {n: (stat, sign) for stat, pair in STAT_NAMES.items() for n, sign in zip(pair, (-1, 1)) if n}
+COUNTER_OF["AccDown"] = ("ACC", -1)            # the Reyk spirits' old rider: Blinded 1
+STACKS_BY_TIER = {"Halv": 1, "Base": 1, "Mer": 2, "Jatte": 3, "Ur": 3}   # a status move's stacks (Mer adds two)
+FADE = (1.0, 0.5, 0.2)    # the fade shape: Frozen's chance to hold, action by action (Scorched's tick, later)
+
 # ---------------------------------------------------------------- statuses as data (refactor_plan Wave 1)
 # The engine reads these rows; it doesn't know a status by name. Fields:
 #   duration   rounds: a number, a (lo, hi) range rolled when applied, or None (until consumed)
@@ -398,21 +410,23 @@ SPEED_GROUP_BY_KIND = {"defend": 3, "cover": 3, "taunt": 3, "move": 1}
 #   group      actions below the protection group drop to this group (Fear)
 #   blocks_mp  MP moves can't be used (Silence)
 #   shatter    a hit (not absorbed) multiplies its damage by this, and ends the status
+#   fade       the fade shape: the skip's chance by step (FADE); a failed roll ends it ("thaw"); used up after the last
+#   boss_immune  a Drott shrugs it off (turn-enders)
 #   chain      a rider of this status, landing on someone who already has it, becomes this status (Chilled -> Frozen)
 STATUSES = {
     "Poisoned": dict(duration=STATUS_DURATION, reapply="refuse",
                      tick=dict(when="round_start", share=POISON_TICK, line="{name} takes {dmg} poison damage.")),
     "Bleeding": dict(duration=STATUS_DURATION, reapply="refuse",
                      tick=dict(when="action", share=BLEED_TICK, line="{name} bleeds for {dmg}.")),
-    "Stunned":  dict(duration=STATUS_DURATION, reapply="refuse", breaks_bide=True,
+    "Stunned":  dict(duration=STATUS_DURATION, reapply="refuse", breaks_bide=True, boss_immune=True,
                      skip=dict(chance=STUN_LOSE_CHANCE, used_up=True, line="{name} is stunned and loses the action!")),
     "Chilled":  dict(duration=CHILL_DURATION, reapply="overwrite", stats={"SPD": -1}, chain="Frozen"),
-    "Frozen":   dict(duration=FREEZE_DURATION, reapply="overwrite", breaks_bide=True, no_orders=True, shatter=SHATTER_MULT,
-                     skip=dict(chance=1.0, used_up=False, line="{name} is frozen solid.")),
-    "Bound":    dict(duration=None, reapply="refuse", breaks_bide=True, bide_pops=True, no_orders=True,
+    "Frozen":   dict(duration=None, reapply="refuse", breaks_bide=True, no_orders="sure", shatter=SHATTER_MULT, boss_immune=True,
+                     fade=FADE, skip=dict(chance=1.0, used_up=False, line="{name} is frozen solid."),
+                     thaw="{name} thaws!"),
+    "Bound":    dict(duration=None, reapply="refuse", breaks_bide=True, bide_pops=True, no_orders=True, boss_immune=True,
                      skip=dict(chance=1.0, used_up=True, line="{name} is caught in the net and loses the action!")),
     "Feared":   dict(duration=STATUS_DURATION, reapply="refuse", group=FEAR_GROUP),
-    "Blinded":  dict(duration=STATUS_DURATION, reapply="refuse", stats={"ACC": -1, "EVA": -1}),
     "Disarmed": dict(duration=STATUS_DURATION, reapply="refuse", stats={"ATK": -1, "MAT": -1}),
     "Cursed":   dict(duration=STATUS_DURATION, reapply="refuse", pick=(["ATK", "MAT", "DEF", "MDF"], 2)),
     "Silenced": dict(duration=STATUS_DURATION, reapply="refuse", blocks_mp=True),
