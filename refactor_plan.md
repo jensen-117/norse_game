@@ -138,8 +138,8 @@ One mechanic at a time, each with its test and its AI valuation:
 
 | Decision | Blocks | Claude's proposal |
 |---|---|---|
-| Git, and the `*_before_*` copies | Wave 0 | Git; copies to `sim/attic/` |
-| **Class affinities without star signs** | Wave 3 | Magicals: their school's (as now). Martials: their weapon weakness plus one authored elemental weakness and resistance per class |
+| Git, and the `*_before_*` copies | Wave 0 | **Done (Nov 20):** a local repo; copies in `attic/`. Needs a remote to survive this workspace |
+| **Class affinities without star signs** | Wave 3 | **Agreed (Nov 20):** magicals take their school's; martials their weapon weakness plus one authored elemental weakness and resistance per class |
 | Do status moves still roll to land? | Wave 4 | Yes, as now (graze, then the tier's chance × WIL), except a weak target: always lands, +1 stack, Bonus Round |
 | Lonnegga's Blinded: on whom? | Wave 4 | On each foe that strikes her this round (the taunted swing wild) |
 | Hevn's power per hit and cap | Wave 4 | +25% per hit, cap +100% (a knob; the sweep tunes) |
