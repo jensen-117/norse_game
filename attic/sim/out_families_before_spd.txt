@@ -1,0 +1,247 @@
+=== Logged fight, level 30: Huskarl, Skurmar, Dagskald vs Storoskorei Greatsword, Storoskorei Stiletto, Storoskorei Maul ===
+  Storoskorei Greatsword: HP 685, 2 action(s): Greatsword, Cleave, Merblast
+  Storoskorei Stiletto: HP 685, 2 action(s): Stiletto, Blot, Merblast
+  Storoskorei Maul: HP 685, 2 action(s): Maul, Merblixt, Nedskold
+Round 1
+    Storoskorei Maul uses Maul.
+      Hit on Huskarl: 41. Weak! (536/576)
+    Storoskorei Stiletto uses Blot.
+      Graze on Skurmar: 7. (524/531)
+    Storoskorei Greatsword uses Greatsword.
+      Hit on Skurmar: 50. Weak! (474/531)
+    Huskarl uses Great Strike.
+      Hit on Storoskorei Maul: 179. Weak! (507/685)
+    Skurmar uses Allblast.
+      Hit/Hit on Storoskorei Greatsword: 28. Resist. (658/685)
+      Graze/Crit on Storoskorei Stiletto: 25. Resist. (660/685)
+      Hit/Hit on Storoskorei Maul: 26. Resist. (481/685)
+    Dagskald uses Mersol.
+      Hit on Storoskorei Greatsword: 149. (509/685)
+    Storoskorei Maul casts Nedskold on Huskarl.
+    Storoskorei Greatsword uses Greatsword.
+      Hit on Dagskald: 49. Weak! (495/544)
+    Storoskorei Stiletto uses Blot.
+      Graze on Skurmar: 7. (466/531)
+  Bonus Round! (Storoskorei Greatsword, Huskarl, Storoskorei Maul)
+    Storoskorei Greatsword uses Greatsword. [Bonus]
+      Hit on Skurmar: 48. Weak! (418/531)
+    Storoskorei Maul uses Maul. [Bonus]
+      Crit on Huskarl: 79. Weak! (441/576)
+    Huskarl uses Great Strike. [Bonus]
+      Hit on Storoskorei Maul: 162. Weak! (319/685)
+Round 2
+    Storoskorei Stiletto uses Stiletto.
+      Graze on Huskarl: 18. (407/576)
+    Storoskorei Greatsword uses Greatsword.
+      Hit on Skurmar: 46. Weak! (373/531)
+    Storoskorei Maul uses Maul.
+      Hit on Huskarl: 54. Weak! (352/576)
+    Huskarl uses Great Strike.
+      Hit on Storoskorei Maul: 174. Weak! (145/685)
+    Skurmar uses Allblast.
+      Hit/Hit on Storoskorei Greatsword: 25. Resist. (484/685)
+      Hit/Hit on Storoskorei Stiletto: 26. Resist. (634/685)
+      Hit/Graze on Storoskorei Maul: 21. Resist. (124/685)
+    Dagskald uses Mersol.
+      Graze on Storoskorei Greatsword: 72. (412/685)
+    Storoskorei Greatsword uses Greatsword.
+      Hit on Skurmar: 47. Weak! (326/531)
+    Storoskorei Stiletto uses Stiletto.
+      Hit on Huskarl: 38. (298/576)
+    Storoskorei Maul uses Maul.
+      Hit on Huskarl: 55. Weak! (244/576)
+  Bonus Round! (Storoskorei Greatsword, Huskarl, Storoskorei Maul)
+    Storoskorei Greatsword uses Cleave. [Bonus]
+      Crit on Huskarl: 27. (217/576)
+      Graze on Skurmar: 14. Weak! (312/531)
+      Hit on Dagskald: 23. Weak! (472/544)
+    Storoskorei Maul casts Nedskold on Huskarl. [Bonus]
+    Huskarl uses Great Strike. [Bonus]
+      Hit on Storoskorei Maul: 171. Weak! (0/685)
+      Storoskorei Maul is down!
+Round 3
+    Storoskorei Greatsword uses Cleave.
+      Hit on Huskarl: 23. (178/576)
+      Hit on Skurmar: 27. Weak! (285/531)
+      Hit on Dagskald: 26. Weak! (446/544)
+    Storoskorei Stiletto uses Stiletto.
+      Crit on Huskarl: 69. (109/576)
+    Huskarl uses Great Strike.
+      Hit on Storoskorei Greatsword: 110. (302/685)
+    Skurmar uses Merblixt.
+      Hit on Storoskorei Greatsword: 59. Resist. (243/685)
+      Storoskorei Greatsword is Stunned!
+    Dagskald casts Allak, healing Huskarl, Skurmar, Dagskald.
+    Storoskorei Greatsword uses Cleave.
+      Hit on Huskarl: 24. (188/576)
+      Hit on Skurmar: 26. Weak! (377/531)
+      Hit on Dagskald: 25. Weak! (519/544)
+    Storoskorei Stiletto uses Blot.
+      Hit on Skurmar: 15. (362/531)
+      Skurmar is Bleeding!
+  Bonus Round! (Storoskorei Greatsword)
+    Storoskorei Greatsword uses Cleave. [Bonus]
+      Hit on Huskarl: 26. (162/576)
+      Hit on Skurmar: 23. Weak! (339/531)
+      Hit on Dagskald: 23. Weak! (496/544)
+Round 4
+    Storoskorei Greatsword uses Cleave.
+      Hit on Huskarl: 26. (136/576)
+      Crit on Skurmar: 41. Weak! (299/531)
+      Hit on Dagskald: 25. Weak! (471/544)
+    Storoskorei Stiletto uses Stiletto.
+      Hit on Huskarl: 47. (89/576)
+    Huskarl uses Great Strike.
+      Hit on Storoskorei Greatsword: 122. (121/685)
+    Skurmar bleeds for 42.
+    Skurmar uses Merblixt.
+      Graze on Storoskorei Greatsword: 28. Resist. (93/685)
+    Dagskald casts Allak, healing Huskarl, Skurmar, Dagskald.
+    Storoskorei Stiletto uses Stiletto.
+      Hit on Huskarl: 43. (148/576)
+    Storoskorei Greatsword is stunned and loses the action!
+  Bonus Round! (Storoskorei Greatsword)
+    Storoskorei Greatsword uses Cleave. [Bonus]
+      Hit on Huskarl: 24. (124/576)
+      Graze on Skurmar: 13. Weak! (363/531)
+      Graze on Dagskald: 13. Weak! (532/544)
+Round 5
+    Storoskorei Greatsword uses Cleave.
+      Hit on Huskarl: 25. (98/576)
+      Graze on Skurmar: 13. Weak! (350/531)
+      Hit on Dagskald: 23. Weak! (509/544)
+    Storoskorei Stiletto uses Stiletto.
+      Hit on Huskarl: 47. (51/576)
+    Huskarl uses Great Strike.
+      Hit on Storoskorei Greatsword: 115. (0/685)
+      Storoskorei Greatsword is down!
+    Skurmar bleeds for 42.
+    Skurmar uses Allblast.
+      Hit/Hit on Storoskorei Stiletto: 27. Resist. (607/685)
+    Dagskald casts Allak, healing Huskarl, Skurmar, Dagskald.
+    Storoskorei Stiletto uses Stiletto.
+      Hit on Skurmar: 29. (397/531)
+Round 6
+    Storoskorei Stiletto uses Stiletto.
+      Hit on Huskarl: 46. (108/576)
+    Huskarl uses Great Strike.
+      Graze on Storoskorei Stiletto: 58. (549/685)
+    Skurmar uses Allblast.
+      Hit/Crit on Storoskorei Stiletto: 35. Resist. (514/685)
+    Dagskald casts Merlak, healing Huskarl.
+    Storoskorei Stiletto uses Stiletto.
+      Hit on Huskarl: 42. (272/576)
+Round 7
+    Storoskorei Stiletto uses Blot.
+      Hit on Skurmar: 15. (383/531)
+      Skurmar is Bleeding!
+    Huskarl uses Great Strike.
+      Graze on Storoskorei Stiletto: 57. (457/685)
+    Skurmar bleeds for 42.
+    Skurmar uses Halvblast.
+      Graze/Crit on Storoskorei Stiletto: 17. Resist. (440/685)
+    Dagskald casts Merlak, healing Huskarl.
+    Storoskorei Stiletto uses Stiletto.
+      Hit on Huskarl: 41. (436/576)
+Round 8
+    Storoskorei Stiletto uses Stiletto.
+      Graze on Huskarl: 21. (415/576)
+    Huskarl uses Great Strike.
+      Graze on Storoskorei Stiletto: 53. (387/685)
+    Skurmar bleeds for 42.
+    Skurmar uses Halvblast.
+      Hit/Crit on Storoskorei Stiletto: 23. Resist. (364/685)
+    Dagskald casts Allak, healing Huskarl, Skurmar, Dagskald.
+    Storoskorei Stiletto uses Stiletto.
+      Hit on Huskarl: 41. (477/576)
+Round 9
+    Storoskorei Stiletto uses Stiletto.
+      Hit on Huskarl: 45. (432/576)
+    Huskarl uses Great Strike.
+      Hit on Storoskorei Stiletto: 110. (254/685)
+    Skurmar bleeds for 42.
+    Skurmar uses Halvblast.
+      Graze/Hit on Storoskorei Stiletto: 14. Resist. (240/685)
+    Dagskald uses Mersol.
+      Hit on Storoskorei Stiletto: 142. (99/685)
+    Storoskorei Stiletto uses Stiletto.
+      Hit on Huskarl: 47. (369/576)
+Round 10
+    Storoskorei Stiletto uses Stiletto.
+      Hit on Huskarl: 43. (326/576)
+    Huskarl uses Great Strike.
+      Hit on Storoskorei Stiletto: 104. (0/685)
+      Storoskorei Stiletto is down!
+Result: party after 10 rounds
+
+=== Level 10: 1500 fights per family ===
+  vs Ande    party wins  33%   median fight 11 rounds
+  vs Draugr  party wins  33%   median fight 7 rounds
+  vs Bein    party wins  22%   median fight 6 rounds
+  vs Drattr  party wins  26%   median fight 7 rounds
+  vs Djur    party wins  26%   median fight 4 rounds
+  vs Oskorei party wins  45%   median fight 6 rounds
+      by tier: T1 74%   T2 63%   T3 13%   T4 29%
+
+  class              Ande       Draugr         Bein       Drattr         Djur      Oskorei
+               win weak/f   win weak/f   win weak/f   win weak/f   win weak/f   win weak/f
+  Brennumar     28%   1.0    55%   7.2    26%   0.0    18%   0.6    52%   4.9    66%   6.0
+  Dagskald      47%   1.2    49%   5.0    40%   4.0    28%   0.0    25%   0.0    48%   0.0
+  Hafrunar      32%   1.4    33%   0.0    27%   0.0    17%   0.0    26%   0.0    45%   0.0
+  Lundar        29%   1.1    36%   0.0    24%   0.0    42%   8.6    24%   0.0    46%   1.1
+  Seidar        18%   0.6    20%   0.0    11%   0.0    17%   0.0    14%   0.0    35%   0.0
+  Skurmar       32%   1.9    29%   0.0    24%   0.0    21%   0.0    23%   0.0    40%   0.0
+  Berserker     28%   0.0    15%   0.0    18%   2.0    22%   0.0    14%   0.0    37%   0.7
+  Hersir        23%   0.0    37%   4.6    19%   0.0    25%   0.0    25%   0.0    30%   2.4
+  Huskarl       32%   0.0    38%   4.1    17%   0.0    14%   0.0    19%   0.0    37%   3.0
+  Nalarbani     30%   0.0    30%   0.0    21%   0.0    22%   2.4    31%   3.6    49%   3.1
+  Ullar         45%   0.0    28%   0.0    14%   0.0    60%   7.5    38%   5.0    62%   3.7
+  Vasara        32%   0.0    26%   0.0    20%   4.2    19%   0.0    14%   0.0    36%   1.0
+
+=== Level 30: 1500 fights per family ===
+  vs Ande    party wins  34%   median fight 7 rounds
+  vs Draugr  party wins  41%   median fight 5 rounds
+  vs Bein    party wins  44%   median fight 5 rounds
+  vs Drattr  party wins  36%   median fight 5 rounds
+  vs Djur    party wins  39%   median fight 4 rounds
+  vs Oskorei party wins  57%   median fight 5 rounds
+      by tier: T1 86%   T2 71%   T3 35%   T4 34%
+
+  class              Ande       Draugr         Bein       Drattr         Djur      Oskorei
+               win weak/f   win weak/f   win weak/f   win weak/f   win weak/f   win weak/f
+  Brennumar     30%   0.9    66%   5.2    48%   0.0    31%   0.6    65%   3.6    72%   4.7
+  Dagskald      57%   0.9    65%   3.4    69%   3.0    45%   0.0    39%   0.0    66%   0.0
+  Hafrunar      31%   1.3    36%   0.0    50%   0.0    28%   0.0    36%   0.0    57%   0.0
+  Lundar        32%   0.9    34%   0.0    48%   0.0    48%   6.6    38%   0.0    59%   1.1
+  Seidar        18%   0.6    25%   0.0    29%   0.0    22%   0.0    26%   0.0    43%   0.0
+  Skurmar       28%   1.1    40%   0.0    44%   0.0    29%   0.0    36%   0.0    47%   0.0
+  Berserker     29%   0.0    26%   0.0    44%   1.9    34%   0.0    19%   0.0    45%   0.7
+  Hersir        29%   0.0    49%   3.6    32%   0.0    23%   0.0    31%   0.0    45%   1.9
+  Huskarl       33%   0.0    56%   3.4    28%   0.0    21%   0.0    36%   0.0    56%   2.0
+  Nalarbani     28%   0.0    28%   0.0    36%   0.0    35%   2.5    54%   3.1    64%   2.4
+  Ullar         41%   0.0    34%   0.0    30%   0.0    68%   5.1    53%   3.5    68%   2.5
+  Vasara        34%   0.0    31%   0.0    46%   4.0    36%   0.0    29%   0.0    45%   0.9
+
+=== Level 60: 1500 fights per family ===
+  vs Ande    party wins  49%   median fight 6 rounds
+  vs Draugr  party wins  57%   median fight 4 rounds
+  vs Bein    party wins  54%   median fight 4 rounds
+  vs Drattr  party wins  51%   median fight 5 rounds
+  vs Djur    party wins  53%   median fight 4 rounds
+  vs Oskorei party wins  70%   median fight 4 rounds
+      by tier: T1 91%   T2 84%   T3 60%   T4 45%
+
+  class              Ande       Draugr         Bein       Drattr         Djur      Oskorei
+               win weak/f   win weak/f   win weak/f   win weak/f   win weak/f   win weak/f
+  Brennumar     42%   0.6    77%   3.1    56%   0.0    47%   1.5    74%   2.2    76%   3.1
+  Dagskald      74%   0.9    82%   2.7    84%   2.5    62%   0.0    59%   0.0    78%   0.0
+  Hafrunar      44%   0.9    55%   0.0    59%   0.0    36%   0.0    49%   0.0    70%   0.0
+  Lundar        40%   0.6    51%   0.0    61%   0.0    67%   4.2    50%   0.0    74%   1.3
+  Seidar        32%   0.4    40%   0.0    39%   0.0    37%   0.0    43%   0.0    58%   0.0
+  Skurmar       48%   1.0    58%   0.0    55%   0.0    45%   0.0    55%   0.0    59%   0.0
+  Berserker     48%   0.0    37%   0.0    62%   2.1    54%   0.0    34%   0.0    65%   0.6
+  Hersir        41%   0.0    69%   3.2    29%   0.0    36%   0.0    41%   0.0    51%   1.6
+  Huskarl       48%   0.0    72%   2.9    37%   0.0    32%   0.0    49%   0.0    73%   1.5
+  Nalarbani     48%   0.0    45%   0.0    37%   0.0    52%   2.3    75%   2.7    73%   1.8
+  Ullar         56%   0.0    50%   0.0    38%   0.0    75%   2.8    66%   2.0    79%   2.3
+  Vasara        43%   0.0    41%   0.0    65%   3.4    48%   0.0    40%   0.0    69%   0.7

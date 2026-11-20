@@ -1,0 +1,335 @@
+=== Logged fight, level 30: Huskarl, Skurmar, Dagskald vs Halvdrattr A, Halvdrattr B, Halvdrattr C, Forsdrattr ===
+  Halvdrattr A: HP 165, 1 action(s): Tail Slap
+  Halvdrattr B: HP 165, 1 action(s): Tail Slap
+  Halvdrattr C: HP 165, 1 action(s): Tail Slap
+  Forsdrattr: HP 960, 3 action(s): Falls Crash, Jattevatn, Allmervatn, Allskolja
+Round 1
+    Halvdrattr C uses Tail Slap.
+      Graze on Huskarl: 7. Weak! (569/576)
+    Halvdrattr A uses Tail Slap.
+      Hit on Skurmar: 6. Resist. (525/531)
+    Halvdrattr B uses Tail Slap.
+      Hit on Huskarl: 15. Weak! (554/576)
+    Forsdrattr uses Falls Crash.
+      Hit on Huskarl: 60. Weak! (494/576)
+    Huskarl uses Great Strike.
+      Crit on Halvdrattr A: 82. Resist. (82/165)
+    Skurmar uses Allblast.
+      Hit/Hit on Halvdrattr A: 47. (35/165)
+      Hit/Crit on Halvdrattr B: 62. (102/165)
+      Hit/Hit on Halvdrattr C: 46. (118/165)
+      Hit/Hit on Forsdrattr: 50. (909/960)
+    Dagskald uses Mersol.
+      Graze on Halvdrattr A: 69. (0/165)
+      Halvdrattr A is down!
+    Forsdrattr uses Allmervatn.
+      Hit on Huskarl: 25. (454/576)
+      Graze on Skurmar: 14. (511/531)
+      Crit on Dagskald: 15. (529/544)
+    Forsdrattr uses Falls Crash.
+      Hit on Huskarl: 53. Weak! (400/576)
+  Bonus Round! (Halvdrattr B, Forsdrattr, Halvdrattr C)
+    Halvdrattr C uses Tail Slap. [Bonus]
+      Graze on Huskarl: 7. Weak! (393/576)
+    Halvdrattr B uses Tail Slap. [Bonus]
+      Hit on Huskarl: 16. Weak! (378/576)
+    Forsdrattr uses Falls Crash. [Bonus]
+      Hit on Huskarl: 58. Weak! (320/576)
+Round 2
+    Halvdrattr C uses Tail Slap.
+      Hit on Huskarl: 15. Weak! (305/576)
+    Halvdrattr B uses Tail Slap.
+      Hit on Huskarl: 13. Weak! (292/576)
+    Forsdrattr uses Falls Crash.
+      Hit on Huskarl: 54. Weak! (238/576)
+    Huskarl uses Great Strike.
+      Hit on Halvdrattr C: 52. Resist. (66/165)
+    Skurmar uses Merblixt.
+      Graze on Halvdrattr B: 67. (35/165)
+    Dagskald uses Mersol.
+      Graze on Halvdrattr C: 59. (7/165)
+    Forsdrattr uses Falls Crash.
+      Graze on Huskarl: 27. Weak! (195/576)
+    Forsdrattr uses Falls Crash.
+      Hit on Huskarl: 50. Weak! (146/576)
+  Bonus Round! (Halvdrattr B, Forsdrattr, Halvdrattr C)
+    Forsdrattr uses Falls Crash. [Bonus]
+      Hit on Huskarl: 60. Weak! (85/576)
+    Halvdrattr C uses Tail Slap. [Bonus]
+      Hit on Huskarl: 14. Weak! (72/576)
+    Halvdrattr B uses Tail Slap. [Bonus]
+      Graze on Huskarl: 7. Weak! (65/576)
+Round 3
+    Halvdrattr B uses Tail Slap.
+      Graze on Huskarl: 8. Weak! (57/576)
+    Halvdrattr C uses Tail Slap.
+      Hit on Huskarl: 15. Weak! (42/576)
+    Forsdrattr uses Falls Crash.
+      Hit on Huskarl: 50. Weak! (0/576)
+      Huskarl is down!
+    Skurmar uses Merblixt.
+      Hit on Halvdrattr B: 135. (0/165)
+      Halvdrattr B is down!
+    Dagskald casts Merlak, healing Skurmar.
+    Forsdrattr uses Falls Crash.
+      Hit on Skurmar: 19. Resist. (512/531)
+    Forsdrattr uses Falls Crash.
+      Hit on Dagskald: 38. (492/544)
+  Bonus Round! (Forsdrattr, Halvdrattr C)
+    Halvdrattr C uses Tail Slap. [Bonus]
+      Hit on Dagskald: 11. (480/544)
+    Forsdrattr uses Jattevatn. [Bonus]
+      Crit on Skurmar: 86. (427/531)
+Round 4
+    Halvdrattr C uses Tail Slap.
+      Crit on Dagskald: 18. (463/544)
+    Forsdrattr uses Jattevatn.
+      Hit on Skurmar: 55. (371/531)
+    Skurmar uses Merblixt.
+      Hit on Halvdrattr C: 110. (0/165)
+      Halvdrattr C is down!
+    Dagskald uses Mersol.
+      Hit on Forsdrattr: 134. (775/960)
+    Forsdrattr uses Falls Crash.
+      Hit on Dagskald: 44. (419/544)
+    Forsdrattr uses Jattevatn.
+      Hit on Skurmar: 59. (312/531)
+Round 5
+    Forsdrattr uses Jattevatn.
+      Hit on Skurmar: 57. (255/531)
+    Skurmar uses Halvblast.
+      Hit/Graze on Forsdrattr: 22. (753/960)
+    Dagskald casts Allak, healing Skurmar, Dagskald.
+    Forsdrattr uses Jattevatn.
+      Hit on Skurmar: 60. (313/531)
+    Forsdrattr uses Jattevatn.
+      Hit on Skurmar: 59. (254/531)
+Round 6
+    Forsdrattr uses Falls Crash.
+      Hit on Dagskald: 44. (494/544)
+    Skurmar uses Halvblast.
+      Hit/Hit on Forsdrattr: 34. (720/960)
+    Dagskald casts Merlak, healing Skurmar.
+    Forsdrattr uses Falls Crash.
+      Hit on Dagskald: 39. (456/544)
+    Forsdrattr uses Jattevatn.
+      Hit on Skurmar: 51. (424/531)
+Round 7
+    Forsdrattr uses Jattevatn.
+      Hit on Skurmar: 55. (369/531)
+    Skurmar uses Halvblast.
+      Graze/Graze on Forsdrattr: 17. (703/960)
+    Dagskald uses Mersol.
+      Hit on Forsdrattr: 127. (576/960)
+    Forsdrattr uses Jattevatn.
+      Hit on Skurmar: 60. (309/531)
+    Forsdrattr uses Jattevatn.
+      Hit on Skurmar: 62. (247/531)
+Round 8
+    Forsdrattr uses Falls Crash.
+      Graze on Dagskald: 21. (435/544)
+    Skurmar uses Halvblast.
+      Hit/Graze on Forsdrattr: 24. (552/960)
+    Dagskald casts Merlak, healing Skurmar.
+    Forsdrattr uses Falls Crash.
+      Hit on Dagskald: 41. (394/544)
+    Forsdrattr uses Falls Crash.
+      Graze on Dagskald: 21. (373/544)
+Round 9
+    Forsdrattr uses Falls Crash.
+      Hit on Dagskald: 40. (333/544)
+    Skurmar uses Halvblast.
+      Hit/Hit on Forsdrattr: 34. (517/960)
+    Dagskald casts Allak, healing Skurmar, Dagskald.
+    Forsdrattr uses Falls Crash.
+      Hit on Dagskald: 39. (412/544)
+    Forsdrattr uses Falls Crash.
+      Hit on Dagskald: 41. (372/544)
+Round 10
+    Forsdrattr uses Falls Crash.
+      Hit on Dagskald: 44. (328/544)
+    Skurmar uses Halvblast.
+      Hit/Graze on Forsdrattr: 24. (493/960)
+    Dagskald casts Allak, healing Skurmar, Dagskald.
+    Forsdrattr uses Falls Crash.
+      Graze on Dagskald: 20. (426/544)
+    Forsdrattr uses Falls Crash.
+      Hit on Dagskald: 40. (386/544)
+Round 11
+    Forsdrattr uses Falls Crash.
+      Hit on Dagskald: 43. (343/544)
+    Skurmar uses Halvblast.
+      Hit/Hit on Forsdrattr: 31. (462/960)
+    Dagskald uses Halvsol.
+      Hit on Forsdrattr: 42. (420/960)
+    Forsdrattr uses Falls Crash.
+      Hit on Dagskald: 41. (302/544)
+    Forsdrattr uses Falls Crash.
+      Hit on Skurmar: 20. Resist. (511/531)
+Round 12
+    Forsdrattr uses Falls Crash.
+      Hit on Skurmar: 22. Resist. (489/531)
+    Skurmar uses Halvblast.
+      Hit/Hit on Forsdrattr: 32. (388/960)
+    Dagskald uses Halvsol.
+      Graze on Forsdrattr: 22. (366/960)
+    Forsdrattr uses Falls Crash.
+      Hit on Dagskald: 37. (265/544)
+    Forsdrattr uses Falls Crash.
+      Hit on Dagskald: 44. (222/544)
+Round 13
+    Forsdrattr uses Falls Crash.
+      Crit on Dagskald: 67. (155/544)
+    Skurmar uses Halvblast.
+      Crit/Hit on Forsdrattr: 39. (327/960)
+    Dagskald uses Halvsol.
+      Hit on Forsdrattr: 47. (280/960)
+    Forsdrattr uses Falls Crash.
+      Graze on Skurmar: 10. Resist. (479/531)
+    Forsdrattr uses Falls Crash.
+      Hit on Dagskald: 42. (113/544)
+Round 14
+    Forsdrattr uses Falls Crash.
+      Hit on Dagskald: 38. (74/544)
+    Skurmar uses Halvblast.
+      Hit/Hit on Forsdrattr: 34. (246/960)
+    Dagskald uses Halvsol.
+      Hit on Forsdrattr: 47. (199/960)
+    Forsdrattr uses Falls Crash.
+      Hit on Dagskald: 38. (36/544)
+    Forsdrattr uses Falls Crash.
+      Hit on Dagskald: 43. (0/544)
+      Dagskald is down!
+Round 15
+    Forsdrattr uses Falls Crash.
+      Hit on Skurmar: 22. Resist. (457/531)
+    Skurmar uses Halvblast.
+      Hit/Graze on Forsdrattr: 24. (175/960)
+    Forsdrattr uses Falls Crash.
+      Hit on Skurmar: 21. Resist. (436/531)
+    Forsdrattr uses Falls Crash.
+      Hit on Skurmar: 19. Resist. (417/531)
+Round 16
+    Forsdrattr uses Falls Crash.
+      Hit on Skurmar: 20. Resist. (397/531)
+    Skurmar uses Halvblast.
+      Graze/Hit on Forsdrattr: 25. (150/960)
+    Forsdrattr uses Falls Crash.
+      Hit on Skurmar: 20. Resist. (377/531)
+    Forsdrattr uses Falls Crash.
+      Hit on Skurmar: 22. Resist. (355/531)
+Round 17
+    Forsdrattr uses Falls Crash.
+      Hit on Skurmar: 21. Resist. (333/531)
+    Skurmar uses Halvblast.
+      Hit/Graze on Forsdrattr: 23. (127/960)
+    Forsdrattr uses Falls Crash.
+      Hit on Skurmar: 19. Resist. (314/531)
+    Forsdrattr uses Falls Crash.
+      Hit on Skurmar: 20. Resist. (294/531)
+Round 18
+    Forsdrattr uses Falls Crash.
+      Hit on Skurmar: 21. Resist. (273/531)
+    Skurmar uses Halvblast.
+      Hit/Hit on Forsdrattr: 30. (96/960)
+    Forsdrattr uses Falls Crash.
+      Graze on Skurmar: 10. Resist. (263/531)
+    Forsdrattr uses Falls Crash.
+      Hit on Skurmar: 20. Resist. (243/531)
+Round 19
+    Forsdrattr uses Falls Crash.
+      Hit on Skurmar: 21. Resist. (223/531)
+    Skurmar uses Halvblast.
+      Hit/Hit on Forsdrattr: 33. (64/960)
+    Forsdrattr uses Falls Crash.
+      Hit on Skurmar: 23. Resist. (200/531)
+    Forsdrattr uses Falls Crash.
+      Hit on Skurmar: 23. Resist. (177/531)
+Round 20
+    Forsdrattr uses Falls Crash.
+      Hit on Skurmar: 20. Resist. (157/531)
+    Skurmar uses Halvblast.
+      Graze/Hit on Forsdrattr: 23. (40/960)
+    Forsdrattr uses Falls Crash.
+      Hit on Skurmar: 19. Resist. (138/531)
+    Forsdrattr uses Falls Crash.
+      Hit on Skurmar: 20. Resist. (117/531)
+Round 21
+    Forsdrattr uses Falls Crash.
+      Hit on Skurmar: 22. Resist. (96/531)
+    Skurmar uses Halvblast.
+      Hit/Graze on Forsdrattr: 22. (19/960)
+    Forsdrattr uses Falls Crash.
+      Hit on Skurmar: 22. Resist. (74/531)
+    Forsdrattr uses Falls Crash.
+      Hit on Skurmar: 22. Resist. (52/531)
+Round 22
+    Forsdrattr uses Falls Crash.
+      Hit on Skurmar: 20. Resist. (32/531)
+    Skurmar uses Halvblast.
+      Hit/Hit on Forsdrattr: 30. (0/960)
+      Forsdrattr is down!
+Result: party after 22 rounds
+
+=== Level 10: 1500 fights per family ===
+  vs Ande    party wins  52%   median fight 9 rounds
+  vs Draugr  party wins  33%   median fight 7 rounds
+  vs Bein    party wins  31%   median fight 7 rounds
+  vs Drattr  party wins  37%   median fight 7 rounds
+
+  class               Ande         Draugr           Bein         Drattr
+               win  weak/f    win  weak/f    win  weak/f    win  weak/f
+  Brennumar     50%   1.33     51%   6.40     33%   0.00     31%   0.81
+  Dagskald      64%   1.03     46%   4.50     45%   4.38     42%   0.00
+  Hafrunar      55%   1.37     30%   0.00     31%   0.00     27%   0.00
+  Lundar        57%   1.27     31%   0.00     29%   0.00     60%   7.15
+  Seidar        43%   2.11     20%   0.00     15%   0.00     25%   0.00
+  Skurmar       51%   1.81     31%   0.00     31%   0.00     33%   0.00
+  Berserker     42%   0.00     16%   0.00     30%   2.20     33%   0.00
+  Hersir        57%   0.00     39%   4.61     29%   0.00     46%   0.00
+  Huskarl       45%   0.00     38%   3.62     20%   0.00     23%   0.00
+  Nalarbani     60%   0.00     31%   0.00     44%   0.00     26%   2.67
+  Ullar         56%   0.00     31%   0.00     23%   0.00     61%   7.00
+  Vasara        45%   0.00     24%   0.00     34%   4.59     31%   0.00
+
+=== Level 30: 1500 fights per family ===
+  vs Ande    party wins  61%   median fight 7 rounds
+  vs Draugr  party wins  51%   median fight 5 rounds
+  vs Bein    party wins  38%   median fight 5 rounds
+  vs Drattr  party wins  49%   median fight 5 rounds
+
+  class               Ande         Draugr           Bein         Drattr
+               win  weak/f    win  weak/f    win  weak/f    win  weak/f
+  Brennumar     65%   0.76     71%   4.92     38%   0.00     46%   1.31
+  Dagskald      83%   0.82     71%   3.28     60%   3.19     54%   0.00
+  Hafrunar      64%   1.28     52%   0.00     34%   0.00     36%   0.00
+  Lundar        57%   0.90     44%   0.00     39%   0.00     73%   4.83
+  Seidar        54%   0.73     38%   0.00     22%   0.00     38%   0.00
+  Skurmar       64%   1.28     47%   0.00     36%   0.00     44%   0.00
+  Berserker     56%   0.00     32%   0.00     42%   2.01     42%   0.00
+  Hersir        56%   0.00     60%   3.62     24%   0.00     41%   0.00
+  Huskarl       59%   0.00     64%   3.19     27%   0.00     37%   0.00
+  Nalarbani     52%   0.00     39%   0.00     35%   0.00     45%   2.46
+  Ullar         59%   0.00     45%   0.00     28%   0.00     69%   4.60
+  Vasara        55%   0.00     38%   0.00     57%   4.09     47%   0.00
+
+=== Level 60: 1500 fights per family ===
+  vs Ande    party wins  75%   median fight 6 rounds
+  vs Draugr  party wins  64%   median fight 4 rounds
+  vs Bein    party wins  57%   median fight 5 rounds
+  vs Drattr  party wins  67%   median fight 5 rounds
+
+  class               Ande         Draugr           Bein         Drattr
+               win  weak/f    win  weak/f    win  weak/f    win  weak/f
+  Brennumar     70%   0.77     83%   3.17     55%   0.00     65%   1.70
+  Dagskald      91%   0.61     84%   2.64     80%   2.75     75%   0.00
+  Hafrunar      74%   0.97     62%   0.00     54%   0.00     54%   0.00
+  Lundar        78%   0.87     61%   0.00     55%   0.00     86%   3.08
+  Seidar        68%   0.37     46%   0.00     39%   0.00     56%   0.00
+  Skurmar       76%   0.93     63%   0.00     57%   0.00     62%   0.00
+  Berserker     75%   0.00     48%   0.00     62%   2.01     69%   0.00
+  Hersir        61%   0.00     79%   3.04     45%   0.00     47%   0.00
+  Huskarl       73%   0.00     82%   2.69     44%   0.00     52%   0.00
+  Nalarbani     73%   0.00     53%   0.00     42%   0.00     69%   2.17
+  Ullar         74%   0.00     60%   0.00     46%   0.00     88%   2.82
+  Vasara        71%   0.00     48%   0.00     78%   3.46     63%   0.00

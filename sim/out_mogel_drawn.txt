@@ -1,0 +1,16 @@
+5
+  Mogel, drawn       party wins  24%   median 12 rounds   re-forms/fight 2.6
+  Ande, drawn        party wins  25%   median  9 rounds   re-forms/fight 0.0
+  Mixed, drawn       party wins  20%   median 10 rounds   re-forms/fight 1.2
+10
+  Mogel, drawn       party wins  35%   median 12 rounds   re-forms/fight 3.1
+  Ande, drawn        party wins  35%   median  8 rounds   re-forms/fight 0.0
+  Mixed, drawn       party wins  34%   median  9 rounds   re-forms/fight 1.5
+20
+  Mogel, drawn       party wins  49%   median  9 rounds   re-forms/fight 3.5
+  Ande, drawn        party wins  48%   median  7 rounds   re-forms/fight 0.0
+  Mixed, drawn       party wins  48%   median  8 rounds   re-forms/fight 1.8
+30
+  Mogel, drawn       party wins  59%   median  8 rounds   re-forms/fight 3.8
+  Ande, drawn        party wins  52%   median  7 rounds   re-forms/fight 0.0
+  Mixed, drawn       party wins  56%   median  8 rounds   re-forms/fight 2.0

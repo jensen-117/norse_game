@@ -1,0 +1,224 @@
+=== Logged fight, level 25 ===
+  Brennumar  sign Mierka, +SPD/-WIL
+    HP 394  MP 92  ATK 32  MAT 56  DEF 31  MDF 57  SPD 49
+    affinity: Blixt:weak, Eld:resist, Pierce:resist, Reyk:resist, Slash:weak, Vatn:weak
+    kit: Halveld, Mereld (20 MP), Mereyk (16 MP), Alleld (15 MP)
+  Hersir  sign Bjark, +WIS/-WIL
+    HP 516  MP 70  ATK 64  MAT 36  DEF 51  MDF 35  SPD 51
+    affinity: Blast:resist, Blixt:resist, Eld:weak, Pierce:weak, Reyk:weak
+    kit: Strike, Power Strike (8 HP), Great Strike (16 HP), Blot (8 HP)
+  Dagskald  sign Bauta, +DEX/-WIL
+    HP 418  MP 111  ATK 23  MAT 76  DEF 35  MDF 76  SPD 33
+    affinity: Natt:weak, Pierce:weak, Slash:resist, Sol:resist
+    kit: Halvsol, Merlak (16 MP), Allak (12 MP), Mersol (16 MP)
+  Frost Wolf
+    HP 512  MP 85  ATK 50  MAT 40  DEF 50  MDF 50  SPD 40
+    affinity: Crush:weak, Hrim:resist, Jord:weak, Reyk:weak, Vatn:resist
+    kit: Bite, Hrim (8 MP)
+  Bog Archer
+    HP 512  MP 85  ATK 50  MAT 40  DEF 50  MDF 50  SPD 40
+    affinity: Blast:weak, Gro:resist, Hrim:weak, Jord:resist, Slash:weak
+    kit: Arrow, Volley (12 HP)
+  Ember Beetle
+    HP 512  MP 85  ATK 50  MAT 40  DEF 50  MDF 50  SPD 40
+    affinity: Blixt:weak, Crush:weak, Eld:absorb, Reyk:resist, Slash:resist, Vatn:weak
+    kit: Mandible, Eld (10 MP)
+Round 1
+    Hersir uses Great Strike.
+      Hit on Bog Archer: 94. Weak! (418/512)
+    Brennumar uses Mereld.
+      Hit on Frost Wolf: 68. (444/512)
+    Ember Beetle uses Eld.
+      Graze on Hersir: 39. Weak! (461/516)
+    Frost Wolf uses Bite.
+      Hit on Dagskald: 61. Weak! (357/418)
+    Bog Archer uses Volley.
+      Hit on Brennumar: 21. Resist. (374/394)
+      Hit on Hersir: 45. Weak! (415/516)
+      Graze on Dagskald: 32. Weak! (324/418)
+    Dagskald uses Mersol.
+      Graze on Bog Archer: 38. (369/512)
+  Bonus Round! (Hersir, Ember Beetle, Bog Archer, Frost Wolf)
+    Hersir uses Great Strike. [Bonus]
+      Crit on Bog Archer: 139. Weak! (229/512)
+    Bog Archer uses Volley. [Bonus]
+      Hit on Brennumar: 25. Resist. (349/394)
+      Hit on Hersir: 39. Weak! (360/516)
+      Crit on Dagskald: 94. Weak! (230/418)
+    Frost Wolf uses Bite. [Bonus]
+      Hit on Dagskald: 60. Weak! (170/418)
+    Ember Beetle uses Eld. [Bonus]
+      Hit on Hersir: 78. Weak! (282/516)
+Round 2
+    Hersir uses Blot.
+      Hit on Bog Archer: 52. Weak! (165/512)
+    Brennumar uses Mereyk.
+      Hit on Frost Wolf: 67. Weak! (378/512)
+    Ember Beetle uses Eld.
+      Hit on Hersir: 66. Weak! (208/516)
+    Frost Wolf uses Bite.
+      Hit on Dagskald: 61. Weak! (110/418)
+    Bog Archer uses Arrow.
+      Hit on Hersir: 42. Weak! (166/516)
+    Dagskald casts Allak, healing Brennumar, Hersir, Dagskald.
+  Bonus Round! (Brennumar, Bog Archer, Frost Wolf, Hersir, Ember Beetle)
+    Hersir uses Great Strike. [Bonus]
+      Graze on Bog Archer: 50. Weak! (115/512)
+    Brennumar uses Mereyk. [Bonus]
+      Hit on Frost Wolf: 63. Weak! (315/512)
+    Ember Beetle uses Eld. [Bonus]
+      Hit on Hersir: 66. Weak! (164/516)
+    Frost Wolf uses Bite. [Bonus]
+      Hit on Dagskald: 66. Weak! (124/418)
+    Bog Archer uses Arrow. [Bonus]
+      Hit on Hersir: 47. Weak! (117/516)
+Round 3
+    Hersir uses Great Strike.
+      Graze on Bog Archer: 53. Weak! (62/512)
+    Brennumar uses Mereyk.
+      Crit on Frost Wolf: 108. Weak! (207/512)
+    Bog Archer uses Volley.
+      Crit on Brennumar: 31. Resist. (363/394)
+      Hit on Hersir: 39. Weak! (62/516)
+      Hit on Dagskald: 55. Weak! (69/418)
+    Ember Beetle uses Mandible.
+      Hit on Brennumar: 52. (311/394)
+    Frost Wolf uses Bite.
+      Hit on Dagskald: 60. Weak! (9/418)
+    Dagskald casts Allak, healing Brennumar, Hersir, Dagskald.
+  Bonus Round! (Hersir, Brennumar, Bog Archer, Frost Wolf)
+    Hersir uses Great Strike. [Bonus]
+      Hit on Bog Archer: 89. Weak! (0/512)
+      Bog Archer is down!
+    Brennumar uses Mereyk. [Bonus]
+      Graze on Frost Wolf: 33. Weak! (174/512)
+    Frost Wolf uses Hrim. [Bonus]
+      Hit on Hersir: 42. (84/516)
+Round 4
+    Hersir uses Great Strike.
+      Graze on Frost Wolf: 30. (145/512)
+    Brennumar uses Halveld.
+      Hit on Frost Wolf: 22. (123/512)
+    Frost Wolf uses Bite.
+      Hit on Dagskald: 62. Weak! (27/418)
+    Ember Beetle uses Eld.
+      Graze on Hersir: 33. Weak! (35/516)
+    Dagskald casts Allak, healing Brennumar, Hersir, Dagskald.
+  Bonus Round! (Ember Beetle, Frost Wolf)
+    Frost Wolf uses Bite. [Bonus]
+      Hit on Dagskald: 65. Weak! (42/418)
+    Ember Beetle uses Eld. [Bonus]
+      Graze on Hersir: 39. Weak! (76/516)
+Round 5
+    Hersir uses Great Strike.
+      Hit on Frost Wolf: 64. (58/512)
+    Brennumar uses Halveld.
+      Hit on Frost Wolf: 22. (36/512)
+    Frost Wolf uses Bite.
+      Hit on Dagskald: 70. Weak! (0/418)
+      Dagskald is down!
+    Ember Beetle uses Mandible.
+      Hit on Brennumar: 49. (345/394)
+  Bonus Round! (Frost Wolf)
+    Frost Wolf uses Bite. [Bonus]
+      Graze on Hersir: 23. Weak! (37/516)
+Round 6
+    Hersir uses Great Strike.
+      Graze on Frost Wolf: 33. (3/512)
+    Brennumar uses Halveld.
+      Graze on Frost Wolf: 13. (0/512)
+      Frost Wolf is down!
+    Ember Beetle uses Eld.
+      Crit on Hersir: 110. Weak! (0/516)
+      Hersir is down!
+  Bonus Round! (Ember Beetle)
+    Ember Beetle uses Mandible. [Bonus]
+      Hit on Brennumar: 45. (300/394)
+Round 7
+    Brennumar uses Halveld.
+      Ember Beetle absorbs it, healing 22!
+    Ember Beetle uses Mandible.
+      Hit on Brennumar: 49. (251/394)
+  Bonus Round! (Ember Beetle)
+    Ember Beetle uses Eld. [Bonus]
+      Hit on Brennumar: 15. Resist. (236/394)
+Round 8
+    Brennumar uses Halveld.
+      Ember Beetle absorbs it, healing 24!
+    Ember Beetle uses Mandible.
+      Hit on Brennumar: 52. (184/394)
+  Bonus Round! (Ember Beetle)
+    Ember Beetle uses Mandible. [Bonus]
+      Hit on Brennumar: 53. (131/394)
+Round 9
+    Brennumar uses Halveld.
+      Ember Beetle absorbs it, healing 33!
+    Ember Beetle uses Mandible.
+      Hit on Brennumar: 46. (85/394)
+  Bonus Round! (Ember Beetle)
+    Ember Beetle uses Mandible. [Bonus]
+      Hit on Brennumar: 51. (35/394)
+Round 10
+    Brennumar uses Halveld.
+      Ember Beetle absorbs it, healing 37!
+    Ember Beetle uses Mandible.
+      Hit on Brennumar: 46. (0/394)
+      Brennumar is down!
+Result: enemy after 10 rounds
+
+=== Level 10, training 1pt, 2000 fights vs 3 random of 6 creatures ===
+  party win rate 48%   avg rounds 9.5   bonus rounds per fight 5.52
+  survival: natural fits 34% (66% of hires), odd births 27%
+  fight length: median 8 rounds, 90th percentile 16
+  party rolls: graze 20%  hit 74%  crit 6%
+  class       win%  dmg/rnd heal/rnd  weak/f  stat/f  surv%  MP left
+  Dagskald     59%     17.0     25.4    1.31    0.00    50%      17%
+  Hafrunar     55%     31.5      0.0    2.50    0.84    38%      14%
+  Skurmar      53%     32.6      0.0    3.22    0.20    39%      13%
+  Ullar        50%     43.3      0.0    2.72    0.00    33%     100%
+  Brennumar    50%     29.9      0.0    2.03    0.12    34%      13%
+  Vasara       48%     25.4      0.0    2.56    0.00    40%      84%
+  Huskarl      47%     26.0      0.0    2.46    0.00    30%      91%
+  Berserker    44%     33.1      0.0    1.65    0.00    15%     100%
+  Nalarbani    42%     20.8      0.0    2.23    0.73    22%     100%
+  Hersir       41%     19.6      0.0    2.26    0.66    22%     100%
+  Lundar       39%     26.6      0.0    1.48    0.08    23%      28%
+  Seidar       30%     12.3      0.0    0.00    0.02    18%      26%
+
+=== Level 30, training 1pt, 2000 fights vs 3 random of 6 creatures ===
+  party win rate 63%   avg rounds 7.9   bonus rounds per fight 4.75
+  survival: natural fits 47% (66% of hires), odd births 41%
+  fight length: median 7 rounds, 90th percentile 13
+  party rolls: graze 20%  hit 73%  crit 7%
+  class       win%  dmg/rnd heal/rnd  weak/f  stat/f  surv%  MP left
+  Dagskald     79%     46.0     97.8    0.98    0.00    70%      30%
+  Hafrunar     73%     95.8      0.0    1.99    0.88    58%      17%
+  Skurmar      66%     88.0      0.0    2.31    0.35    50%      15%
+  Huskarl      66%     81.6      0.0    2.01    0.00    49%      98%
+  Ullar        66%     93.6      0.0    1.64    0.00    41%     100%
+  Vasara       65%     83.9      0.0    2.13    0.00    59%      95%
+  Lundar       62%     71.7      0.0    1.54    0.18    40%      31%
+  Brennumar    59%     70.2      0.0    1.28    0.17    42%      19%
+  Berserker    59%     78.9      0.0    1.49    0.00    24%     100%
+  Nalarbani    58%     68.5      0.0    1.88    0.16    36%     100%
+  Hersir       51%     57.2      0.0    1.85    0.22    29%     100%
+  Seidar       39%     31.9      0.0    0.00    0.07    24%      26%
+
+=== Level 60, training 1pt, 2000 fights vs 3 random of 6 creatures ===
+  party win rate 80%   avg rounds 6.0   bonus rounds per fight 3.70
+  survival: natural fits 63% (66% of hires), odd births 59%
+  fight length: median 5 rounds, 90th percentile 10
+  party rolls: graze 20%  hit 71%  crit 9%
+  class       win%  dmg/rnd heal/rnd  weak/f  stat/f  surv%  MP left
+  Dagskald     87%    130.9    174.9    0.68    0.00    80%      42%
+  Hafrunar     87%    242.7      0.0    1.63    0.73    71%      17%
+  Skurmar      86%    239.0      0.0    1.87    0.34    68%      14%
+  Huskarl      84%    201.3      0.0    1.54    0.00    68%      99%
+  Ullar        81%    237.5      0.0    1.38    0.00    58%     100%
+  Vasara       81%    210.1      0.0    1.63    0.00    77%      99%
+  Berserker    77%    207.7      0.0    1.26    0.00    51%     100%
+  Lundar       77%    180.9      0.0    1.31    0.20    60%      28%
+  Nalarbani    75%    174.0      0.0    1.57    0.11    50%     100%
+  Brennumar    73%    173.7      0.0    1.22    0.24    57%      14%
+  Hersir       73%    133.0      0.0    1.44    0.11    47%     100%
+  Seidar       63%     73.3      0.0    0.00    0.23    39%      26%

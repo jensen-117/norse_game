@@ -1,0 +1,24 @@
+Mereitrkross           Great Venom Smash                power  19.6  cost  16 HP  group +0  ev  18.1  status Poisoned
+Flokskott              Volley                           power  20.0  cost  12 HP  group +0  ev  13.9  status None
+Jarfkross              Reckless Smash                   power  14.0  cost  12 HP  group +0  ev  19.6  status None
+Flokjattedrifskar      Sweeping Giant Flurry of Cuts    power  38.0  cost  48 HP  group +0  ev  24.7  status None
+Jattebidskott          Giant Patient Shot               power  98.8  cost  32 HP  group +0  ev  91.4  status None
+Bideld                 Patient Fire                     power  52.0  cost  10 MP  group +0  ev  55.3  status None
+Allmermoglkross        Great Disarming Smash Storm      power  19.6  cost  24 HP  group +0  ev  13.6  status Disarmed
+
+2520 martial words compiled.
+36 flagged: {'more damage per point of cost than the plain move': 36}
+
+Single-target Kross by manner: expected damage (cost)
+                   Halv          Base           Mer         Jatte            Ur
+  plain       9.2 ( 0)    18.5 ( 8)    25.9 (16)    35.1 (32)    46.2 ( 0)
+  Snar        8.3 ( 4)    16.7 ( 8)    23.3 (16)    31.6 (32)    41.6 ( 0)
+  Tung       11.1 ( 4)    22.2 ( 8)    31.1 (16)    42.2 (32)    55.5 ( 0)
+  Bid        24.1 ( 4)    48.1 ( 8)    67.3 (16)    91.4 (32)   120.2 ( 0)
+  Jarf        9.8 ( 6)    19.6 (12)    27.4 (24)    37.2 (48)    49.0 ( 0)
+  Drif        8.7 ( 4)    17.3 ( 8)    24.3 (16)    33.0 (32)    43.4 ( 0)
+
+Flagged, plain single-target words only:
+  Tungkross        x1.20 of plain, cost 8: more damage per point of cost than the plain move
+  Mertungkross     x1.20 of plain, cost 16: more damage per point of cost than the plain move
+  Jattetungkross   x1.20 of plain, cost 32: more damage per point of cost than the plain move

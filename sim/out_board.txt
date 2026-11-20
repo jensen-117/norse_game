@@ -1,0 +1,52 @@
+
+=== Level 10, 800 fights each: no board -> board ===
+  family               party wins  median rounds  rear-melee hits  fizzles  advances
+  Ande               32% -> 32%       12 -> 11                0.0     0.00      0.00
+  Draugr             34% -> 47%        7 -> 7                 0.0     0.00      0.03
+  Bein               26% -> 32%        6 -> 7                 0.0     0.00      0.05
+  Drattr             25% -> 39%        7 -> 8                 0.0     0.00      0.02
+  Djur               29% -> 36%        4 -> 5                 0.0     0.00      0.02
+  Oskorei            39% -> 50%        6 -> 7                 0.0     0.00      0.02
+  Mogel (drawn)      33% -> 42%       11 -> 12                0.0     0.00      0.31
+  Ande (drawn)       35% -> 34%        8 -> 8                 0.0     0.00      0.00
+
+  class       win, no board   board
+  Brennumar             39%     48%
+  Dagskald              40%     50%
+  Hafrunar              32%     40%
+  Lundar                35%     42%
+  Seidar                19%     25%
+  Skurmar               30%     37%
+  Berserker             25%     30%
+  Hersir                30%     35%
+  Huskarl               26%     34%
+  Nalarbani             31%     36%
+  Ullar                 40%     45%
+  Vasara                25%     36%
+  heroes Downed at least once: caster 73% -> 63%, martial 81% -> 79%
+
+=== Level 30, 800 fights each: no board -> board ===
+  family               party wins  median rounds  rear-melee hits  fizzles  advances
+  Ande               37% -> 31%        7 -> 7                 0.0     0.00      0.00
+  Draugr             44% -> 62%        5 -> 5                 0.0     0.00      0.03
+  Bein               42% -> 51%        5 -> 5                 0.0     0.00      0.03
+  Drattr             33% -> 49%        5 -> 6                 0.0     0.00      0.02
+  Djur               39% -> 53%        4 -> 4                 0.0     0.00      0.03
+  Oskorei            50% -> 60%        5 -> 5                 0.0     0.00      0.03
+  Mogel (drawn)      54% -> 67%        8 -> 9                 0.0     0.00      0.38
+  Ande (drawn)       54% -> 55%        7 -> 6                 0.0     0.00      0.00
+
+  class       win, no board   board
+  Brennumar             49%     59%
+  Dagskald              60%     70%
+  Hafrunar              42%     53%
+  Lundar                45%     54%
+  Seidar                31%     38%
+  Skurmar               44%     53%
+  Berserker             35%     45%
+  Hersir                39%     45%
+  Huskarl               42%     51%
+  Nalarbani             44%     52%
+  Ullar                 49%     58%
+  Vasara                39%     50%
+  heroes Downed at least once: caster 64% -> 51%, martial 73% -> 69%

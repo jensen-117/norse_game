@@ -1,0 +1,2 @@
+Level 10: party wins 32% without paint -> 29% with paint; median rounds 11 -> 11
+Level 30: party wins 55% without paint -> 54% with paint; median rounds 8 -> 8

@@ -1,0 +1,7 @@
+Level 10, 800 fights: party wins
+                                       Draugr     Bein   Drattr     Djur  Oskorei    Mogel
+  target (no board)                       30%      25%      20%      24%      38%      32%
+  enemy damage scale 0.5                  50%      32%      37%      35%      51%      40%
+  enemy damage scale 0.55                 43%      24%      30%      32%      44%      36%
+  enemy damage scale 0.6                  41%      21%      25%      24%      37%      30%
+  enemy damage scale 0.65                 32%      17%      21%      24%      37%      27%

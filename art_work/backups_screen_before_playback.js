@@ -1,0 +1,717 @@
+/* The fight screen: 320x180 pixel art, scaled up by whole numbers, with the watercolor text box drawn at full
+   resolution underneath (fight_lab_spec Parts 2-6). Python runs the rules; this file draws and takes clicks.
+   Needs from the page: window.Lab = { call(fn, ...args) -> parsed JSON, speed() -> ms, onState(r), onEvents(evs) }. */
+"use strict";
+const Screen = (() => {
+  const W = 320, H = 180;
+  const C = {
+    ink: "#2e222f", white: "#ffffff", dim: "#9babb2", mute: "#7f708a", gold: "#f9c22b", shadow: "#625565",
+    blue: "#4d9be6", bshade: "#484a77", red: "#e83b3b", rshade: "#6e2727", frame: "#cd683d",
+    hpHi: "#1ebc73", hpMid: "#f9c22b", hpLo: "#e83b3b", hpBack: "#45293f", weak: "#fbff86", heal: "#91db69",
+    absorb: "#8fd3ff", plate: "#2e222f", plateEdge: "#7f708a", plateLit: "#c7dcd0", plateDark: "#3e3546",
+  };
+  // 3x5 capitals and digits (PICO-8-like): rows top to bottom
+  const TINY = {
+    A: "010101111101101", B: "110101110101110", C: "011100100100011", D: "110101101101110", E: "111100110100111",
+    F: "111100110100100", G: "011100101101011", H: "101101111101101", I: "111010010010111", J: "001001001101010",
+    K: "101101110101101", L: "100100100100111", M: "101111111101101", N: "110101101101101", O: "010101101101010",
+    P: "110101110100100", Q: "010101101110011", R: "110101110101101", S: "011100010001110", T: "111010010010010",
+    U: "101101101101011", V: "101101101101010", W: "101101111111101", X: "101101010101101", Y: "101101010010010",
+    Z: "111001010100111", "0": "010101101101010", "1": "010110010010111", "2": "110001010100111", "3": "110001010001110",
+    "4": "101101111001001", "5": "111100110001110", "6": "011100110101010", "7": "111001010010010", "8": "010101010101010",
+    "9": "010101011001110", "/": "001001010100100", "-": "000000111000000", "+": "000010111010000", ".": "000000000000010",
+    "%": "101001010100101", "!": "010010010000010", ":": "000010000010000", ">": "100010001010100", "?": "110001010000010",
+    " ": "000000000000000", "'": "010010000000000",
+  };
+  const MARTIAL_ART = { Hersir: "Brennumar", Huskarl: "Hafrunar", Vasara: "Seidar", Berserker: "Skurmar", Ullar: "Lundar", Nalarbani: "Dagskald" };
+  const MARTIAL = new Set(["Slash", "Crush", "Pierce"]);
+
+  let A, atlas, wash, tracker, cord, CORD, badges, icons9, ICON9, bgs = {};   // assets (cord: Joseph's dialog frame, cut in pieces)
+  let cv, ctx, Z = 3, P, pc, Q, pq;               // the screen canvas, its scale, the pixel layer, the overlay layer
+  let sheetWash = null, sheetRect = null;         // the Inspect sheet's own watercolor: a fresh crop each time it opens
+  let area = "Neutral", boxWash = null;           // the text box's watercolor, one crop per fight
+  let S = null, units = {}, busy = false;         // Python's state; the drawn units; playing events
+  let orders = {}, opts = {}, current = null;     // the player's orders this phase
+  let mode = "menu", pending = null, scroll = 0;  // menu | info | pouch | cell | inspect
+  let hover = null, hoverChip = null, inspectCard = null;
+  let lines = [], floaters = [], trackRows = [], trackOff = 0, acted = 0;
+  let mouse = null, t0 = performance.now(), hits = [];
+
+  /* ------------------------------------------------------------ loading */
+  function img(src) { return new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => no(new Error(src)); i.src = src; }); }
+  async function load(canvas) {
+    cv = canvas; ctx = cv.getContext("2d");
+    A = await (await fetch("assets/assets.json")).json();
+    [atlas, wash, tracker, cord] = await Promise.all([img("assets/atlas.png"), img("assets/wash_grey.jpg"), img("assets/tracker.png"), img("assets/cord.png")]);
+    badges = await img("assets/intents.png"); icons9 = await img("assets/icons9.png");
+    ICON9 = await (await fetch("assets/icons9.json")).json();
+    CORD = await (await fetch("assets/cord.json")).json();
+    for (const a of ["Neutral", "Vatn", "Eld"]) bgs[a] = await img(`assets/bg_${a}.png`);
+    P = document.createElement("canvas"); P.width = W; P.height = H; pc = P.getContext("2d");
+    Q = document.createElement("canvas"); Q.width = W; Q.height = H; pq = Q.getContext("2d");
+    fit(); window.addEventListener("resize", fit);
+    cv.addEventListener("mousemove", e => { mouse = toPx(e); hoverAt(mouse); });
+    cv.addEventListener("mouseleave", () => { mouse = null; hover = hoverChip = null; });
+    cv.addEventListener("click", e => click(toPx(e)));
+    cv.addEventListener("contextmenu", e => { e.preventDefault(); back(); });
+    cv.addEventListener("wheel", e => { if (mode === "info") { scroll = Math.max(0, scroll + Math.sign(e.deltaY)); e.preventDefault(); }
+                                        else if (S && S.phase !== "over") { trackOff = Math.max(0, trackOff + Math.sign(e.deltaY)); e.preventDefault(); } }, { passive: false });
+    requestAnimationFrame(loop);
+  }
+  function fit() {
+    const box = cv.parentElement.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+    Z = Math.max(1, Math.floor(Math.min(box.width * dpr / W, 6)));
+    cv.width = W * Z; cv.height = H * Z;
+    cv.style.width = (W * Z / dpr) + "px"; cv.style.height = (H * Z / dpr) + "px";
+    boxWash = null;
+  }
+  const toPx = e => { const r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) * W / r.width, y: (e.clientY - r.top) * H / r.height }; };
+
+  /* ------------------------------------------------------------ the watercolor under the text box */
+  function makeWash(seed, rect = A.areas[area].box) {
+    const [x0, y0, x1, y1] = rect, w = (x1 - x0 + 1) * Z, h = (y1 - y0 + 1) * Z;
+    const c = document.createElement("canvas"); c.width = w; c.height = h; const g = c.getContext("2d");
+    let s = seed >>> 0; const rnd = () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
+    const sw = Math.min(wash.width, w), sh = Math.min(wash.height, h);
+    const sx = Math.floor(rnd() * (wash.width - sw)), sy = Math.floor(rnd() * (wash.height - sh));
+    g.save(); if (rnd() < .5) { g.translate(w, 0); g.scale(-1, 1); } if (rnd() < .5) { g.translate(0, h); g.scale(1, -1); }
+    g.drawImage(wash, sx, sy, sw, sh, 0, 0, w, h); g.restore();
+    const d = g.getImageData(0, 0, w, h), p = d.data;
+    let lo = 255, hi = 0; for (let i = 0; i < p.length; i += 4 * 7) { lo = Math.min(lo, p[i]); hi = Math.max(hi, p[i]); }
+    const ramp = A.areas[area].tint.map(h => [1, 3, 5].map(k => parseInt(h.slice(k, k + 2), 16)));
+    for (let i = 0; i < p.length; i += 4) {
+      const v = Math.min(1, Math.max(0, (p[i] - lo) / Math.max(1, hi - lo)));   // pale paper is light stone, pigment is ink
+      const t = v * 2, k = Math.min(1, Math.floor(t)), f = t - k, a = ramp[k], b = ramp[k + 1];
+      p[i] = a[0] + (b[0] - a[0]) * f; p[i + 1] = a[1] + (b[1] - a[1]) * f; p[i + 2] = a[2] + (b[2] - a[2]) * f;
+    }
+    g.putImageData(d, 0, 0); return c;
+  }
+
+  /* ------------------------------------------------------------ text */
+  function textW(s) { let w = 0; for (const ch of s) w += ((A.font.glyphs[ch] || A.font.glyphs["?"]).w + 1); return Math.max(0, w - 1); }
+  function text(x, y, s, col, sh = C.ink) {
+    x = Math.round(x); y = Math.round(y);
+    for (const pass of sh ? [0, 1] : [1]) {
+      let cx = x; pc.fillStyle = pass ? col : sh;
+      for (const ch of s) {
+        const g = A.font.glyphs[ch] || A.font.glyphs["?"];
+        for (const [gx, gy] of g.px) pc.fillRect(cx + gx + (pass ? 0 : 1), y + gy + (pass ? 0 : 1), 1, 1);
+        cx += g.w + 1;
+      }
+    }
+    return x + textW(s);
+  }
+  function tiny(x, y, s, col, sh = C.ink) {
+    s = s.toUpperCase();
+    for (const pass of sh ? [0, 1] : [1]) {
+      let cx = x; pc.fillStyle = pass ? col : sh;
+      for (const ch of s) {
+        const g = TINY[ch] || TINY["?"];
+        for (let i = 0; i < 15; i++) if (g[i] === "1") pc.fillRect(cx + i % 3, y + (i / 3 | 0) + (pass ? 0 : 1), 1, 1);
+        cx += 4;
+      }
+    }
+    return x + s.length * 4 - 1;
+  }
+  const tinyW = s => s.length * 4 - 1;
+  function wrap(s, maxw) {
+    const out = []; let cur = "";
+    for (const w of s.split(" ")) { const t = cur ? cur + " " + w : w; if (textW(t) > maxw && cur) { out.push(cur); cur = w; } else cur = t; }
+    if (cur) out.push(cur); return out;
+  }
+
+  /* ------------------------------------------------------------ units on the board */
+  function spriteKey(u) {
+    if (u.side === "party") return "hero:" + (MARTIAL_ART[u.cls] || u.cls);
+    const el = u.element, r = u.rank, f = u.family, has = k => A.sprites[k] ? k : null;
+    if (f === "Mogel") return has(`mogel${r === "Halv" ? 16 : r === "Litel" ? 24 : 32}:${el}`);
+    if (f === "Ande") return has(`${r === "Halv" ? "halvande" : "ande"}:${el}`) || has(`ande:${el}`) || has(`halvande:${el}`);
+    if (f === "Draugr") return has(`draugr:${r}`);
+    if (f === "Bein") return r === "Beinseidr" ? (has(`bein:Beinseidr:${el}`) || "bein:Beinseidr:Natt") : has(`bein:${r}`);
+    return null;
+  }
+  const REAR_BACK = 6;                            // the Rear stands a little further back in its cell, to give the intents room
+  function foot(side, row, lane) {
+    const g = A.geo, [ty, th] = g.lanes[lane], fy = ty + th - 5;
+    const back = row === 1 ? (side === 0 ? -REAR_BACK : REAR_BACK) : 0;
+    return [Math.round(g.GX[`${side}${row}`] + g.K * (g.FRONT - fy)) + (g.pitch - 16) / 2 + 8 + back, fy];
+  }
+  function cellPoly(side, row, lane) {
+    const g = A.geo, [ty, th] = g.lanes[lane], e = y => g.GX[`${side}${row}`] + g.K * (g.FRONT - y);
+    const xt = e(ty), xb = e(ty + th - 1);
+    return [[xt, ty], [xt + g.pitch - 1, ty], [xb + g.pitch - 1, ty + th - 1], [xb, ty + th - 1]];
+  }
+  const sideOf = u => u.side === "party" ? 0 : 1, rowOf = c => c[0] === "front" ? 0 : 1;
+  function syncUnits(board) {
+    const keep = units; units = {};
+    for (const b of board) {
+      const u = Object.assign({}, keep[b.id] || {}, b);
+      u.key = spriteKey(b); u.hp = b.hp !== undefined ? b.hp : (u.hp ?? null); u.frac = b.frac; u.defending = false;
+      if (!keep[b.id] || keep[b.id].key !== u.key) { u.anim = "idle"; u.animT = performance.now(); }
+      units[b.id] = u;
+    }
+  }
+  function unitBox(u) {
+    if (!u.cell) return null;
+    const [cx, fy] = foot(sideOf(u), rowOf(u.cell), u.cell[1]), m = A.sprites[u.key];
+    const w = m ? m.w : 14, h = m ? m.h : 22;
+    return { x: cx - (m ? m.foot[0] : 7), y: fy - h, w, h, cx, fy };
+  }
+  function animFrame(u, now) {
+    const m = A.sprites[u.key]; if (!m) return null;
+    let an = u.anim || "idle";
+    if (!u.alive) an = u.family === "Draugr" ? "fall" : (m.anims.downed ? "downed" : "idle");
+    if (u.crawling && u.alive && m.anims.crawl) an = "crawl";
+    if (!m.anims[an]) an = "idle";
+    const fr = m.anims[an], dt = now - (u.animT || 0);
+    const once = an !== "idle" && an !== "crawl";
+    let i = Math.floor(dt / (once ? 90 : 220));
+    if (once) { if (i >= fr.length) { if (an === "fall" || an === "downed") i = fr.length - 1; else { u.anim = "idle"; u.animT = now; return animFrame(u, now); } } }
+    else i %= fr.length;
+    return fr[i];
+  }
+
+  /* ------------------------------------------------------------ drawing */
+  function loop(now) {
+    if (A) draw(now);
+    requestAnimationFrame(loop);
+  }
+  function hpbar(x, y, frac, w = 16) {
+    pc.fillStyle = C.ink; pc.fillRect(x, y, w + 2, 4);
+    pc.fillStyle = C.hpBack; pc.fillRect(x + 1, y + 1, w, 2);
+    if (frac > 0) { pc.fillStyle = frac > .5 ? C.hpHi : frac > .25 ? C.hpMid : C.hpLo; pc.fillRect(x + 1, y + 1, Math.max(1, Math.round(w * frac)), 2); }
+  }
+  function poly(pts, col) {
+    pc.strokeStyle = col; pc.lineWidth = 1; pc.beginPath();
+    pts.forEach(([x, y], i) => i ? pc.lineTo(Math.round(x) + .5, y + .5) : pc.moveTo(Math.round(x) + .5, y + .5));
+    pc.closePath(); pc.stroke();
+  }
+  const ICON = {   // 7x7 intent glyphs
+    strike: ["......#", ".....#.", "....#..", "#..#...", ".##....", ".##....", "#..#..."],
+    pierce: ["....###", ".....##", "....#.#", "...#...", "..#....", "##.....", "##....."],
+    crush:  [".####..", ".####..", ".####..", "...#...", "...#...", "...#...", "...#..."],
+    spell:  ["...#...", ".#.#.#.", "..###..", "#######", "..###..", ".#.#.#.", "...#..."],
+    heal:   ["..###..", "..###..", "#######", "#######", "#######", "..###..", "..###.."],
+    hex:    ["...#...", "...#...", "...#...", "#..#..#", ".#.#.#.", "..###..", "...#..."],
+    buff:   ["...#...", "..###..", ".#.#.#.", "#..#..#", "...#...", "...#...", "...#..."],
+    guard:  ["#######", "#.....#", "#.....#", "#.....#", ".#...#.", "..#.#..", "...#..."],
+    move:   ["...#...", "..###..", ".#.#.#.", "...#...", ".#.#.#.", "..###..", "...#..."],
+    wind:   ["#######", ".#...#.", "..#.#..", "...#...", "..#.#..", ".#...#.", "#######"],
+    item:   ["..###..", ".#...#.", "#######", "#.....#", "#.....#", "#.....#", "#######"],
+  };
+  function icon(x, y, name, col, edge) {          // a 9x9 ink tag, edged in the side's colour, the glyph in white or gold
+    const g = ICON[name] || ICON.strike;
+    pc.fillStyle = edge; pc.fillRect(x - 1, y - 1, 9, 9);
+    pc.fillStyle = C.ink; pc.fillRect(x, y, 7, 7);
+    pc.fillStyle = col; for (let j = 0; j < 7; j++) for (let i = 0; i < 7; i++) if (g[j][i] === "#") pc.fillRect(x + i, y + j, 1, 1);
+  }
+  function headTop(u, b) {                       // just above the head, not the top of the sprite's box (swords, bows)
+    const m = A.sprites[u.key]; return m ? b.y + m.face[1] - 11 : b.y - 10;
+  }
+  function intentIcon(it) {
+    if (!it) return null;
+    const k = it.move_kind || it.kind;
+    if (it.reason === "release" || it.reason === "bide") return "wind";
+    if (it.move === "Guard" || it.move === "Defend" || k === "defend" || k === "cover") return "guard";
+    if (k === "move" || ["Swap", "Move", "Step up", "Step off", "Fall back", "Advance"].includes(it.move)) return "move";
+    if (k === "heal" || k === "revive" || k === "cleanse" || k === "mp") return "heal";
+    if (k === "stat") return it.direction > 0 ? "buff" : "hex";
+    if (k === "status") return "hex";
+    if (it.item) return "item";
+    return it.element === "Pierce" ? "pierce" : it.element === "Crush" ? "crush" : MARTIAL.has(it.element) ? "strike" : "spell";
+  }
+
+  function draw(now) {
+    pc.clearRect(0, 0, W, H);
+    const legal = legalTargets();
+    // board highlights: legal targets (white), Move cells (white), the hovered unit's cell (dim)
+    if (legal) for (const id of legal) { const u = units[id]; if (u && u.cell) poly(cellPoly(sideOf(u), rowOf(u.cell), u.cell[1]), C.white); }
+    if (mode === "cell" && current && opts[current]) for (const c of opts[current].move.cells) poly(cellPoly(0, rowOf(c.cell), c.cell[1]), C.white);
+    // units, back to front
+    const list = Object.values(units).filter(u => u.cell && (u.alive || u.piled || u.state !== "up" || now < (u.fadeUntil || 0)));
+    list.sort((a, b) => unitBox(a).fy - unitBox(b).fy);
+    for (const u of list) {
+      const b = unitBox(u), fr = animFrame(u, now);
+      pc.fillStyle = C.ink; pc.beginPath(); pc.ellipse(b.cx, b.fy, 6, 2, 0, 0, Math.PI * 2); pc.fill();
+      let sx = 0; if (u.shakeUntil && now < u.shakeUntil) sx = Math.round(Math.sin(now / 25) * 2);
+      if (!fr) {                                            // no art yet: a labelled stand-in
+        pc.fillStyle = u.side === "party" ? C.bshade : C.rshade; pc.fillRect(b.x + sx, b.y, b.w, b.h);
+        tiny(b.x + 1, b.y + 2, (u.rank || u.family || "?").slice(0, 3), C.white);
+      } else {
+        pc.save();
+        if (!u.alive && u.side !== "party") pc.globalAlpha = u.piled ? .9 : Math.max(0, ((u.fadeUntil || 0) - now) / 900);
+        if (u.piled) {                                      // a pile of bones: the sprite's lowest third, dropped
+          const third = Math.ceil(fr[3] / 3);
+          pc.drawImage(atlas, fr[0], fr[1] + fr[3] - third, fr[2], third, b.x + sx, b.fy - third, fr[2], third);
+        } else pc.drawImage(atlas, fr[0], fr[1], fr[2], fr[3], b.x + sx, b.y, fr[2], fr[3]);
+        pc.restore();
+      }
+    }
+    for (const u of list) {                                // bars, pips, intents, orders: above every sprite
+      const b = unitBox(u);
+      if (u.alive) hpbar(b.cx - 9, b.fy + 2, u.frac);
+      if (u.side === "party" && u.state === "dying") { pc.fillStyle = C.hpLo; for (let i = 0; i < u.breaths; i++) pc.fillRect(b.cx - 9 + i * 4, b.fy + 2, 3, 3); }
+      const top = headTop(u, b);
+      if (u.alive && !busy) {                       // what they're about to do: Joseph's 12x12 frame at the feet, facing the foe
+        let it = null;
+        if (u.side === "enemy") it = u.winding ? { reason: "bide" } : u.intent;
+        else if (orders[u.id]) it = orderIntent(u.id);
+        if (it) footBadge(u, b, it);
+      }
+      if (false) {
+        const atHero = u.intent && u.intent.target_id && units[u.intent.target_id] && units[u.intent.target_id].side === "party";
+        const i9 = u.intent && icon9(u.intent);
+        if (u.winding) icon(b.cx - 3, top, "wind", C.gold, C.gold);
+        else if (i9 !== null && i9 !== undefined) {         // Joseph's 9x9 icons, on an ink tag edged red when aimed at a hero
+          pc.fillStyle = atHero ? C.red : C.mute; pc.fillRect(b.cx - 5, top - 2, 13, 13);
+          pc.fillStyle = C.ink; pc.fillRect(b.cx - 4, top - 1, 11, 11);
+          pc.drawImage(icons9, i9 * 9, 0, 9, 9, b.cx - 3, top, 9, 9);
+        }
+        else if (u.intent) {
+          const g = intentIcon(u.intent), col = g === "buff" ? C.hpHi : g === "hex" ? "#a884f3" : C.white;
+          pc.fillStyle = atHero ? C.red : C.mute; pc.fillRect(b.cx - 5, top - 2, 13, 13);
+          pc.fillStyle = C.ink; pc.fillRect(b.cx - 4, top - 1, 11, 11);
+          const G = ICON[g] || ICON.strike; pc.fillStyle = col;
+          for (let j = 0; j < 7; j++) for (let i = 0; i < 7; i++) if (G[j][i] === "#") pc.fillRect(b.cx - 2 + i, top + 1 + j, 1, 1);
+        }
+      }
+      if (u.side === "party" && !busy) {
+        if (u.id === current && S.phase !== "over") { pc.fillStyle = C.gold; pc.fillRect(b.cx - 2, top + 1, 5, 1); pc.fillRect(b.cx - 1, top + 2, 3, 1); pc.fillRect(b.cx, top + 3, 1, 1); }
+        if (!orders[u.id] && u.winding) tiny(b.cx - (tinyW(u.winding.slice(0, 9)) >> 1), top - 7, u.winding.slice(0, 9), C.dim);
+      }
+      if (hover && hover.id === u.id) poly(cellPoly(sideOf(u), rowOf(u.cell), u.cell[1]), C.gold);
+    }
+    drawFloaters(now);
+    drawTracker(now);
+    drawStatus();
+    drawBox();
+    drawCord(...A.areas[area].frame, false);
+    pq.clearRect(0, 0, W, H);
+    if (inspectCard) { const keep = pc; pc = pq; drawInspect(); pc = keep; }
+    else if (hover || hoverChip) drawPlate(hover || hoverChip);
+    // compose: the wash under the box window, the pixel art over it
+    ctx.imageSmoothingEnabled = false;
+    const fr = snapCord(...A.areas[area].frame);
+    if (!boxWash) boxWash = makeFill(fightSeed, fr, false);
+    ctx.fillStyle = C.ink; ctx.fillRect(0, 0, cv.width, cv.height);
+    ctx.drawImage(boxWash, fr[0] * Z, fr[1] * Z);
+    ctx.drawImage(bgs[area], 0, 0, W * Z, H * Z);
+    ctx.drawImage(P, 0, 0, W * Z, H * Z);
+    if (inspectCard) {
+      if (!sheetWash) sheetWash = makeFill((Math.random() * 1e9) | 0, sheetRect, true);
+      ctx.drawImage(sheetWash, sheetRect[0] * Z, sheetRect[1] * Z);
+      ctx.drawImage(Q, 0, 0, W * Z, H * Z);
+    } else sheetWash = null;
+  }
+  /* Joseph's cord frame, every corner as he drew it (assets/cord.json). The twist repeats every 4 px, so a box keeps its
+     corners in phase only at some sizes: x1 - x0 = 1 (mod 4), y1 - y0 = 2 (mod 4). snapCord trims a box to the nearest
+     smaller size that fits. Floating boxes take the bottom corners with heads attached. */
+  function snapCord(x0, y0, x1, y1) {
+    x1 -= (((x1 - x0 - 1) % 4) + 4) % 4; y1 -= (((y1 - y0 - 2) % 4) + 4) % 4;
+    return [x0, y0, x1, y1];
+  }
+  /* The fill runs right up to the cord: into every notch of the twist on the inside, and no further. The region is
+     traced from the cord itself (a flood fill from the middle, stopped by the cord's pixels). */
+  function cordMask(rect, floating) {
+    const [x0, y0, x1, y1] = rect, w = x1 - x0 + 1, h = y1 - y0 + 1;
+    const t = document.createElement("canvas"); t.width = W; t.height = H;
+    const keep = pc; pc = t.getContext("2d"); drawCord(x0, y0, x1, y1, floating); const px = pc.getImageData(x0, y0, w, h).data; pc = keep;
+    const m = document.createElement("canvas"); m.width = w; m.height = h; const g = m.getContext("2d"), out = g.createImageData(w, h);
+    const seen = new Uint8Array(w * h), stack = [((h >> 1) * w) + (w >> 1)];
+    while (stack.length) {
+      const i = stack.pop(); if (seen[i] || px[i * 4 + 3]) continue;
+      seen[i] = 1; out.data[i * 4 + 3] = 255;
+      const x = i % w, y = (i / w) | 0;
+      if (x > 0) stack.push(i - 1); if (x < w - 1) stack.push(i + 1); if (y > 0) stack.push(i - w); if (y < h - 1) stack.push(i + w);
+    }
+    g.putImageData(out, 0, 0); return m;
+  }
+  function makeFill(seed, rect, floating) {
+    const c = makeWash(seed, rect), g = c.getContext("2d");
+    g.globalCompositeOperation = "destination-in"; g.imageSmoothingEnabled = false;
+    g.drawImage(cordMask(rect, floating), 0, 0, c.width, c.height);
+    return c;
+  }
+  function piece(k, x, y) { const p = CORD[k]; pc.drawImage(cord, p.r[0], p.r[1], p.r[2], p.r[3], x - p.a[0], y - p.a[1], p.r[2], p.r[3]); }
+  function run(k, x, y, len, horiz) {
+    const p = CORD[k], step = horiz ? p.r[2] : p.r[3];
+    for (let i = 0; i < len; i += step) {
+      const n = Math.min(step, len - i);
+      if (horiz) pc.drawImage(cord, p.r[0], p.r[1], n, p.r[3], x + i, y - p.a[1], n, p.r[3]);
+      else pc.drawImage(cord, p.r[0], p.r[1], p.r[2], n, x - p.a[0], y + i, p.r[2], n);
+    }
+  }
+  function drawCord(x0, y0, x1, y1, floating) {
+    [x0, y0, x1, y1] = snapCord(x0, y0, x1, y1);
+    run("top", x0 + 4, y0, x1 - x0 - 7, true); run("bot", x0 + 4, y1, x1 - x0 - 7, true);
+    run("lft", x0, y0 + 3, y1 - y0 - 6, false); run("rgt", x1, y0 + 3, y1 - y0 - 6, false);
+    piece(floating ? "blh" : "bl", x0, y1); piece(floating ? "brh" : "br", x1, y1);
+    piece("tl", x0, y0); piece("tr", x1, y0);
+    return [x0, y0, x1, y1];
+  }
+  let fightSeed = 1;
+
+  function drawFloaters(now) {
+    floaters = floaters.filter(f => now - f.t < 900);
+    for (const f of floaters) {
+      const k = (now - f.t) / 900, y = Math.round(f.y - 10 * k);
+      tiny(f.x - (tinyW(f.s) >> 1), y, f.s, f.col);
+    }
+  }
+  function drawTracker(now) {
+    const x0 = 96, y0 = 1;
+    pc.drawImage(tracker, x0, y0);
+    pc.save(); pc.beginPath(); pc.rect(x0 + 3, y0 + 3, 123, 10); pc.clip();
+    const rows = trackRows.slice(Math.min(trackOff + acted, Math.max(0, trackRows.length - 1)));
+    rows.forEach((r, i) => {
+      const x = x0 + 3 + i * 11, u = units[r.id]; if (x > x0 + 126) return;
+      const edge = i === 0 && !busy ? C.gold : (r.side === "party" ? C.blue : C.red);
+      pc.fillStyle = edge; pc.fillRect(x, y0 + 3, 10, 10);
+      pc.fillStyle = r.side === "party" ? C.bshade : C.rshade; pc.fillRect(x + 1, y0 + 4, 8, 8);
+      const m = u && A.sprites[u.key];
+      if (m) { const fr = m.anims.idle[0]; pc.drawImage(atlas, fr[0] + m.face[0], fr[1] + m.face[1], 8, 8, x + 1, y0 + 4, 8, 8); }
+      const suf = / ([A-H])$/.exec(r.name);
+      if (suf) { pc.fillStyle = C.ink; pc.fillRect(x + 5, y0 + 6, 5, 7); tiny(x + 6, y0 + 7, suf[1], C.white, null); }
+      if (!r.ordered) { pc.fillStyle = "rgba(46,34,47,.55)"; pc.fillRect(x + 1, y0 + 4, 8, 8); tiny(x + 4, y0 + 6, "?", C.white, null); }
+      r._box = { x, y: y0 + 3, w: 10, h: 10 };
+    });
+    pc.restore();
+  }
+  function drawStatus() {                         // the party, top left: name, HP, MP (3x5)
+    let y = 2;
+    for (const u of Object.values(units).filter(u => u.side === "party")) {
+      const col = u.state === "dead" ? C.hpLo : u.state === "dying" ? C.hpMid : u.id === current ? C.gold : C.white;
+      tiny(3, y, u.name.slice(0, 9), col);
+      tiny(41, y, `${u.hp}/${u.maxhp}`, u.state === "up" ? C.white : col);
+      tiny(77, y, String(u.mp), C.absorb);
+      y += 6;
+    }
+    if (S) { const s = S.phase === "over" ? "OVER" : `ROUND ${S.round}${S.phase === "bonus" ? " BONUS" : ""}`; tiny(W - 3 - tinyW(s), 2, s, S.phase === "bonus" ? C.weak : C.white); }
+  }
+  function plateBox(y, linesArr, title, right) {
+    const x0 = 8, x1 = W - 9, h = 8 + 11 * (linesArr.length + 1);
+    pc.fillStyle = C.plate; pc.fillRect(x0, y, x1 - x0 + 1, h + 1);
+    pc.strokeStyle = C.plateEdge; pc.strokeRect(x0 + 1.5, y + 1.5, x1 - x0 - 2, h - 2);
+    pc.fillStyle = C.plateLit; pc.fillRect(x0 + 1, y + 1, x1 - x0 - 1, 1);
+    text(x0 + 6, y + 4, title, C.gold); if (right) text(x1 - 6 - textW(right), y + 4, right, C.dim);
+    linesArr.forEach((l, i) => text(x0 + 6, y + 15 + i * 11, l, C.white));
+  }
+  const FRAME = { foe: ["#9e4539", "#6e2727"], calm: ["#7f708a", "#3e3546"], mine: ["#4d9be6", "#484a77"] };
+  function footBadge(u, b, it) {
+    const atHero = it.target_id && units[it.target_id] && units[it.target_id].side === "party";
+    const [outer, inner] = u.side === "party" ? FRAME.mine : atHero ? FRAME.foe : FRAME.calm;
+    // just clear of the body, on the side facing the foe (a wide Mogel pushes it further out)
+    // Joseph's 13x13 frame: a 1 px edge, a 1 px ring, the 9x9 icon centred
+    const x = u.side === "party" ? Math.max(b.cx + 10, b.x + b.w + 1) : Math.min(b.cx - 23, b.x - 14), y = b.fy - 11;
+    pc.fillStyle = outer; pc.fillRect(x, y, 13, 13);
+    pc.fillStyle = inner; pc.fillRect(x + 1, y + 1, 11, 11);
+    pc.fillStyle = C.ink; pc.fillRect(x + 2, y + 2, 9, 9);
+    if (it.reason === "bide" || it.move_kind === "windup") {   // winding up: Joseph's aura, charging
+      const f = ICON9["aura" + (1 + Math.floor(performance.now() / 160) % 3)];
+      pc.drawImage(icons9, f * 9, 0, 9, 9, x + 2, y + 2, 9, 9);   // the sparks loop on their own; the spiral is the still version
+      return;
+    }
+    const i9 = icon9(it);
+    if (i9 !== null && i9 !== undefined) pc.drawImage(icons9, i9 * 9, 0, 9, 9, x + 2, y + 2, 9, 9);
+    else {
+      const g = intentIcon(it), G = ICON[g] || ICON.strike;
+      pc.fillStyle = g === "wind" ? C.gold : C.white;
+      for (let j = 0; j < 7; j++) for (let i = 0; i < 7; i++) if (G[j][i] === "#") pc.fillRect(x + 3 + i, y + 3 + j, 1, 1);
+    }
+  }
+  function orderIntent(id) {                       // a hero's order, described like an intent so it gets the same icon
+    const o = orders[id], op = opts[id]; if (!o || !op) return null;
+    if (o.key === "guard") return { move_kind: "defend" };
+    if (o.key === "move") return { move_kind: "move", move: "Move" };
+    if (o.key === "flee") return { move_kind: "flee", move: "Flee" };
+    const mv = [op.halv, ...op.moves, ...op.items].find(m => m && m.key === o.key); if (!mv) return null;
+    return { move_kind: mv.kind, element: mv.element, all: mv.aim === "all", shape: mv.aim === "row" ? "row" : null,
+             reach: mv.card && mv.card.reach, item: mv.slot === "item" ? mv.key : null, direction: mv.kind === "stat" ? (mv.targets.some(t => units[t] && units[t].side === "party") ? 1 : -1) : null };
+  }
+  function icon9(it) {                           // which of Joseph's 9x9 icons says what this enemy is about to do
+    const k = it.move_kind, el = it.element, wide = it.all || it.shape === "row";
+    if (it.item) return ICON9[k === "heal" || k === "mp" || k === "revive" ? "potion" : "chest"];
+    if (k === "defend" || it.move === "Defend" || it.move === "Guard") return ICON9.guard;
+    if (k === "flee") return ICON9.step;   // boot kicking up dust: bolting
+    if (k === "move" || ["Swap", "Move", "Step up", "Step off", "Fall back", "Advance"].includes(it.move)) return ICON9.flee;   // boot with speed lines: moving
+    if (k === "cover") return ICON9.cover;
+    if (k === "heal" || k === "revive" || k === "cleanse") return ICON9.heal;
+    if (k === "stat") return ICON9[it.direction > 0 ? "buff" : "hex"];
+    if (k === "status") return ICON9.hex;
+    if (k !== "damage") return null;                 // moves, wind-ups, fleeing: the small glyphs
+    if (el === "Slash") return ICON9[wide ? "slash_sweep" : "slash"];
+    if (el === "Crush") return ICON9[wide ? "crush_sweep" : "crush"];
+    if (el === "Pierce") return it.reach === "any" ? ICON9[wide ? "volley" : "arrow"] : ICON9.stab;
+    return ICON9["magic:" + el] ?? ICON9.magic;
+  }
+  const BADGE = { crush: 0, strike: 1, spell: 2, pierce: 3 };
+  function badge(it, x, y) {                     // Joseph's 16x16 intent badges; motion lines red when it's coming for a hero
+    const ic = intentIcon(it); if (!(ic in BADGE)) return false;
+    const atHero = it.target_id && units[it.target_id] && units[it.target_id].side === "party";
+    pc.drawImage(badges, (BADGE[ic] + (atHero ? 4 : 0)) * 18, 0, 18, 18, x, y, 18, 18); return true;
+  }
+  function drawPlate(u) {                        // hover: who this is, and what they're about to do
+    if (u.id && units[u.id]) u = units[u.id];
+    const it = u.intent, o = orders[u.id], ls = [];
+    if (o) ls.push(o.label);
+    else if (u.winding) ls.push(`Winding up ${u.winding}.`);
+    else if (it && u.side === "enemy" && u.alive) {
+      ls.push(`${it.shown}${it.target ? " -> " + it.target : ""}`);
+      if (it.why) ls.push(...wrap("Why: " + it.why + ".", W - 30).slice(0, 1));
+    }
+    if (u.piled) ls.push("A pile of bones. It will stand again unless crushed.");
+    if (u.state === "dying") ls.push(`Dying: ${u.breaths} breaths left.`);
+    plateBox(19, ls.slice(0, 2), u.name, u.side === "party" ? `${u.hp}/${u.maxhp} HP` : "");
+    if (u.side === "enemy" && u.alive && it && !u.winding) badge(it, W - 9 - 22, 21);
+  }
+
+  /* ------------------------------------------------------------ the text box */
+  const BOX = { rows: [137, 149, 161], wordX: [16, 110], costR: [96, 190], utilX: [210, 256], div: 199 };
+  let boxHits = [];
+  function boxItem(x, y, w, label, onClick, enabled = true, selected = false, hoverKey = null) {
+    boxHits.push({ x: x - 8, y: y - 1, w: w + 10, h: 11, onClick, enabled, hoverKey });
+    const hot = mouse && enabled && mouse.x >= x - 8 && mouse.x < x + w + 2 && mouse.y >= y - 1 && mouse.y < y + 10;
+    if (selected || hot) text(x - 8, y, ">", C.gold);
+    return text(x, y, label, enabled ? (selected ? C.gold : C.white) : C.mute);
+  }
+  function divider() { run("lft", BOX.div, 138, 34, false); }      // a strand of the cord between moves and utilities
+  function drawBox() {
+    boxHits = [];
+    if (busy || !S || S.phase === "over" || !current || !opts[current]) {   // narration
+      const ls = lines.slice(-3);
+      ls.forEach((l, i) => text(14, BOX.rows[i], l.s, l.col || C.white));
+      return;
+    }
+    const o = opts[current];
+    divider();
+    // the right half: the utilities, always live
+    const n = o.items.reduce((a, b) => a + b.count, 0);
+    const util = [
+      ["Pouch", () => { mode = mode === "pouch" ? "menu" : "pouch"; pending = null; }, o.items.length > 0, mode === "pouch"],
+      ["Guard", () => order("guard", null, "Guard", "Guard"), true],
+      ["Move", () => { mode = "cell"; pending = null; }, o.move.cells.length > 0, mode === "cell"],
+      ["Flee", () => order("flee", null, "Flee", "Flee"), o.flee.allowed],
+      ["Inspect", () => { mode = "inspect"; pending = null; }, true, mode === "inspect"],
+      [Object.values(orders).some(x => x.key === "flee") ? "Fight!" : "Fight", fight, ready()],
+    ];
+    util.forEach(([label, fn, en, sel], i) => {
+      const x = BOX.utilX[i < 3 ? 0 : 1], y = BOX.rows[i % 3];
+      if (label.startsWith("Fight")) { if (en) boxItem(x, y, textW(label), label, fn, true, true); else text(x, y, label, C.mute); }
+      else {
+        const end = boxItem(x, y, textW(label), label, fn, en, sel);
+        if (label === "Flee") tiny(end + 3, y + 3, o.flee.allowed ? Math.round(o.flee.chance * 100) + "%" : "NO", C.dim);
+      }
+    });
+    // the left half: the moves, or one move's card, or the pouch
+    if (mode === "info" && pending) return drawInfo(pending);
+    if (mode === "pouch") {
+      o.items.slice(0, 3).forEach((it, i) => {
+        const ok = it.aim === "self" || it.aim === "all" || it.targets.length > 0;
+        boxItem(BOX.wordX[0], BOX.rows[i], textW(it.name), it.name, () => pick(it), ok);
+        text(BOX.costR[1] - textW("x" + it.count), BOX.rows[i], "x" + it.count, C.dim);
+      });
+      return;
+    }
+    const moves = [o.halv, ...o.moves].filter(Boolean);
+    moves.forEach((mv, i) => {
+      const col = i < 3 ? 0 : 1, y = BOX.rows[i % 3], x = BOX.wordX[col];
+      const ok = mv.afford && (mv.aim === "self" || mv.aim === "all" || mv.targets.length > 0);
+      boxItem(x, y, textW(mv.shown), mv.shown, () => pick(mv), ok, pending && pending.key === mv.key);
+      const cost = mv.cost ? String(mv.cost) : "";
+      if (cost) text(BOX.costR[col] - textW(cost), y, cost, ok ? C.dim : C.mute);
+    });
+  }
+  const REACH = [[" Melee: reaches the Front; half damage from the Rear.", "melee"], [" Reaches the Rear while you stand in the Front.", "reach"],
+                 [" Thrown: reaches anywhere.", "thrown"], [" Reaches anywhere.", "ranged"]];
+  function drawInfo(mv) {
+    let plain = (mv.card && mv.card.plain) || "", tag = "";
+    for (const [s, t] of REACH) if (plain.includes(s)) { plain = plain.replace(s, ""); tag = t; }
+    const cost = mv.cost ? `${mv.cost} ${mv.cost_type}` : (mv.slot === "item" ? `x${mv.count}` : "free");
+    boxItem(10, BOX.rows[0], textW("<"), "<", back);
+    const x = text(BOX.wordX[0] + 2, BOX.rows[0], mv.shown, C.gold);
+    if (tag) tiny(x + 4, BOX.rows[0] + 3, tag, C.dim);
+    text(BOX.costR[1] - textW(cost), BOX.rows[0], cost, C.dim);
+    const ls = wrap(plain, BOX.costR[1] - BOX.wordX[0]);
+    scroll = Math.min(scroll, Math.max(0, ls.length - 2));
+    ls.slice(scroll, scroll + 2).forEach((l, i) => text(BOX.wordX[0], BOX.rows[1 + i], l, C.white));
+    if (ls.length > scroll + 2) tiny(BOX.costR[1] - 3, BOX.rows[2] + 4, "V", C.gold, null);
+    if (scroll > 0) tiny(BOX.costR[1] - 3, BOX.rows[1] - 1, "^", C.gold, null);
+    if (!mv.afford) text(BOX.wordX[0], BOX.rows[2], mv.why === "Silenced" ? "Silenced." : `Not enough ${mv.cost_type}.`, C.hpLo);
+    else if (mv.aim === "self" || mv.aim === "all") tiny(BOX.costR[1] - tinyW("CLICK AGAIN TO USE"), BOX.rows[0] - 6, "CLICK AGAIN TO USE", C.gold, null);
+  }
+  function drawInspect() {                       // the sheet, as the Company remembers it
+    const c = inspectCard, x0 = 50, y0 = 26;
+    const [, , x1, y1] = drawCord(x0, y0, x0 + 221, y0 + 98, true), w = x1 - x0 + 1, h = y1 - y0 + 1;  // eslint-disable-line
+    sheetRect = [x0, y0, x1, y1];
+    text(x0 + 6, y0 + 4, c.name, C.gold);
+    const sub = [c.rank, c.element, c.side === "party" ? c.cls : null, `L${c.level}`].filter(Boolean).join(" ");
+    tiny(x0 + w - 6 - tinyW(sub), y0 + 7, sub, C.dim);
+    tiny(x0 + 6, y0 + 18, "HP " + (c.hp === null ? "?" : `${c.hp}/${c.maxhp}`), C.white);
+    tiny(x0 + 70, y0 + 18, "MP " + (c.mp === null ? "?" : `${c.mp}/${c.maxmp}`), C.white);
+    if (c.known && !c.known.all && c.side === "enemy") tiny(x0 + 134, y0 + 18, `FELLED ${c.known.kills}`, C.dim);
+    let y = y0 + 27;
+    if (c.intent) {
+      const u = units[c.id];
+      if (u && u.intent && c.side === "enemy" && badge(u.intent, x1 - 24, y - 4)) {}
+      tiny(x0 + 6, y, "INTENDS " + (c.intent.shown + (c.intent.target ? " > " + c.intent.target : "")).slice(0, 44), C.white); y += 7;
+    }
+    const st = Object.entries(c.status).map(([k, v]) => `${k} ${v}`).concat(Object.entries(c.stages).map(([k, v]) => `${k} ${v > 0 ? "+" : ""}${v}`));
+    if (st.length) { tiny(x0 + 6, y, st.join("  ").slice(0, 56), C.hpMid); y += 7; }
+    y += 2;
+    const affs = Object.entries(c.affinities), cols = 4;
+    affs.forEach(([k, v], i) => {
+      const x = x0 + 7 + (i % cols) * 53, yy = y + Math.floor(i / cols) * 8;
+      const col = v === "?" ? C.dim : v === "weak" ? C.weak : v === "absorb" ? C.absorb : v === "normal" ? C.plateLit : C.white;
+      tiny(x, yy, `${k} ${v === "normal" ? "-" : v === "?" ? "?" : v}`.slice(0, 13), col);
+    });
+    tiny(x0 + w - 7 - tinyW("CLICK TO CLOSE"), y0 + h - 10, "CLICK TO CLOSE", C.dim);
+  }
+
+  /* ------------------------------------------------------------ input */
+  function unitAt(p) {
+    const list = Object.values(units).filter(u => u.cell && (u.alive || u.piled || u.state === "dying"));
+    list.sort((a, b) => unitBox(b).fy - unitBox(a).fy);
+    for (const u of list) { const b = unitBox(u); if (p.x >= b.x - 2 && p.x < b.x + b.w + 2 && p.y >= b.y - 10 && p.y < b.fy + 6) return u; }
+    for (const u of list) { if (inPoly(p, cellPoly(sideOf(u), rowOf(u.cell), u.cell[1]))) return u; }
+    return null;
+  }
+  function cellAt(p) {
+    for (const row of [0, 1]) for (let lane = 0; lane < 3; lane++) if (inPoly(p, cellPoly(0, row, lane))) return [row ? "rear" : "front", lane];
+    return null;
+  }
+  function inPoly(p, pts) {
+    let inside = false;
+    for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+      const [xi, yi] = pts[i], [xj, yj] = pts[j];
+      if ((yi > p.y) !== (yj > p.y) && p.x < (xj - xi) * (p.y - yi) / (yj - yi) + xi) inside = !inside;
+    }
+    return inside;
+  }
+  function hoverAt(p) {
+    hover = null; hoverChip = null;
+    if (p.y < 18) { for (const r of trackRows) if (r._box && p.x >= r._box.x && p.x < r._box.x + 10 && p.y >= r._box.y && p.y < r._box.y + 10) { hoverChip = units[r.id] || null; } return; }
+    if (p.y < 132) hover = unitAt(p);
+  }
+  function click(p) {
+    if (!S || !A) return;
+    if (inspectCard) { inspectCard = null; return; }
+    for (const h of boxHits) if (p.x >= h.x && p.x < h.x + h.w && p.y >= h.y && p.y < h.y + h.h) { if (h.enabled) h.onClick(); return; }
+    if (busy || S.phase === "over") { const u = unitAt(p); if (u) inspectCard = Lab.call("inspect", u.id); return; }
+    if (mode === "cell") {
+      const c = cellAt(p), mv = c && opts[current].move.cells.find(x => x.cell[0] === c[0] && x.cell[1] === c[1]);
+      if (mv) return order("move", mv.cell, mv.swap ? `Swap with ${mv.swap_name}` : `Move to ${mv.cell[0]} ${mv.cell[1] + 1}`, mv.swap ? "Swap" : "Move");
+      return;
+    }
+    const u = unitAt(p); if (!u) return;
+    if (mode === "inspect") { inspectCard = Lab.call("inspect", u.id); mode = "menu"; return; }
+    if (mode === "info" && pending) {
+      if (pending.targets.includes(u.id)) return order(pending.key, u.id, `${pending.shown} -> ${u.name}`, pending.shown);
+      return;
+    }
+    if (u.side === "party" && S.awaiting.includes(u.id)) { current = u.id; mode = "menu"; pending = null; return; }
+    inspectCard = Lab.call("inspect", u.id);
+  }
+  function legalTargets() { return mode === "info" && pending && pending.aim !== "self" && pending.aim !== "all" ? pending.targets : null; }
+  function pick(mv) {
+    if ((mv.aim === "self" || mv.aim === "all") && mode === "info" && pending === mv)   // nothing to aim: a second click uses it
+      return order(mv.key, null, mv.shown + (mv.aim === "all" ? " -> all" : ""), mv.shown);
+    pending = mv; scroll = 0; mode = "info";
+  }
+  function order(key, target, label, short) {
+    const r = Lab.call("submit", current, key, JSON.stringify(target));
+    if (!r.ok) { say("Can't: " + r.error, C.hpLo); return; }
+    orders[current] = { key, target, label, short };
+    mode = "menu"; pending = null; inspectCard = null;
+    const next = S.awaiting.find(id => !orders[id]); if (next) current = next;
+    refreshTrack();
+  }
+  function back() { inspectCard = null; if (mode !== "menu") { mode = "menu"; pending = null; } }
+  function ready() { return S && S.phase !== "over" && !busy && S.awaiting.length > 0 && S.awaiting.every(id => orders[id]); }
+  function fight() { if (!ready()) return; const r = Lab.call("commit"); if (r.error) return say(r.error, C.hpLo); play(r); }
+  function key(e) {
+    if (!S) return;
+    if (e.key === "Escape") return back();
+    if (e.key === "Enter") return fight();
+    if (e.key === "ArrowRight") { trackOff++; return; } if (e.key === "ArrowLeft") { trackOff = Math.max(0, trackOff - 1); return; }
+    if (e.key === "ArrowDown" && mode === "info") { scroll++; return; } if (e.key === "ArrowUp" && mode === "info") { scroll = Math.max(0, scroll - 1); return; }
+    if (e.key === "Tab" && S.awaiting.length) {
+      e.preventDefault(); const i = S.awaiting.indexOf(current);
+      current = S.awaiting[(i + (e.shiftKey ? -1 : 1) + S.awaiting.length) % S.awaiting.length]; mode = "menu"; pending = null; return;
+    }
+    const n = "123456".indexOf(e.key);
+    if (n >= 0 && current && opts[current] && mode !== "pouch") { const mv = [opts[current].halv, ...opts[current].moves].filter(Boolean)[n]; if (mv && mv.afford) pick(mv); }
+  }
+
+  /* ------------------------------------------------------------ playing a batch of events */
+  function say(s, col) { for (const l of wrap(s, W - 30)) lines.push({ s: l, col }); lines = lines.slice(-40); }
+  function floatAt(id, s, col) { const u = units[id]; if (!u) return; const b = unitBox(u); if (b) floaters.push({ x: b.cx, y: b.y - 2, s, col, t: performance.now() }); }
+  function setAnim(id, an) { const u = units[id]; if (u) { u.anim = an; u.animT = performance.now(); } }
+  function refreshTrack() { try { trackRows = Lab.call("preview"); } catch { trackRows = []; } }
+  const NARRATE = new Set(["act", "hit", "absorb", "heal", "stat", "status", "resist", "defend", "cover", "covered", "move", "windup", "bide_lost",
+    "paint", "skip", "silenced", "tick", "down", "reform", "crawl", "pile", "scatter", "reassemble", "dying", "breath", "dead", "revive",
+    "stabilised", "item", "mp", "fled", "flee_failed", "retarget", "fizzle", "shatter", "flurry", "cleanse"]);
+  async function play(r) {
+    busy = true; mode = "menu"; pending = null; inspectCard = null; acted = 0; trackOff = 0;
+    const delay = Lab.speed();
+    for (const e of r.events) {
+      Lab.onEvent(e);
+      apply(e);
+      if (e.kind === "round") { say(`Round ${e.n}`, C.gold); }
+      else if (e.kind === "bonus") say("Bonus Round!", C.weak);
+      else if (e.kind === "end") say({ party: "Victory.", enemy: "The party has fallen.", fled: "The party got away.", draw: "Neither side gives way." }[e.winner], C.white);
+      else if (NARRATE.has(e.kind) && e.text) say(e.text, e.kind === "hit" && e.affinity === "weak" ? C.weak : null);
+      if (["act", "scatter", "defend", "move", "item", "windup", "skip", "cover"].includes(e.kind)) acted++;
+      if (delay && ["hit", "act", "heal", "move", "dying", "down", "reform", "crawl", "pile", "revive", "windup", "item", "cover", "defend", "absorb", "tick", "scatter"].includes(e.kind))
+        await new Promise(res => setTimeout(res, e.kind === "act" ? delay * 0.8 : delay));
+    }
+    for (const l of r.learned || []) Lab.onLearn(l);
+    S = r; syncUnits(r.board); busy = false; orders = {}; opts = {}; acted = 0; trackOff = 0;
+    Lab.onState(r);
+    if (S.phase === "over") { current = null; trackRows = []; return; }
+    refreshTrack();
+    if (Lab.auto() || S.awaiting.length === 0) { setTimeout(() => play(Lab.call("commit")), delay ? 450 : 0); return; }
+    for (const id of S.awaiting) opts[id] = Lab.call("options", id);
+    current = S.awaiting[0]; mode = "menu";
+  }
+  function apply(e) {
+    const u = e.unit_id && units[e.unit_id];
+    switch (e.kind) {
+      case "act": if (u) { setAnim(e.unit_id, e.move_kind === "damage" && MARTIAL.has(e.element) ? "attack" : "cast"); u.winding = null; } break;
+      case "item": setAnim(e.unit_id, "item"); break;
+      case "hit": if (u) {
+        u.hp = e.hp; u.frac = e.maxhp ? e.hp / e.maxhp : u.frac; setAnim(e.unit_id, u.defending ? "defend_hit" : "hit"); u.shakeUntil = performance.now() + 220;
+        floatAt(e.unit_id, String(e.dmg), e.affinity === "weak" ? C.weak : (e.results || []).includes("crit") ? C.gold : C.white);
+        if (e.affinity === "weak") setTimeout(() => floatAt(e.unit_id, "WEAK", C.weak), 120);
+        if (e.affinity === "resist" || e.affinity === "null") setTimeout(() => floatAt(e.unit_id, e.affinity.toUpperCase(), C.dim), 120);
+      } break;
+      case "absorb": if (u) { u.hp = e.hp; u.frac = Math.min(1, e.hp / ((u.maxhp || e.hp) || 1)); floatAt(e.unit_id, "+" + e.amount, C.absorb); setTimeout(() => floatAt(e.unit_id, "ABSORB", C.absorb), 120); } break;
+      case "heal": (e.target_ids || []).forEach((id, i) => { const t = units[id], x = e.targets[i]; if (t && x) { t.hp = x.hp; t.frac = t.maxhp ? x.hp / t.maxhp : t.frac; floatAt(id, "+" + x.amount, C.heal); } }); break;
+      case "tick": if (u) { u.hp = e.hp; u.frac = u.maxhp ? e.hp / u.maxhp : u.frac; floatAt(e.unit_id, String(e.dmg), C.hpMid); } break;
+      case "defend": if (u) { u.defending = true; setAnim(e.unit_id, "defend"); } break;
+      case "move": if (u) u.cell = e.cell; if (e.swapped_id && units[e.swapped_id]) units[e.swapped_id].cell = e.other_cell; break;
+      case "windup": if (u) u.winding = e.shown; break;
+      case "down": if (u) { u.alive = false; u.frac = 0; u.fadeUntil = performance.now() + 900; setAnim(e.unit_id, "fall"); } break;
+      case "pile": if (u) { u.alive = false; u.piled = true; u.frac = 0; } break;
+      case "scatter": if (e.target_id && units[e.target_id]) { units[e.target_id].piled = false; } break;
+      case "crawl": if (u) { u.crawling = true; u.frac = e.hp / e.maxhp; } break;
+      case "reform": if (u) { u.name = e.unit; u.rank = e.rank; u.key = spriteKey(u); u.frac = e.hp / e.maxhp; setAnim(e.unit_id, "reform"); } break;
+      case "reassemble": if (u) { u.alive = true; u.piled = false; u.cell = e.cell; u.frac = e.hp / e.maxhp; } break;
+      case "dying": if (u) { u.state = "dying"; u.alive = false; u.hp = 0; u.frac = 0; u.breaths = e.breaths; setAnim(e.unit_id, "downed"); } break;
+      case "breath": if (u) u.breaths = e.breaths; break;
+      case "dead": if (u) { u.state = "dead"; u.breaths = 0; } break;
+      case "revive": { const t = e.target_id && units[e.target_id]; if (t) { t.state = "up"; t.alive = true; t.hp = e.hp; t.frac = t.maxhp ? e.hp / t.maxhp : .1; t.anim = "idle"; floatAt(e.target_id, "UP", C.heal); } } break;
+      case "stabilised": if (u) { u.state = "up"; u.alive = true; u.hp = e.hp; } break;
+    }
+  }
+
+  /* ------------------------------------------------------------ a new fight */
+  function begin(r, areaName) {
+    area = A.areas[areaName] ? areaName : "Neutral";
+    fightSeed = (Math.random() * 1e9) | 0; boxWash = null;
+    units = {}; lines = []; floaters = []; orders = {}; opts = {}; current = null; mode = "menu"; pending = null; inspectCard = null;
+    S = Object.assign({}, r); syncUnits(r.board);
+    play(r);
+  }
+  function inspectId(id) { inspectCard = Lab.call("inspect", id); }
+  return { load, begin, key, inspectId, get state() { return S; }, get debug() { return { mode, pending: pending && pending.key, busy, current, hits: boxHits.map(h => [h.x, h.y, h.w, h.h, h.enabled]) }; } };
+})();

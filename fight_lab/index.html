@@ -1,0 +1,345 @@
+<meta charset="utf-8">
+<title>Fight Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&family=Atkinson+Hyperlegible:wght@400;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a dev panel on the left, the fight screen on the right (a 320x180 canvas, scaled up).
+   One dark look on purpose: the game's own screen, in Resurrect 64. */
+:root {
+  color-scheme: dark;
+  --ink: #2e222f; --panel: #3e3546; --line: #625565; --mute: #7f708a;
+  --fg: #c7dcd0; --dim: #9babb2; --white: #ffffff;
+  --gold: #f9c22b; --party: #4d9be6; --foe: #f68181; --legal: #30e1b9;
+  --hp-hi: #1ebc73; --hp-mid: #f9c22b; --hp-lo: #e83b3b; --hp-back: #45293f;
+  --weak: #fbff86; --bad: #e83b3b;
+  --display: "Pixelify Sans", "Courier New", monospace;
+  --body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", monospace;
+}
+html, body { background: var(--ink); color: var(--fg); }
+body { font: 14px/1.45 var(--body); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 12px 32px; }
+h1, h2, h3 { font-family: var(--display); font-weight: 600; margin: 0; letter-spacing: .02em; text-wrap: balance; }
+h1 { font-size: 22px; color: var(--white); }
+h2 { font-size: 15px; color: var(--gold); text-transform: uppercase; letter-spacing: .08em; }
+button, select, input { font: inherit; color: var(--fg); background: var(--panel); border: 1px solid var(--line); border-radius: 2px; padding: 4px 8px; }
+button { cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--dim); color: var(--white); }
+button:disabled { opacity: .45; cursor: default; }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
+.primary { background: var(--gold); color: var(--ink); border-color: var(--gold); font-weight: 700; }
+.primary:hover:not(:disabled) { color: var(--ink); filter: brightness(1.1); }
+
+header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 16px; margin-bottom: 12px; }
+#status { font: 12px var(--mono); color: var(--dim); }
+#status.err { color: var(--bad); }
+.wrap { display: grid; grid-template-columns: minmax(260px, 320px) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 860px) { .wrap { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---- the lab panel ---- */
+#lab { display: flex; flex-direction: column; gap: 14px; background: var(--panel); border: 1px solid var(--line); padding: 12px; }
+#lab section { display: flex; flex-direction: column; gap: 8px; }
+.slot { display: grid; grid-template-columns: 1fr 64px; gap: 6px; padding-top: 8px; border-top: 1px solid var(--line); }
+.slot .pouch { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 48px; gap: 4px; }
+.row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.row label { font-size: 12px; color: var(--dim); }
+.field { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--dim); }
+.cards { display: flex; flex-direction: column; gap: 6px; font-size: 12px; }
+.card { border-left: 2px solid var(--party); padding-left: 8px; }
+.card.foe { border-color: var(--foe); }
+.card b { color: var(--white); font-weight: 700; }
+.card .mv { font-family: var(--mono); color: var(--dim); }
+.check { display: flex; gap: 6px; align-items: center; font-size: 13px; }
+details summary { cursor: pointer; color: var(--dim); font-size: 12px; }
+#log-raw { max-height: 240px; overflow: auto; font: 11px/1.3 var(--mono); white-space: pre-wrap; color: var(--dim); }
+
+/* ---- the fight: one canvas, scaled by whole numbers ---- */
+#fight { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+#screenwrap { width: 100%; }
+#screen { display: block; image-rendering: pixelated; background: var(--ink); cursor: pointer; max-width: 100%; }
+#keys { font: 12px var(--mono); color: var(--dim); }
+#sheet { background: var(--panel); border: 1px solid var(--line); padding: 8px 10px; font-size: 12px; }
+#sheet .w { font-family: var(--display); font-size: 16px; color: var(--white); }
+#sheet .sub { font: 12px var(--mono); color: var(--dim); }
+</style>
+
+<header>
+  <h1>Fight Lab</h1>
+  <span id="status">Loading Python…</span>
+</header>
+
+<div class="wrap">
+  <aside id="lab" aria-label="Lab panel">
+    <section>
+      <h2>Party</h2>
+      <div id="slots"></div>
+      <div class="row"><button id="mkparty">Make party</button><button id="rollparty">Roll classes</button></div>
+      <div class="cards" id="partycards"></div>
+    </section>
+    <section>
+      <h2>Enemies</h2>
+      <div class="row">
+        <label class="field">Where<select id="hab"></select></label>
+        <label class="field">Budget<input id="budget" type="number" min="1" max="12" value="6" style="width:56px"></label>
+        <label class="field">Level<input id="elevel" type="number" min="1" max="99" value="30" style="width:56px"></label>
+      </div>
+      <div class="row">
+        <label class="field">Ranged<select id="ranged"><option value="any">whatever rolls</option><option value="include">include one</option><option value="exclude">none</option></select></label>
+        <label class="check"><input type="checkbox" id="artonly" checked> Drawn units only</label>
+      </div>
+      <div class="row"><button id="rollpack">Roll pack</button></div>
+      <div class="cards" id="packcards"></div>
+    </section>
+    <section>
+      <div class="row"><button class="primary" id="start" disabled>Fight</button><button id="auto" disabled>Auto</button></div>
+    </section>
+    <section>
+      <h2>Dev</h2>
+      <div class="row"><label class="field">Seed<input id="seed" type="number" value="1" style="width:90px"></label>
+        <label class="field">Playback<select id="speed"><option value="220">normal</option><option value="70">fast</option><option value="0">instant</option></select></label></div>
+      <label class="check"><input type="checkbox" id="knowall"> Know everything</label>
+      <div class="row"><button id="bestiary">Bestiary</button><button id="resetmem">Reset bestiary</button></div>
+      <div class="field" id="recbox">
+        <span id="recstat">Recorder: starting…</span>
+        <textarea id="note" rows="3" placeholder="Something odd? Say what, and Claude can replay this exact fight." style="font:inherit;color:var(--fg);background:var(--ink);border:1px solid var(--line);padding:6px;resize:vertical"></textarea>
+        <div class="row"><button id="savenote" disabled>Save note on this fight</button></div>
+      </div>
+      <details><summary>Raw event log</summary><div id="log-raw"></div></details>
+    </section>
+  </aside>
+
+  <main id="fight">
+    <div id="screenwrap"><canvas id="screen" width="960" height="540" aria-label="The fight screen"></canvas></div>
+    <div id="keys">Click a move, then a target. Click a hero to give them an order. 1–6 pick moves, Tab switches hero, Esc goes back, Enter fights, arrows scroll the turn order.</div>
+    <div id="sheet" hidden></div>
+  </main>
+</div>
+
+<script src="py/pyodide.js"></script>
+<script src="screen.js"></script>
+<script>
+"use strict";
+const $ = s => document.querySelector(s);
+const el = (tag, attrs = {}, ...kids) => {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") e.className = v; else if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
+    else if (v !== null && v !== undefined && v !== false) e.setAttribute(k, v === true ? "" : v);
+  }
+  for (const k of kids.flat()) if (k !== null && k !== undefined && k !== false) e.append(k.nodeType ? k : String(k));
+  return e;
+};
+const store = {
+  get(k, d) { try { const v = localStorage.getItem("fightlab:" + k); return v === null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem("fightlab:" + k, JSON.stringify(v)); } catch {} },
+};
+const status = (t, err) => { const s = $("#status"); s.textContent = t; s.classList.toggle("err", !!err); };
+
+let py, lab, M;              // Pyodide, the lab module, the panel's lists
+const SIM = ["data.py", "grammar.py", "engine.py", "composer.py", "knowledge.py", "lab.py"];
+const call = (fn, ...args) => JSON.parse(lab[fn](...args));
+
+/* Python's standard library ships as a JSON file of the modules the rules use (the host doesn't serve archives);
+   the page packs them into the zip Pyodide boots from, and hands it over when Pyodide asks for it. */
+function crcTable() { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; }
+function packZip(files) {
+  const T = crcTable(), enc = new TextEncoder(), parts = [], central = [];
+  let off = 0;
+  const crc = b => { let c = 0xFFFFFFFF; for (let i = 0; i < b.length; i++) c = T[(c ^ b[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+  for (const [name, text] of Object.entries(files)) {
+    const nb = enc.encode(name), data = enc.encode(text), c = crc(data);
+    const h = new DataView(new ArrayBuffer(30));
+    h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(8, 0, true); h.setUint16(12, 0x21, true);
+    h.setUint32(14, c, true); h.setUint32(18, data.length, true); h.setUint32(22, data.length, true); h.setUint16(26, nb.length, true);
+    const d = new DataView(new ArrayBuffer(46));
+    d.setUint32(0, 0x02014b50, true); d.setUint16(4, 20, true); d.setUint16(6, 20, true); d.setUint16(14, 0x21, true);
+    d.setUint32(16, c, true); d.setUint32(20, data.length, true); d.setUint32(24, data.length, true); d.setUint16(28, nb.length, true);
+    d.setUint32(42, off, true);
+    parts.push(new Uint8Array(h.buffer), nb, data); central.push(new Uint8Array(d.buffer), nb);
+    off += 30 + nb.length + data.length;
+  }
+  const cdSize = central.reduce((a, b) => a + b.length, 0), n = Object.keys(files).length;
+  const e = new DataView(new ArrayBuffer(22));
+  e.setUint32(0, 0x06054b50, true); e.setUint16(8, n, true); e.setUint16(10, n, true); e.setUint32(12, cdSize, true); e.setUint32(16, off, true);
+  return new Blob([...parts, ...central, new Uint8Array(e.buffer)]).arrayBuffer();
+}
+
+async function boot() {
+  try {
+    status("Loading Python (about 15 MB the first time)…");
+    const lib = await fetch("py/stdlib.json");
+    if (!lib.ok) throw new Error("py/stdlib.json: " + lib.status);
+    const zip = await packZip(await lib.json());
+    const realFetch = window.fetch.bind(window);
+    window.fetch = (u, ...a) => String(u).endsWith("python_stdlib.zip") ? Promise.resolve(new Response(zip.slice(0))) : realFetch(u, ...a);
+    py = await loadPyodide({ indexURL: new URL("py/", location.href).href });
+    window.fetch = realFetch;
+  } catch (e) {
+    status("Python didn't load: " + (e && e.message || e), true);
+
+    console.error(e); return;
+  }
+  try {
+    status("Loading the rules…");
+    for (const f of SIM) {
+      const r = await fetch("sim/" + f);
+      if (!r.ok) throw new Error(`sim/${f}: ${r.status}`);
+      py.FS.writeFile("/home/pyodide/" + f, await r.text());
+    }
+    lab = py.pyimport("lab");
+    M = call("menus");
+  } catch (e) {
+    status("The rules didn't load: " + (e && e.message || e), true); console.error(e); return;
+  }
+  const mem = store.get("memory", null);
+  if (mem) lab.memory_load(mem);
+  try { status("Loading the art…"); await Screen.load($("#screen")); }
+  catch (e) { status("The art didn't load: " + (e && e.message || e), true); console.error(e); return; }
+  status("Ready.");
+  initPanel();
+}
+
+/* ------------------------------------------------------------ the lab panel */
+const ITEM = () => Object.fromEntries(M.items.map(i => [i.key, i]));
+let partySpec = store.get("party", [
+  { cls: "Hersir", level: 30, pouch: [["life", 2], ["firecracker", 1]] },
+  { cls: "Dagskald", level: 30, pouch: [["life", 1], ["surgeons_kit", 1]] },
+  { cls: "Brennumar", level: 30, pouch: [["spirit", 1], ["smoke_pot", 1]] },
+]);
+let packReady = false, partyReady = false;
+
+function initPanel() {
+  const classOpts = () => [el("option", { value: "random" }, "random"), ...M.classes.map(c => el("option", { value: c.key }, `${c.key} (${c.school || c.dmg})`))];
+  const itemOpts = () => [el("option", { value: "" }, "—"), ...M.items.map(i => el("option", { value: i.key }, i.name))];
+  const slots = $("#slots"); slots.textContent = "";
+  partySpec.forEach((s, i) => {
+    const cls = el("select", { id: `cls${i}`, "aria-label": `Hero ${i + 1} class` }, classOpts()); cls.value = s.cls;
+    const lvl = el("input", { id: `lvl${i}`, type: "number", min: 1, max: 99, value: s.level, "aria-label": `Hero ${i + 1} level` });
+    const pouch = el("div", { class: "pouch" });
+    for (let j = 0; j < M.pouch_slots; j++) {
+      const it = el("select", { id: `it${i}_${j}`, "aria-label": `Hero ${i + 1} pouch slot ${j + 1}` }, itemOpts());
+      const n = el("input", { id: `n${i}_${j}`, type: "number", min: 0, max: 9, value: 1, "aria-label": "count" });
+      const p = (s.pouch || [])[j]; if (p) { it.value = p[0]; n.value = p[1]; }
+      pouch.append(it, n);
+    }
+    slots.append(el("div", { class: "slot" }, cls, lvl, pouch));
+  });
+  const hab = $("#hab"); hab.textContent = ""; M.habitats.forEach(h => hab.append(el("option", { value: h }, h)));
+  hab.value = store.get("hab", "Barrow");
+  $("#seed").value = store.get("seed", 1);
+  $("#speed").value = String(store.get("speed", 220));
+  $("#knowall").checked = store.get("knowall", false); lab.set_know_all($("#knowall").checked);
+  $("#mkparty").onclick = makeParty;
+  $("#rollparty").onclick = () => { partySpec.forEach((s, i) => $(`#cls${i}`).value = "random"); makeParty(); };
+  $("#rollpack").onclick = rollPack;
+  $("#start").onclick = () => startFight("party");
+  $("#auto").onclick = () => startFight("auto");
+  $("#seed").onchange = () => { store.set("seed", +$("#seed").value); lab.set_seed(+$("#seed").value); makeParty(); rollPack(); };
+  $("#speed").onchange = () => store.set("speed", +$("#speed").value);
+  $("#knowall").onchange = () => { lab.set_know_all($("#knowall").checked); store.set("knowall", $("#knowall").checked); };
+  $("#resetmem").onclick = () => { lab.memory_reset(); store.set("memory", null); status("The bestiary is empty again."); };
+  $("#bestiary").onclick = showBestiary;
+  $("#savenote").onclick = saveFight;
+  lab.set_seed(+$("#seed").value);
+  makeParty(); rollPack();
+}
+
+function readSpec() {
+  return partySpec.map((s, i) => ({
+    cls: $(`#cls${i}`).value, level: +$(`#lvl${i}`).value || 30,
+    pouch: Array.from({ length: M.pouch_slots }, (_, j) => [$(`#it${i}_${j}`).value, +$(`#n${i}_${j}`).value]).filter(p => p[0] && p[1] > 0),
+  }));
+}
+function makeParty() {
+  lab.set_seed(+$("#seed").value);
+  const r = call("make_party", JSON.stringify(readSpec()));
+  partySpec = r.spec; store.set("party", partySpec);
+  partySpec.forEach((s, i) => $(`#cls${i}`).value = s.cls);
+  const box = $("#partycards"); box.textContent = "";
+  r.party.forEach(h => box.append(el("div", { class: "card" },
+    el("b", {}, h.name), ` · level ${h.level} · ${h.hp} HP · ${h.mp} MP`,
+    el("div", { class: "mv" }, h.moves.map(m => m.name + (m.cost ? ` ${m.cost}${m.cost_type === "HP" ? "hp" : ""}` : "")).join(" · ")))));
+  partyReady = true; armStart();
+}
+function rollPack() {
+  store.set("hab", $("#hab").value);
+  const r = call("roll_pack", $("#hab").value, +$("#budget").value, $("#ranged").value, +$("#elevel").value, $("#artonly").checked);
+  const box = $("#packcards"); box.textContent = "";
+  if (r.error) { box.append(el("div", { class: "card foe" }, "Couldn't roll that pack: " + r.error)); packReady = false; armStart(); return; }
+  r.pack.forEach(u => box.append(el("div", { class: "card foe" }, el("b", {}, u.name),
+    ` · ${u.cell[0]} ${u.cell[1] + 1} · cost ${u.cost}${u.art ? "" : " · no art yet"}`)));
+  packReady = true; armStart();
+}
+function armStart() { $("#start").disabled = $("#auto").disabled = !(partyReady && packReady) || busy; }
+
+/* ------------------------------------------------------------ the recorder: each fight goes to the lab's own database,
+   with the seed and every order, so Claude can replay it exactly. */
+let db = null, fightId = null, writing = false, dirty = false;
+(async () => {
+  try { db = window.claude && window.claude.use ? await window.claude.use("db") : null; } catch { db = null; }
+  $("#recstat").textContent = db ? "Recorder: on. Every fight is saved for Claude to replay." : "Recorder: off here (it works when the page is open on claude.ai).";
+})();
+async function saveFight() {
+  if (!db || !fightId || !lab) return;
+  if (writing) { dirty = true; return; }
+  writing = true; dirty = false;
+  try {
+    const rec = JSON.parse(lab.record());
+    rec.at = new Date().toISOString(); rec.note = $("#note").value.trim() || null;
+    await db.doc("fights/" + fightId).set(rec);
+    $("#recstat").textContent = `Recorder: on. Saved fight ${fightId}${rec.note ? " with your note" : ""}.`;
+  } catch (e) {
+    $("#recstat").textContent = "Recorder: couldn't save (" + (e && (e.code || e.message) || e) + ").";
+  } finally {
+    writing = false;
+    if (dirty) saveFight();
+  }
+}
+
+/* ------------------------------------------------------------ the fight: screen.js draws it; this is the glue */
+let busy = false, autoMode = false, fightArea = "Neutral";
+const AREA_OF = hab => hab === "Rapids" || /Vatn|Hrim/.test(hab) ? "Vatn" : /Eld|Ash|Reyk/.test(hab) ? "Eld" : "Neutral";
+window.Lab = {
+  call, speed: () => +$("#speed").value, auto: () => autoMode,
+  onEvent(e) { $("#log-raw").append(JSON.stringify(e) + "\n"); },
+  onLearn(l) {
+    const [fam, rank, elm] = l.kind.split("|");
+    const t = l.what === "affinity" ? `Noted: ${rank || fam}${elm && elm !== "-" ? ` (${elm})` : ""}, ${l.element}: ${l.result}.` : `Noted: you know a ${rank || fam}'s ${l.what.toUpperCase()} now.`;
+    noteLines.push(t); $("#recstat").dataset.learn = t;
+  },
+  onState(r) {
+    busy = false; armStart();
+    try { store.set("memory", lab.memory_save()); } catch {}
+    if (fightId && r.events && r.events.some(e => e.kind === "round" || e.kind === "end")) saveFight();
+    if (noteLines.length) { status(noteLines.slice(-1)[0]); noteLines = []; }
+  },
+};
+let noteLines = [];
+function startFight(control) {
+  autoMode = control === "auto";
+  makeParty();
+  const r = call("start", control);
+  if (r.error) { status(r.error, true); return; }
+  $("#log-raw").textContent = ""; $("#sheet").hidden = true;
+  fightId = "f" + Date.now().toString(36); $("#note").value = ""; $("#savenote").disabled = false; saveFight();
+  busy = true; armStart(); status("Fighting.");
+  Screen.begin(r, AREA_OF($("#hab").value));
+}
+function showBestiary() {
+  const list = call("bestiary"), box = $("#sheet");
+  box.hidden = false; box.textContent = "";
+  box.append(el("div", { class: "w" }, "Bestiary"), el("div", { class: "sub" }, `${list.length} kinds met`));
+  for (const e of list) {
+    const affs = Object.entries(e.aff).map(([k, v]) => `${k} ${v}`).join(", ") || "nothing noted";
+    box.append(el("div", { style: "margin-top:6px" }, el("b", {}, e.rank + (e.element ? ` (${e.element})` : "")),
+      ` · felled ${e.kills}${e.hp ? " · HP known" : ""}${e.mp ? " · MP known" : ""}`, el("div", { class: "sub" }, affs)));
+  }
+}
+document.addEventListener("keydown", ev => {
+  if (ev.target.matches("input, select, textarea")) return;
+  if (["Tab", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", " "].includes(ev.key) && Screen.state) ev.preventDefault();
+  Screen.key(ev);
+});
+
+boot();
+</script>

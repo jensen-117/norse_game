@@ -1,0 +1,135 @@
+=== Logged fight, level 30: Nalarbani, Huskarl, Berserker vs Storhrimande, Drotthrimande, Litelhrimande ===
+  Storhrimande: HP 685, 2 action(s): Merhrim, Allhrim, Mervatn, Mernedrask
+  Drotthrimande: HP 960, 3 action(s): Jattehrim, Allmerhrim, Jattevatn, Meraukskold
+  Litelhrimande: HP 274, 1 action(s): Halvhrim, Allhalvhrim
+Round 1
+    Litelhrimande uses Allhalvhrim.
+      Hit on Nalarbani: 16. (494/510)
+      Graze on Huskarl: 9. Weak! (455/464)
+      Crit on Berserker: 14. (450/464)
+    Drotthrimande uses Allmerhrim.
+      Hit on Nalarbani: 44. (451/510)
+      Graze on Huskarl: 26. Weak! (430/464)
+      Hit on Berserker: 26. (424/464)
+    Storhrimande uses Mervatn.
+      Hit on Huskarl: 78. Weak! (352/464)
+    Nalarbani uses Great Strike.
+      Crit on Storhrimande: 110. (575/685)
+    Berserker uses Reckless Strike.
+      Graze on Storhrimande: 70. (506/685)
+    Huskarl uses Great Strike.
+      Hit on Storhrimande: 78. (427/685)
+    Drotthrimande uses Jattevatn.
+      Hit on Huskarl: 96. Weak! (240/464)
+    Storhrimande uses Mervatn.
+      Graze on Huskarl: 35. Weak! (205/464)
+    Drotthrimande uses Jattevatn.
+      Hit on Huskarl: 103. Weak! (101/464)
+  Bonus Round! (Storhrimande, Litelhrimande, Drotthrimande)
+    Storhrimande uses Mervatn. [Bonus]
+      Hit on Huskarl: 66. Weak! (35/464)
+    Litelhrimande uses Allhalvhrim. [Bonus]
+      Hit on Nalarbani: 16. (418/510)
+      Hit on Huskarl: 21. Weak! (15/464)
+      Hit on Berserker: 9. (309/464)
+    Drotthrimande uses Jattevatn. [Bonus]
+      Hit on Huskarl: 89. Weak! (0/464)
+      Huskarl is down!
+Round 2
+    Litelhrimande uses Allhalvhrim.
+      Graze on Nalarbani: 7. (411/510)
+      Hit on Berserker: 9. (300/464)
+    Storhrimande uses Mervatn.
+      Hit on Nalarbani: 59. (352/510)
+    Drotthrimande uses Jattevatn.
+      Hit on Nalarbani: 71. (280/510)
+    Nalarbani uses Great Strike.
+      Hit on Storhrimande: 84. (343/685)
+    Berserker uses Reckless Strike.
+      Graze on Storhrimande: 68. (275/685)
+    Drotthrimande uses Jattevatn.
+      Graze on Nalarbani: 41. (224/510)
+    Storhrimande uses Mervatn.
+      Hit on Nalarbani: 51. (173/510)
+    Drotthrimande uses Allmerhrim.
+      Hit on Nalarbani: 39. (133/510)
+      Hit on Berserker: 26. (200/464)
+Round 3
+    Litelhrimande uses Allhalvhrim.
+      Hit on Nalarbani: 16. (117/510)
+      Crit on Berserker: 15. (185/464)
+    Storhrimande uses Merhrim.
+      Hit on Nalarbani: 56. (62/510)
+    Drotthrimande uses Jattevatn.
+      Hit on Nalarbani: 76. (0/510)
+      Nalarbani is down!
+    Berserker uses Reckless Strike.
+      Hit on Storhrimande: 148. (127/685)
+    Storhrimande uses Mervatn.
+      Hit on Berserker: 36. (103/464)
+    Drotthrimande uses Jattehrim.
+      Graze on Berserker: 23. (80/464)
+    Drotthrimande uses Jattevatn.
+      Hit on Berserker: 43. (36/464)
+Round 4
+    Drotthrimande uses Jattevatn.
+      Hit on Berserker: 47. (0/464)
+      Berserker is down!
+Result: enemy after 4 rounds
+
+=== Level 10: 2500 fights, 3 recruits vs a 6-slot spirit pack ===
+  party win rate 53%   median fight 9 rounds (90th pct 22)   bonus rounds per fight 2.55
+    swarm   44% of fights   win  74%   avg 11.1 rounds
+    mixed    8% of fights   win  37%   avg 13.4 rounds
+    boss    48% of fights   win  36%   avg 11.7 rounds
+  class        all  swarm  mixed   boss  out/rnd  weak/f
+  Dagskald     65%    84%    56%    51%     46.2    1.05
+  Nalarbani    58%    72%    43%    47%     16.0    0.00
+  Hersir       57%    77%    43%    44%     15.2    0.00
+  Ullar        55%    76%    41%    37%     44.2    0.00
+  Lundar       55%    77%    49%    37%     42.6    1.42
+  Hafrunar     54%    79%    23%    33%     46.0    1.89
+  Brennumar    52%    76%    35%    33%     38.0    1.18
+  Skurmar      51%    71%    43%    33%     40.8    1.98
+  Huskarl      46%    69%    24%    28%     19.9    0.00
+  Vasara       45%    70%    16%    29%     19.0    0.00
+  Berserker    45%    65%    37%    28%     31.7    0.00
+  Seidar       43%    64%    21%    25%     17.8    1.32
+
+=== Level 30: 2500 fights, 3 recruits vs a 6-slot spirit pack ===
+  party win rate 63%   median fight 7 rounds (90th pct 17)   bonus rounds per fight 1.97
+    swarm   45% of fights   win  83%   avg  8.2 rounds
+    mixed    8% of fights   win  57%   avg 10.1 rounds
+    boss    48% of fights   win  45%   avg 10.3 rounds
+  class        all  swarm  mixed   boss  out/rnd  weak/f
+  Dagskald     83%    94%    81%    72%    151.1    0.79
+  Hafrunar     67%    87%    55%    48%    126.7    1.39
+  Lundar       67%    87%    60%    48%    117.0    1.04
+  Skurmar      64%    83%    65%    45%    116.2    1.25
+  Brennumar    63%    83%    63%    45%    109.0    0.83
+  Ullar        61%    86%    57%    41%    110.3    0.00
+  Huskarl      58%    79%    54%    39%     62.9    0.00
+  Vasara       57%    78%    53%    37%     56.0    0.00
+  Berserker    56%    82%    42%    34%     75.0    0.00
+  Nalarbani    55%    77%    43%    37%     55.1    0.00
+  Seidar       54%    78%    40%    33%     49.0    1.24
+  Hersir       54%    73%    65%    34%     49.1    0.00
+
+=== Level 60: 2500 fights, 3 recruits vs a 6-slot spirit pack ===
+  party win rate 77%   median fight 6 rounds (90th pct 12)   bonus rounds per fight 1.62
+    swarm   46% of fights   win  92%   avg  6.1 rounds
+    mixed    8% of fights   win  78%   avg  7.8 rounds
+    boss    46% of fights   win  63%   avg  8.4 rounds
+  class        all  swarm  mixed   boss  out/rnd  weak/f
+  Dagskald     91%    98%    96%    84%    349.4    0.58
+  Ullar        79%    93%    86%    64%    242.2    0.00
+  Berserker    78%    91%    80%    65%    196.7    0.00
+  Skurmar      78%    89%    84%    66%    263.9    0.94
+  Hafrunar     77%    94%    65%    62%    289.2    1.02
+  Lundar       76%    92%    83%    61%    240.3    0.81
+  Vasara       76%    91%    67%    62%    139.7    0.00
+  Brennumar    75%    95%    60%    58%    237.5    0.78
+  Huskarl      74%    91%    83%    56%    155.4    0.00
+  Seidar       71%    87%    69%    53%    121.6    0.74
+  Nalarbani    71%    89%    73%    52%    140.8    0.00
+  Hersir       66%    86%    66%    46%    127.2    0.00

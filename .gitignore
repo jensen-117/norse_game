@@ -1,0 +1,15 @@
+# tooling and caches
+.cache/
+.config/
+.npm/
+.npm-global/
+__pycache__/
+*.pyc
+.pytest_cache/
+# vendored Pyodide (re-downloadable; the Lab bundles it at publish time)
+fight_lab/py/
+# dated whole-project zips (git replaces them)
+project_backup_*.zip
+.claude/
+.ssh/
+.local/

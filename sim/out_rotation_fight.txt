@@ -1,0 +1,217 @@
+  Vasara F1  Ullar F2  Hafrunar R1
+  Mogel F1  Litelmogel A F2  Litelgromogel F3  Halvgromogel R1  Litelmogel B R2
+Round 1
+  Order: [+0] Ullar Flokskott | [+0] Vasara Merkross | [+0] Mogel Jord | [+0] Halvgromogel Halvgro | [+0] Litelmogel B Halvjord | [+0] Litelmogel A Halvjord | [+0] Litelgromogel Engulf | [+0] Hafrunar Allvatn | [+0] Mogel Jord
+    Ullar uses Flokskott.
+      Crit on Mogel: 45. Resist. (476/521)
+      Hit on Litelmogel A: 29. Resist. (283/313)
+      Hit on Litelgromogel: 30. Resist. (283/313)
+    Vasara uses Merkross.
+      Hit on Litelgromogel: 91. (192/313)
+    Mogel uses Jord.
+      Graze on Hafrunar: 35. Weak! (353/388)
+    Litelgromogel uses Engulf.
+      Hit on Ullar: 40. (393/445)
+    Litelmogel B uses Halvjord.
+      Hit on Hafrunar: 35. Weak! (318/388)
+    Litelmogel A uses Halvjord.
+      Hit on Hafrunar: 35. Weak! (284/388)
+    Halvgromogel uses Halvgro.
+      Hit on Ullar: 44. Weak! (349/445)
+    Hafrunar uses Allvatn.
+      Hit on Mogel: 51. (425/521)
+      Hit on Litelmogel A: 57. (226/313)
+      Graze on Litelgromogel: 25. (167/313)
+      Crit on Halvgromogel: 76. (185/260)
+      Graze on Litelmogel B: 24. (288/313)
+    Mogel uses Jord.
+      Hit on Hafrunar: 69. Weak! (214/388)
+  Bonus Round! (Litelmogel A, Halvgromogel, Mogel, Litelmogel B)
+  Order: [+0] Litelmogel B Halvjord | [+0] Litelmogel A Halvjord | [+0] Halvgromogel Halvgro | [+0] Mogel Jord
+    Halvgromogel uses Halvgro. [Bonus]
+      Hit on Ullar: 48. Weak! (301/445)
+    Mogel uses Jord. [Bonus]
+      Graze on Hafrunar: 35. Weak! (180/388)
+    Litelmogel B uses Halvjord. [Bonus]
+      Graze on Hafrunar: 17. Weak! (162/388)
+    Litelmogel A uses Halvjord. [Bonus]
+      Graze on Ullar: 18. Weak! (283/445)
+Round 2
+  Order: [+0] Ullar Flokskott | [+0] Vasara Merkross | [+0] Litelgromogel Engulf | [+0] Litelmogel B Halvjord | [+0] Litelmogel A Halvjord | [+0] Mogel Jord | [+0] Halvgromogel Engulf | [+0] Hafrunar Merhrim | [+0] Mogel Jord
+    Ullar uses Flokskott.
+      Hit on Mogel: 30. Resist. (395/521)
+      Hit on Litelmogel A: 28. Resist. (198/313)
+      Hit on Litelgromogel: 29. Resist. (137/313)
+    Vasara uses Merkross.
+      Graze on Mogel: 45. (350/521)
+    Halvgromogel uses Engulf.
+      Crit on Ullar: 31. (241/445)
+    Mogel uses Jord.
+      Hit on Hafrunar: 69. Weak! (93/388)
+    Litelgromogel uses Engulf.
+      Graze on Ullar: 18. (223/445)
+    Litelmogel B uses Halvjord.
+      Hit on Hafrunar: 35. Weak! (58/388)
+    Litelmogel A uses Halvjord.
+      Hit on Hafrunar: 35. Weak! (24/388)
+    Hafrunar uses Merhrim.
+      Hit on Litelgromogel: 146. Weak! (0/313)
+      Litelgromogel bursts and re-forms as Halvgromogel! (91/260)
+    Mogel uses Jord.
+      Hit on Hafrunar: 69. Weak! (0/388)
+      Hafrunar is down!
+  Bonus Round! (Litelmogel A, Mogel, Litelmogel B)
+  Order: [+0] Litelmogel B Engulf | [+0] Mogel Jord | [+0] Litelmogel A Engulf
+    Litelmogel B uses Engulf. [Bonus]
+      Hit on Ullar: 20. (203/445)
+    Mogel uses Jord. [Bonus]
+      Graze on Ullar: 35. Weak! (168/445)
+    Litelmogel A uses Engulf. [Bonus]
+      Hit on Ullar: 34. (133/445)
+Round 3
+  Order: [+0] Ullar Flokskott | [+0] Vasara Merkross | [+0] Litelmogel A Halvjord | [+0] Halvgromogel Halvgro | [+0] Halvgromogel Halvgro | [+0] Litelmogel B Halvjord | [+0] Mogel Jord | [+0] Mogel Jord
+    Ullar uses Flokskott.
+      Hit on Mogel: 27. Resist. (323/521)
+      Hit on Litelmogel A: 31. Resist. (167/313)
+      Hit on Halvgromogel: 31. Resist. (60/260)
+    Vasara uses Merkross.
+      Graze on Mogel: 41. (282/521)
+    Litelmogel B uses Halvjord.
+      Hit on Ullar: 35. Weak! (86/445)
+    Halvgromogel uses Halvgro.
+      Graze on Ullar: 23. Weak! (63/445)
+    Mogel uses Jord.
+      Hit on Ullar: 70. Weak! (0/445)
+      Ullar is down!
+    Halvgromogel uses Halvgro.
+      Hit on Vasara: 9. Resist. (646/703)
+    Litelmogel A uses Halvjord.
+      Graze on Vasara: 3. Resist. (643/703)
+    Mogel uses Jord.
+      Hit on Vasara: 13. Resist. (631/703)
+  Bonus Round! (Halvgromogel, Litelmogel B, Mogel)
+  Order: [+3] Halvgromogel Cover | [+0] Litelmogel B Halvjord | [+0] Mogel Jord
+    Halvgromogel covers Halvgromogel. [Bonus]
+    Litelmogel B uses Halvjord. [Bonus]
+      Hit on Vasara: 6. Resist. (624/703)
+    Mogel uses Jord. [Bonus]
+      Hit on Vasara: 13. Resist. (612/703)
+Round 4
+  Order: [+1] Halvgromogel Swap | [+0] Vasara Merkross | [+0] Litelmogel A Engulf | [+0] Halvgromogel Halvgro | [+0] Mogel Engulf | [+0] Litelmogel B Engulf | [+0] Mogel Engulf
+    Halvgromogel swaps with Litelmogel B to the Rear.
+    Vasara uses Merkross.
+      Hit on Litelmogel B: 87. (201/313)
+    Mogel uses Engulf.
+      Graze on Vasara: 8. (588/703)
+    Litelmogel B uses Engulf.
+      Crit on Vasara: 24. (564/703)
+    Litelmogel A uses Engulf.
+      Hit on Vasara: 17. (546/703)
+    Halvgromogel uses Halvgro.
+      Hit on Vasara: 8. Resist. (538/703)
+    Mogel uses Engulf.
+      Hit on Vasara: 15. (523/703)
+Round 5
+  Order: [+0] Vasara Merkross | [+0] Halvgromogel Halvgro | [+0] Litelmogel B Engulf | [+0] Halvgromogel Halvgro | [+0] Litelmogel A Engulf | [+0] Mogel Engulf | [+0] Mogel Engulf
+    Vasara uses Merkross.
+      Hit on Mogel: 96. (186/521)
+    Litelmogel B uses Engulf.
+      Crit on Vasara: 25. (482/703)
+    Halvgromogel uses Halvgro.
+      Hit on Vasara: 9. Resist. (473/703)
+    Mogel uses Engulf.
+      Hit on Vasara: 15. (457/703)
+    Halvgromogel uses Halvgro.
+      Hit on Vasara: 9. Resist. (449/703)
+    Litelmogel A uses Engulf.
+      Hit on Vasara: 16. (432/703)
+    Mogel uses Engulf.
+      Graze on Vasara: 9. (423/703)
+Round 6
+  Order: [+1] Halvgromogel Swap | [+0] Vasara Merkross | [+0] Litelmogel A Halvjord | [+0] Mogel Jord | [+0] Halvgromogel Halvgro | [+0] Litelmogel B Engulf | [+0] Mogel Engulf
+    Halvgromogel swaps with Mogel to the Front.
+    Vasara uses Merkross.
+      Hit on Halvgromogel: 86. (99/260)
+    Mogel uses Jord.
+      Hit on Vasara: 13. Resist. (394/703)
+    Litelmogel B uses Engulf.
+      Hit on Vasara: 16. (378/703)
+    Litelmogel A uses Halvjord.
+      Hit on Vasara: 6. Resist. (372/703)
+    Halvgromogel uses Halvgro.
+      Graze on Vasara: 4. Resist. (368/703)
+    Mogel uses Engulf.
+      Hit on Vasara: 9. (359/703)
+Round 7
+  Order: [+0] Vasara Merkross | [+0] Halvgromogel Halvgro | [+0] Litelmogel A Engulf | [+0] Mogel Engulf | [+0] Litelmogel B Engulf | [+0] Halvgromogel Engulf | [+0] Mogel Jord
+    Vasara uses Merkross.
+      Hit on Litelmogel A: 83. (85/313)
+    Litelmogel A uses Engulf.
+      Hit on Vasara: 17. (326/703)
+    Mogel uses Engulf.
+      Hit on Vasara: 8. (317/703)
+    Halvgromogel uses Halvgro.
+      Graze on Vasara: 4. Resist. (313/703)
+    Halvgromogel uses Engulf.
+      Hit on Vasara: 18. (295/703)
+    Litelmogel B uses Engulf.
+      Hit on Vasara: 17. (278/703)
+    Mogel uses Jord.
+      Hit on Vasara: 13. Resist. (265/703)
+Round 8
+  Order: [+3] Litelmogel B Cover | [+0] Vasara Merkross | [+0] Litelmogel A Engulf | [+0] Mogel Jord | [+0] Halvgromogel Engulf | [+0] Halvgromogel Halvgro | [+0] Mogel Jord
+    Litelmogel B covers Litelmogel A.
+    Vasara uses Merkross.
+      Litelmogel B takes it for Litelmogel A!
+      Hit on Litelmogel B: 98. (102/313)
+    Halvgromogel uses Halvgro.
+      Hit on Vasara: 9. Resist. (240/703)
+    Mogel uses Jord.
+      Hit on Vasara: 13. Resist. (228/703)
+    Litelmogel A uses Engulf.
+      Graze on Vasara: 8. (219/703)
+    Halvgromogel uses Engulf.
+      Crit on Vasara: 24. (195/703)
+    Mogel uses Jord.
+      Crit on Vasara: 19. Resist. (176/703)
+Round 9
+  Order: [+0] Vasara Merkross | [+0] Litelmogel A Engulf | [+0] Mogel Jord | [+0] Litelmogel B Engulf | [+0] Halvgromogel Engulf | [+0] Halvgromogel Engulf | [+0] Mogel Jord
+    Vasara uses Merkross.
+      Graze on Litelmogel A: 43. (42/313)
+    Halvgromogel uses Engulf.
+      Hit on Vasara: 15. (145/703)
+    Mogel uses Jord.
+      Hit on Vasara: 13. Resist. (132/703)
+    Litelmogel B uses Engulf.
+      Hit on Vasara: 16. (116/703)
+    Litelmogel A uses Engulf.
+      Graze on Vasara: 8. (108/703)
+    Halvgromogel uses Engulf.
+      Hit on Vasara: 8. (100/703)
+    Mogel uses Jord.
+      Hit on Vasara: 13. Resist. (87/703)
+Round 10
+  Order: [+0] Vasara Merkross | [+0] Halvgromogel Halvgro | [+0] Mogel Jord | [+0] Litelmogel B Halvjord | [+0] Halvgromogel Engulf | [+0] Litelmogel A Engulf | [+0] Mogel Jord
+    Vasara uses Merkross.
+      Hit on Litelmogel A: 84. (0/313)
+      Litelmogel A bursts and re-forms as Halvmogel A! (91/260)
+    Halvgromogel uses Halvgro.
+      Hit on Vasara: 8. Resist. (63/703)
+    Halvgromogel uses Engulf.
+      Graze on Vasara: 8. (55/703)
+    Mogel uses Jord.
+      Crit on Vasara: 19. Resist. (36/703)
+    Litelmogel B uses Halvjord.
+      Graze on Vasara: 3. Resist. (33/703)
+    Halvmogel A uses Engulf.
+      Crit on Vasara: 26. (8/703)
+    Mogel uses Jord.
+      Graze on Vasara: 6. Resist. (1/703)
+Round 11
+  Order: [+0] Vasara Halvkross | [+0] Halvmogel A Engulf | [+0] Halvgromogel Halvgro | [+0] Litelmogel B Engulf | [+0] Mogel Jord | [+0] Halvgromogel Engulf | [+0] Mogel Jord
+    Vasara uses Halvkross.
+      Graze on Halvgromogel: 16. (83/260)
+    Halvgromogel uses Halvgro.
+      Hit on Vasara: 10. Resist. (0/703)
+      Vasara is down!
+Result: enemy after 11 rounds

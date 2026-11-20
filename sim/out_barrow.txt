@@ -1,0 +1,4 @@
+Level 10, rules off: party wins 33%, median rounds 7, per fight crawl 0.00, pile 0.00, scatter 0.00, reassemble 0.00, covered 0.25
+Level 10, rules on : party wins 24%, median rounds 7, per fight crawl 0.39, pile 0.82, scatter 0.08, reassemble 0.58, covered 0.72
+Level 30, rules off: party wins 53%, median rounds 5, per fight crawl 0.00, pile 0.00, scatter 0.00, reassemble 0.00, covered 0.14
+Level 30, rules on : party wins 39%, median rounds 6, per fight crawl 0.44, pile 1.05, scatter 0.09, reassemble 0.61, covered 0.54

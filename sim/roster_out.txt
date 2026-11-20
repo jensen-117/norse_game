@@ -1,0 +1,66 @@
+Settings: Personality +/-20%, class tilt 50%, fit exponent 9
+Genes listed in order STR CON SPD DEX WIL INT WIS. Attributes shown before training.
+
+  Hafrunar -- odd birth (body suits Berserker)
+    genes [28 29 28 12 11 30 11]  +STR/-DEX  Knarr (resists Vatn, weak Blast)
+    L1   STR  24  CON  22  SPD  26  DEX  16  WIL  16  INT  25  WIS  16   HP  198 MP  26
+    L30  STR  61  CON  48  SPD  63  DEX  34  WIL  37  INT  77  WIS  37   HP  529 MP  77
+    L100 STR 150  CON 111  SPD 150  DEX  77  WIL  90  INT 203  WIS  90   HP 1328 MP 200
+
+  Nalarbani -- natural fit
+    genes [ 2 25 28 10  0  4  3]  +STR/-CON  Mierka (resists Vatn, weak Eld)
+    L1   STR   9  CON  22  SPD  24  DEX  15  WIL  10  INT  12  WIS  14   HP  201 MP  25
+    L30  STR  24  CON  45  SPD  66  DEX  44  WIL  26  INT  30  WIS  35   HP  513 MP  75
+    L100 STR  63  CON 101  SPD 168  DEX 114  WIL  63  INT  73  WIS  87   HP 1265 MP 197
+
+  Huskarl -- odd birth (body suits Berserker)
+    genes [29 20 28 12 14 18 31]  +STR/-INT  Kerti (resists Eld, weak Blast)
+    L1   STR  24  CON  17  SPD  24  DEX  16  WIL  17  INT  22  WIS  26   HP  171 MP  36
+    L30  STR  81  CON  45  SPD  54  DEX  38  WIL  40  INT  47  WIS  57   HP  507 MP  97
+    L100 STR 217  CON 110  SPD 127  DEX  91  WIL  95  INT 109  WIS 134   HP 1318 MP 244
+
+  Vasara -- odd birth (body suits Berserker)
+    genes [17 26  5 16 20 14 18]  +STR/-WIS  Otso (resists Jord, weak Eld)
+    L1   STR  21  CON  23  SPD  12  DEX  16  WIL  20  INT  17  WIS  19   HP  204 MP  30
+    L30  STR  66  CON  64  SPD  31  DEX  36  WIL  46  INT  40  WIS  39   HP  622 MP  79
+    L100 STR 174  CON 162  SPD  75  DEX  84  WIL 109  INT  95  WIS  87   HP 1630 MP 197
+
+  Hersir -- natural fit
+    genes [25  6 18 24  4  1  0]  +CON/-WIS  Arin (resists Eld, weak Vatn)
+    L1   STR  22  CON  15  SPD  17  DEX  22  WIL  12  INT  10  WIS  10   HP  158 MP  21
+    L30  STR  62  CON  42  SPD  38  DEX  61  WIL  30  INT  27  WIS  23   HP  491 MP  63
+    L100 STR 159  CON 106  SPD  89  DEX 156  WIL  73  INT  66  WIS  53   HP 1295 MP 163
+
+  Vasara -- natural fit
+    genes [25 26  4 12 17 21  5]  +SPD/-WIS  Arin (resists Eld, weak Vatn)
+    L1   STR  22  CON  25  SPD  10  DEX  16  WIL  18  INT  20  WIS  12   HP  218 MP  24
+    L30  STR  62  CON  70  SPD  27  DEX  38  WIL  43  INT  47  WIS  27   HP  660 MP  67
+    L100 STR 159  CON 178  SPD  69  DEX  91  WIL 102  INT 111  WIS  62   HP 1727 MP 172
+
+  Dagskald -- natural fit
+    genes [ 7  8 15  6  0  3 29]  +WIS/-DEX  Eimyr (resists Eld, weak Jord)
+    L1   STR  16  CON  14  SPD  18  DEX  13  WIL  10  INT  12  WIS  22   HP  150 MP  33
+    L30  STR  42  CON  34  SPD  41  DEX  28  WIL  26  INT  29  WIS  77   HP  445 MP 117
+    L100 STR 104  CON  83  SPD  99  DEX  65  WIL  64  INT  71  WIS 211   HP 1158 MP 321
+
+  Brennumar -- natural fit
+    genes [12 28 12  8 26 24  7]  +DEX/-WIS  Mierka (resists Vatn, weak Eld)
+    L1   STR  14  CON  24  SPD  16  DEX  14  WIL  23  INT  22  WIS  16   HP  210 MP  27
+    L30  STR  31  CON  55  SPD  38  DEX  38  WIL  53  INT  69  WIS  36   HP  569 MP  76
+    L100 STR  74  CON 129  SPD  92  DEX  97  WIL 125  INT 182  WIS  85   HP 1436 MP 195
+
+Across 10,000 recruits: 67% natural fits
+    Dagskald   14.9%
+    Ullar      10.9%
+    Berserker  10.3%
+    Vasara      8.0%
+    Skurmar     7.5%
+    Brennumar   7.4%
+    Huskarl     7.4%
+    Hafrunar    7.4%
+    Lundar      7.3%
+    Nalarbani   7.1%
+    Seidar      6.3%
+    Hersir      5.7%
+  Median best-minus-worst gap at L30, with class tilt: 41
+  Median best-minus-worst gap at L100, with class tilt: 114

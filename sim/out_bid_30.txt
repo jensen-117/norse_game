@@ -1,0 +1,4 @@
+Level 30, 1000 fights per family: plain 44.4%
+  Bid x2.6: 45.3%
+  Bid x2.8: 45.6%
+  Bid x3.0: 47.7%

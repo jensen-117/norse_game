@@ -1,0 +1,32 @@
+
+=== Level 10, 1500 fights per scenario (MOGEL_REFORM_HP 0.35) ===
+  Mogel only         party wins  16%   median  9 rounds   re-forms/fight 1.6
+  Ande only          party wins  37%   median 13 rounds   re-forms/fight 0.0
+  Mixed biome        party wins  20%   median  9 rounds   re-forms/fight 0.8
+  Mixed, drawn only  party wins  34%   median  9 rounds   re-forms/fight 1.5
+
+=== Level 30, 1500 fights per scenario (MOGEL_REFORM_HP 0.35) ===
+  Mogel only         party wins  28%   median  8 rounds   re-forms/fight 2.1
+  Ande only          party wins  29%   median  7 rounds   re-forms/fight 0.0
+  Mixed biome        party wins  29%   median  7 rounds   re-forms/fight 1.1
+  Mixed, drawn only  party wins  56%   median  7 rounds   re-forms/fight 2.0
+
+  class              Mogel only          Ande only        Mixed biome  Mixed, drawn only
+  Brennumar                 30%                21%                25%                51%
+  Dagskald                  39%                54%                47%                76%
+  Hafrunar                  33%                25%                30%                58%
+  Lundar                    32%                26%                27%                60%
+  Seidar                    20%                14%                17%                35%
+  Skurmar                   32%                27%                27%                54%
+  Berserker                 23%                26%                22%                53%
+  Hersir                    41%                23%                39%                63%
+  Huskarl                   35%                24%                34%                58%
+  Nalarbani                 14%                22%                19%                41%
+  Ullar                     17%                37%                26%                61%
+  Vasara                    27%                25%                28%                53%
+
+=== Level 60, 1500 fights per scenario (MOGEL_REFORM_HP 0.35) ===
+  Mogel only         party wins  45%   median  8 rounds   re-forms/fight 2.8
+  Ande only          party wins  42%   median  6 rounds   re-forms/fight 0.0
+  Mixed biome        party wins  42%   median  6 rounds   re-forms/fight 1.5
+  Mixed, drawn only  party wins  73%   median  6 rounds   re-forms/fight 2.2

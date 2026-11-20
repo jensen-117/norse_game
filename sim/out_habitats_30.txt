@@ -1,0 +1,11 @@
+=== Level 30, 800 fights per cell: party wins ===
+  habitat   ranged     no board 0.5      board 0.5     board 0.55      board 0.6
+  Barrow    None                42%            54%            46%            45%
+  Barrow    include             41%            52%            48%            44%
+  Barrow    exclude             37%            54%            51%            46%
+  Wildwood  None                38%            50%            41%            38%
+  Wildwood  include             38%            50%            45%            38%
+  Wildwood  exclude             34%            52%            43%            38%
+  Rapids    None                29%            40%            36%            30%
+  Rapids    include             29%            42%            38%            32%
+  Rapids    exclude             70%            91%            88%            87%
