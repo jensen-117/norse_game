@@ -37,7 +37,7 @@ P1 means high-impact correctness or a prerequisite for the relevant next milesto
 |---|---|---|---|
 | C01 | P1 | Victory can kill a hero before stabilization | Closed (be4118b) |
 | C02 | P1 | Old playback callbacks can commit a new fight | Closed (a4f7c23) |
-| C03 | P1 | Fresh checkout lacks reproducible Lab runtime setup | Open; source and packaging inspection |
+| C03 | P1 | Fresh checkout lacks reproducible Lab runtime setup | Closed (fe9e76e) |
 | C04 | P2 | Flurries bypass Shatter | Closed (a0bb56f) |
 | C05 | P2 | Death can preserve a wind-up through revival | Closed (a0bb56f) |
 | C06 | P2 | Transformation leaves knowledge under the old identity | Closed (a0bb56f) |
@@ -111,6 +111,13 @@ P1 means high-impact correctness or a prerequisite for the relevant next milesto
 **Close when:** A clean checkout can prepare and serve the Lab using only documented commands; an automated smoke check reaches the ready state and executes a fight; no pre-existing runtime directory is needed.
 
 **Sources:** [.gitignore:9–10](https://github.com/jensen-117/norse_game/blob/8a7afee433626c3fe532d618f2c95f73a219e035/.gitignore#L9-L10), [index.html:118](https://github.com/jensen-117/norse_game/blob/8a7afee433626c3fe532d618f2c95f73a219e035/fight_lab/index.html#L118), [167–189](https://github.com/jensen-117/norse_game/blob/8a7afee433626c3fe532d618f2c95f73a219e035/fight_lab/index.html#L167-L189).
+
+**Resolution (Nov 20, commits [fe9e76e](https://github.com/jensen-117/norse_game/commit/fe9e76e), [e2d9507](https://github.com/jensen-117/norse_game/commit/e2d9507)): Closed.**
+- **Cause:** confirmed: `fight_lab/py/` was ignored and nothing in the repository could rebuild it; `stdlib.json` was a hand-curated subset with no recorded rule.
+- **Finding while fixing:** the four runtime files are byte-identical to the npm release of Pyodide 0.26.4; `stdlib.json` is 296 of the 516 files in its `python_stdlib.zip`, in zip order, as compact JSON, and can be rebuilt byte for byte.
+- **Fix:** `fight_lab/runtime_manifest.json` pins the version, the npm tarball and its published sha512 integrity, the 296 stdlib file names, and the SHA-256 of every output. `tools/prepare_lab.py` (plain Python, no npm) fetches the tarball, refuses it unless the integrity matches, extracts the runtime, rebuilds `stdlib.json` from the manifest, and verifies every checksum; `--check` verifies without fetching. `fight_lab/README.md` is the launch guide (and states that publishing uses the same files). `sim/checks/s_smoke.py` serves a folder itself, boots to Ready and plays one Auto fight. `py/` stays ignored, as the review allows, because setup recreates it.
+- **Verification:** a clean clone (no `py/`, empty download cache) prepared only with the documented command matched every checksum, booted to Ready and played an Auto fight to the end. Also added `sim/test_lab_parity.py`: every module the page loads matches `sim/` (review step 3).
+- **Limits:** needs network access to registry.npmjs.org on first run; Playwright and Chromium for the smoke check. The stdlib list is now explicit data: a new import in the sim must be added to it (README says how).
 
 ### C04 — Flurries bypass Shatter
 
