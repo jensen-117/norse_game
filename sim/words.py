@@ -258,7 +258,8 @@ def compile_verb(verb, tier=None, target=None, manners=(), styng=False, lonn=Fal
 # Every move that can enter a fight, from any path (the builders, the grammar, class verbs, items, enemy rows), is one
 # dict with the act() fields plus what its kind needs. check_move() states the contract; unresolved() says what the
 # engine can't yet carry out, so a compiled but unfinished move can't be put in a playable kit (Battle refuses it).
-EXECUTABLE_KINDS = {"damage", "heal", "cleanse", "status", "stat", "revive", "cover", "defend", "move", "flee", "mp"}
+EXECUTABLE_KINDS = {"damage", "heal", "cleanse", "status", "stat", "revive", "cover", "defend", "move", "flee", "mp",
+                    "taunt", "meditate"}                     # Wave 3: Egga and Meditate
 KIND_NEEDS = {"revive": ("reaches", "hp", "wound"), "stat": ("stat", "direction"), "status": ("status",)}
 WAVE4_FIELDS = ("also_status", "cleanse_one", "pays_on", "styng", "knots", "follow", "push")   # effects not yet resolved
 RUNTIME_STATUSES = set(STATUSES) | set(COUNTER_OF) | {"Death"}

@@ -645,7 +645,7 @@ const Screen = (() => {
       });
       return;
     }
-    const moves = [o.halv, ...o.moves].filter(Boolean);
+    const moves = [o.halv, ...o.moves, o.meditate].filter(Boolean).slice(0, 6);   // Meditate: the magicals' sixth space
     moves.forEach((mv, i) => {
       const col = i < 3 ? 0 : 1, y = BOX.rows[i % 3], x = BOX.wordX[col];
       const ok = mv.afford && (mv.aim === "self" || mv.aim === "all" || mv.targets.length > 0);
@@ -803,7 +803,7 @@ const Screen = (() => {
       current = S.awaiting[(i + (e.shiftKey ? -1 : 1) + S.awaiting.length) % S.awaiting.length]; mode = "menu"; pending = null; return;
     }
     const n = "123456".indexOf(e.key);
-    if (n >= 0 && current && opts[current] && mode !== "pouch") { const mv = [opts[current].halv, ...opts[current].moves].filter(Boolean)[n]; if (mv && mv.afford) pick(mv); }
+    if (n >= 0 && current && opts[current] && mode !== "pouch") { const mv = [opts[current].halv, ...opts[current].moves, opts[current].meditate].filter(Boolean)[n]; if (mv && mv.afford) pick(mv); }
   }
 
   /* ------------------------------------------------------------ playing a batch of events (Nov 9)

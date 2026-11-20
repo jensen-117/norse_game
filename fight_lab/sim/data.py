@@ -667,3 +667,18 @@ KITS = {
                   2: [W("Blast"), W("Knyta"), W("Kuling"), W("Blixt")],
                   3: [W("Blast"), W("Knyta", tier="Mer"), W("Storm"), W("Blixt", lonn=True)]},
 }
+
+# ================================================================ class sheets (refactor_plan Wave 3)
+# Fixed characters (pillars Part 4): each class has one stat block at one power level, and its kit by leg (KITS).
+# Stats: an average body (genes 15.5) grown the class's way to SHEET_LEVEL; no Personality, no star sign.
+# Affinities (agreed Nov 20): magicals take their school's; martials their weapon weakness plus one authored
+# elemental weakness and resistance. SHEET_LEVEL is a knob until the level sweep freezes it.
+SHEET_LEVEL = 15
+CLASS_AFFINITY = {
+    "Ullar":  dict(weak=["Slash", "Eld"], resist=["Hrim"]),     # Ullr of the skis and the winter: frost-hardy
+    "Vasara": dict(weak=["Pierce", "Blixt"], resist=["Eld"]),   # the anvil shrugs off fire; lightning finds the iron
+}
+BASIC_VERB = {"Vasara": "Krosh", "Ullar": "Skott", "Brennumar": "Eld", "Dagskald": "Sol", "Skurmar": "Blast"}  # its free Halv
+MEDITATE_SHARE = 0.15     # Meditate: this share of max MP back; magicals only, a universal action (a knob: the sweep tunes)
+AI_MEDITATE_VALUE = 1.2   # AI: x ref x the MP share it would restore
+AI_TAUNT_VALUE = 0.6      # AI: x ref per ally Egga would shield (hurt, or a wind-up's target)

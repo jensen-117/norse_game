@@ -34,7 +34,8 @@ def set_seed(seed):
 # ------------------------------------------------------------ the party
 def hero_card(u):
     halv = next((a for a in u.actions if a.get("tier") == "Halv" and a["cost"] == 0 and a["kind"] == "damage"), None)
-    return dict(name=u.name, cls=u.cls, level=u.level, hp=round(u.maxhp), mp=round(u.maxmp),
+    return dict(name=u.name, cls=u.cls, level=u.level, hp=round(u.maxhp), mp=round(u.maxmp), kit=getattr(u, "kit_leg", None),
+                waiting=[n for n, _ in getattr(u, "excluded", [])],
                 attrs={k: round(v) for k, v in u.attrs.items()}, sign=u.sign,
                 moves=[dict(name=a["name"], kind=a["kind"], element=a.get("element"), cost=a["cost"], cost_type=a["cost_type"],
                             halv=a is halv) for a in u.actions])
@@ -62,7 +63,9 @@ def _party():
     spec = S["party_spec"]; party = []
     for i, s in enumerate(spec):
         r = random.Random(S["seed"] * 101 + i)
-        u = birth(s["cls"], int(s["level"]), r)
+        if s["cls"] in KITS:                     # the new game's classes: a fixed sheet and a kit snapshot (Wave 3)
+            u = build_hero(s["cls"], int(s.get("kit") or 1), int(s["level"]))
+        else: u = birth(s["cls"], int(s["level"]), r)
         u.pouch = [[k, int(n)] for k, n in s.get("pouch", []) if int(n) > 0][:POUCH_SLOTS]
         party.append(u)
     return party

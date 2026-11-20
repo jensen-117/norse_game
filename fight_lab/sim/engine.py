@@ -18,6 +18,10 @@ def vakna(tier):
     """The revive ladder (combat_spec Part 10): Halvakna and Vakna reach the Dying, Mervakna and up raise the Dead."""
     return compile_move("revive", "Vakna", tier)
 
+def meditate():
+    """The magicals' universal MP recovery (pillars Part 5): MEDITATE_SHARE of max MP, in the normal speed group."""
+    return finalize(act("meditate", "Meditate", target="self", amount=MEDITATE_SHARE))
+
 def item_move(key):
     """An item as a move: fixed power, no cost but the item itself."""
     it = ITEMS[key]; k = it["kind"]
@@ -147,6 +151,8 @@ def plain(a):
     if k == "flee": return "Escape the fight, for certain." if a.get("item") else "Try to run."
     if k == "defend": return "Halve the damage you take this round. Acts first."
     if k == "cover": return "Take the hits meant for one ally this round. Acts first."
+    if k == "taunt": return "First. Every foe's single-target attack this round goes to you, if it can reach you."
+    if k == "meditate": return "Recover some MP. Takes your turn."
     if k == "move": return "Step to another spot, or swap with the ally there."
     return ""
 
@@ -168,6 +174,7 @@ class Unit:
         self.pushed = set()       # stats pushed this round: they don't step toward zero at its end
         self.status = {}          # name -> dict(rounds=..., ...)
         self.defending = False
+        self.taunting = False     # Egga this round: foes' single-target attacks that can reach her go to her
         self.bide = None          # (action, target) wound up last round, fires this round (Bid- moves)
         self.charge = None        # the token of a release already queued this round; an interruption clears it (C05)
         self.covered_by = None    # an ally who Covers this unit this round (combat_spec Part 8)
@@ -317,6 +324,37 @@ def birth(cls, level, rng, training="1pt", name=None, normal=None):
     u = Unit(name or cls, "party", level, attrs, c["atk"], c["mat"], aff, loadout(cls, level),
              cls=cls, sign=n["sign"][0], personality=n["personality"])
     u.natural_fit = is_natural_fit(n, cls)
+    return u
+
+def sheet_attrs(cls, level):
+    """A class's fixed stats (pillars Part 4): an average body grown the class's way, trained one point a level."""
+    g = class_growth(cls); a = {k: attr_at(15.5, level, g[k]) for k in ATTRS}
+    a[CLASSES[cls]["train"][0]] += level - 1
+    return a
+
+def sheet_affinity(cls):
+    """Magicals take their school's affinities; martials their weapon weakness plus one authored pair."""
+    c = CLASSES[cls]
+    if c["kind"] == "magical": return build_aff(**SCHOOL_AFFINITY[c["school"]])
+    return build_aff(**CLASS_AFFINITY[cls])
+
+def build_hero(cls, leg=1, level=None, playable=True, name=None):
+    """A hero of the new game (refactor_plan Wave 3): a class sheet and a kit snapshot (data.KITS), priced by the
+    hero's own bars. With playable=True, moves the engine can't carry out yet are left out of the kit and listed in
+    u.excluded with their reasons; a Battle refuses them either way. Every hero also has a free Halv basic attack
+    (BASIC_VERB) outside the four slots, and the universal actions (Defend, Meditate for magicals, items, Move, Flee)."""
+    from words import compile_kit
+    c = CLASSES[cls]; L = level or SHEET_LEVEL
+    kit = compile_kit(cls, leg)
+    excluded = [(a["name"], a["unresolved"]) for a in kit if a["unresolved"]] if playable else []
+    if playable: kit = [a for a in kit if not a["unresolved"]]
+    basic = compile_verb(BASIC_VERB[cls], tier="Halv")
+    u = Unit(name or cls, "party", L, sheet_attrs(cls, L), c["atk"], c["mat"], sheet_affinity(cls), [basic] + kit, cls=cls)
+    for a in u.actions:                    # a martial verb's range: its root in this class's weapon (Skott on a Bow: Long)
+        if a["kind"] == "damage" and a.get("root") and c.get("weapon"):
+            a["reach"] = RANGES[root_range(a["root"], c["weapon"])]; a["weapon"] = c["weapon"]
+    u.kit_leg, u.excluded = leg, excluded
+    price_bars(u)
     return u
 
 def recruit(level, rng, training="1pt"):
@@ -715,6 +753,12 @@ class Battle:
             return [u]
         pool = self.allies(u) if a["target"] == "ally" else self.foes(u)
         pool = [x for x in pool if self.reach_mult(u, a, x) is not None]
+        if a["target"] == "enemy" and not a["all"] and not a.get("shape") and not a.get("spot"):
+            drawn = next((x for x in pool if x.taunting), None)       # Egga: a single-target attack that can reach her
+            if drawn is not None and drawn is not chosen:
+                if chosen is not None:
+                    self.emit("drawn", f"    {u.name} is drawn to {drawn.name}!", unit=u.name, target=drawn.name, was=chosen.name)
+                return [drawn]
         if not pool:
             u.stats["fizzles"] += 1
             self.emit("fizzle", f"    {u.name} has no one in reach for {self.shown(u, a)}.", unit=u.name, move=a["name"], shown=self.shown(u, a))
@@ -857,6 +901,12 @@ class Battle:
             if not lanes: return
             u.cell = (a["to"], lanes[0]); u.stats["moves"] += 1
             self.emit("move", f"    {u.name} steps up to the {a['to'].capitalize()}.{tag}", unit=u.name, cell=u.cell, advance=True); return
+        if a["kind"] == "taunt":                            # Egga: draw every foe's single-target attack this round
+            u.taunting = True
+            self.emit("taunt", f"    {u.name} uses {self.shown(u, a)}, daring the foe to strike her!{tag}", unit=u.name, move=a["name"]); return
+        if a["kind"] == "meditate":
+            got = min(a["amount"] * u.maxmp, u.maxmp - u.mp); u.mp += got
+            self.emit("mp", f"    {u.name} meditates, recovering {got:.0f} MP.{tag}", unit=u.name, amount=round(got), move="Meditate"); return
         if a["kind"] == "cover":
             t = tgts[0]
             if t is u or not t.alive: return
@@ -1172,6 +1222,13 @@ class Battle:
             elif a["kind"] == "defend":
                 s = (0.8 if u.hp < 0.25 * u.maxhp else 0.1) * ref
                 options.append((s, a, u))
+            elif a["kind"] == "taunt":                          # worth it while she's healthy and others need shielding
+                if u.hp >= 0.5 * u.maxhp:
+                    shield = sum(1 for x in self.allies(u) if x is not u and (x.hp < 0.6 * x.maxhp or self.bide_threat(x) > 0))
+                    if shield: options.append((AI_TAUNT_VALUE * ref * shield - cost_pen, a, u))
+        if self.can_meditate(u) and u.mp < u.maxmp:                # the universal Meditate
+            share = min(MEDITATE_SHARE, (u.maxmp - u.mp) / u.maxmp)
+            if u.mp < 0.5 * u.maxmp: options.append((AI_MEDITATE_VALUE * ref * share / MEDITATE_SHARE * (1 - u.mp / u.maxmp), meditate(), u))
         if USE_BOARD and USE_ROTATION:
             options += self.board_options(u, ref)
         options = [(sc * (AI_ITEM_THRIFT if a.get("item") and a["kind"] in ("damage", "stat") else 1.0), a, t)
@@ -1277,7 +1334,9 @@ class Battle:
                 hurt = GUARDIAN_COVER_HURT if guard else ROT_COVER_HURT
                 s = (ROT_COVER_VALUE * ref if frac(x) < hurt else 0.0) + ROT_COVER_BIDE * threat
                 if guard: s *= GUARDIAN_COVER
-                if s > 0: out.append((s, act("cover", "Cover", target="ally", rescue=x), x))
+                own = next((m for m in u.actions if m["kind"] == "cover"), None)   # a new-game hero covers only with Lya
+                if getattr(u, "kit_leg", None) is not None and own is None: s = 0
+                if s > 0: out.append((s, dict(own, rescue=x) if own else act("cover", "Cover", target="ally", rescue=x), x))
         taken = {x.cell for x in team}
         sp = self.painted(u)
         if sp:                                                   # step off a painted spot, within the row
@@ -1381,7 +1440,7 @@ class Battle:
             remaining = self.order(remaining)            # re-ranked every step: SPD or Fear can change
             k, u, (a, tgt) = remaining.pop(0)
             if k >= u.actions_per_round: continue      # re-formed smaller since declaring
-            if a not in u.actions and a["kind"] not in ("defend", "move", "cover", "flee") and not a.get("_release") \
+            if a not in u.actions and a["kind"] not in ("defend", "move", "cover", "flee", "meditate") and not a.get("_release") \
                     and not a.get("item"):
                 a, tgt = self.declare(u)
             self.resolve(u, a, tgt, bonus)
@@ -1434,7 +1493,7 @@ class Battle:
             if u.alive: self.tick_statuses(u, "round_start")
         self.tick_spots(); self.tick_piles()
         self.eligible, self.barred = set(), set()
-        for u in self.units: u.defending, u.covered_by = False, None
+        for u in self.units: u.defending, u.covered_by, u.taunting = False, None, False
         self.plan_phase([u for u in self.units if u.alive], bonus=False)
         self.phase = "declare"
 
@@ -1492,6 +1551,10 @@ class Battle:
     # ------------------------------------------------------------ the player's side: what can this hero do?
     def unit(self, uid): return self.by_uid[uid]
 
+    def can_meditate(self, u):
+        """Meditate is universal for the new game's magicals (pillars Part 5); old recruits and enemies don't."""
+        return getattr(u, "kit_leg", None) is not None and CLASSES.get(u.cls, {}).get("kind") == "magical"
+
     def flee_chance(self, u):
         if self.no_flee: return 0.0
         mine = [x.speed() for x in self.allies(u)]; theirs = [x.speed() for x in self.foes(u)]
@@ -1504,8 +1567,8 @@ class Battle:
         a martial hero with a free slot gets Cover, which the AI uses through the board rules."""
         halv = next((a for a in u.actions if a.get("tier") == "Halv" and a["cost"] == 0 and a["kind"] == "damage"), None)
         moves = [a for a in u.actions if a is not halv and a["kind"] != "defend"]
-        if CLASSES.get(u.cls, {}).get("kind") == "martial" and len(moves) < 4 and USE_BOARD:
-            moves.append(act("cover", "Cover", target="ally"))
+        if CLASSES.get(u.cls, {}).get("kind") == "martial" and len(moves) < 4 and USE_BOARD and getattr(u, "kit_leg", None) is None:
+            moves.append(act("cover", "Cover", target="ally"))          # old recruits only: Lya is the Vasara's
         return halv, moves[:4]
 
     def aim(self, a):
@@ -1553,6 +1616,12 @@ class Battle:
             if n <= 0: continue
             d = self.describe(u, item_move(k), f"i:{k}", "item"); d["count"] = n; out["items"].append(d)
         out["guard"] = dict(key="guard", slot="guard", name="Guard", group=self.group_of(u, act("defend", "Defend")), aim="self")
+        if self.can_meditate(u):
+            m = meditate()
+            out["meditate"] = dict(key="meditate", slot="meditate", name="Meditate", shown="Meditate", kind="meditate", group=0,
+                                   aim="self", afford=True, why=None, cost=0, cost_type="MP", targets=[],
+                                   amount=round(min(MEDITATE_SHARE * u.maxmp, u.maxmp - u.mp)),
+                                   card=dict(word="Meditate", plain=plain(m), power=0, tier=None, reach="any"))
         cells = []
         if USE_BOARD:
             for r in ("front", "rear"):
@@ -1572,6 +1641,9 @@ class Battle:
     def order_for(self, u, key, target):
         """Turn a menu key and a target (an id, a [row, lane] cell, or None) into the engine's (action, target)."""
         if key == "guard": return act("defend", "Guard", target="self"), u
+        if key == "meditate":
+            if not self.can_meditate(u): raise ValueError(f"{u.name} can't meditate")
+            return meditate(), u
         if key == "flee":
             if self.no_flee: raise ValueError("this fight can't be run from")
             return act("flee", "Flee", target="self"), u
