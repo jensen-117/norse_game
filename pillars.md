@@ -97,6 +97,9 @@ Power is set by **how long fights last**, not by a level: tune stats until these
 
 ### The cap and capstones
 - **A move carries at most two upgrade parts.** Within the cap, a move keeps its **spoken name** (Merblotskott, Flokblotskott): the grammar is the joy, so it stays readable.
+- **A rider's spoken part belongs to the verb, not the status** (Nov 20): Sundered is Brak on Krosh (Brakrosh) and Lonn on Peka (Lonnpeka); Blinded is Blinda on Sol (Blindasol) and Lonn on Egga (Lonnegga). Lonn shows only where the rider has no part of its own.
+- **Styng adds 70% of the tier's power** to a move with no damage of its own; **Lonn never weakens a hit** (its price is the cost).
+- **Bynames:** a move within the cap whose spoken name runs past 15 letters gets a name of its own (Merstyngnaglskott is **Geirskott**). Once the mutation session sets which parts each verb accepts, every reachable long name needs one.
 - **Capstones are the named peaks beyond the cap:** rare, found rather than carved, one or a few per class (Tusensplitter, Pilskur, Hasin, Holm, Skogsbrand: classes.md). Naming is only combining legal parts and naming the result for effect.
 
 ### The noticeable-change rule

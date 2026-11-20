@@ -54,7 +54,7 @@ The first four classes (the vertical slice), designed the same way: **fantasy �
 | Verb | Job | Basic move | Lonn rider | Notes |
 |---|---|---|---|---|
 | **Shoot** | Damage at range | **Skott** | **Bleeding** → **Blotskott** | Starting kit. Merblotskott, Flokblotskott keep their spoken names |
-| **Pin** | Slow it and root it | **Naglskott** (no damage): inflicts **Pinned** | Settles in the mutation session | Starting kit. **Styng** adds damage (Styngnaglskott); **Mer** makes a longer Pin |
+| **Pin** | Slow it and root it | **Naglskott** (no damage): inflicts **Pinned** | Settles in the mutation session | Starting kit. **Styng** adds damage (Styngnaglskott); **Mer** makes a longer Pin. Mer + Styng is ***Geirskott*** (ON *geirr*, "spear": a pike-length shaft that pins the leg), a byname |
 | **Mark** | Strip its defences | **Peka** (*coined*: Swedish *peka*, "to point"): inflicts **Marked** | **Sundered** → **Lonnpeka** (he points out the gap) | Styngpeka adds damage. Merpeka: Marked 2 in one shot |
 | **Volley** | Hit many | **Flokskott** | (as Skott) | Exists |
 | **Finish** | Pay off a setup | **Banskott** (*coined*: ON *bani*, "death, slayer," + skott): **only pays off on Pinned targets** | | His cash-in |
@@ -111,7 +111,7 @@ The first four classes (the vertical slice), designed the same way: **fantasy �
 | Verb | Job | Basic move | Lonn rider | Notes |
 |---|---|---|---|---|
 | **Mend** | Heal | **Lak** | **Cleanse one status** → **Lonnlak** | Starting kit |
-| **Smite** | Daylight damage | **Sol** (a weak Ray) | **Blinded** | Starting kit. Not Scorched: that stays the Brennumar's |
+| **Smite** | Daylight damage | **Sol** (a weak Ray) | **Blinded**, spoken Blinda → **Blindasol** | Starting kit. Not Scorched: that stays the Brennumar's |
 | **Sing** | Sustained healing that grows | **Kvad** (Norwegian/Danish *kvad*, "a lay, a poem"; ON *kvæði*) | | His signature (below). Merkvad adds two verses |
 | **Cleanse** | Clear statuses | **Skolja** (Swedish *skölja*, "to rinse") | | Clears every harmful status and lifts every lowered stat to neutral; Lonnlak clears one, so the rider doesn't duplicate the verb |
 | **Wake** | Bring back the Dying | **Vakna** (Swedish *vakna*, "to wake"): revive a Dying ally | | |

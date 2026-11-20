@@ -585,7 +585,7 @@ VERBS = {
     "Hevn":     dict(cls="Vasara", kind="answer", root="Krosh", element="Crush"),
     # Dagskald (Sol school, child Lak; magical)
     "Lak":      dict(cls="Dagskald", kind="heal", element="Lak", target="ally", rider=("cleanse_one", "Lonn")),
-    "Sol":      dict(cls="Dagskald", kind="damage", element="Sol", rider=("Blinded", "Lonn")),
+    "Sol":      dict(cls="Dagskald", kind="damage", element="Sol", rider=("Blinded", "Blinda")),   # Blindasol
     "Kvad":     dict(cls="Dagskald", kind="song", target="allies"),
     "Skolja":   dict(cls="Dagskald", kind="cleanse", target="ally"),
     "Vakna":    dict(cls="Dagskald", kind="revive", target="fallen"),
@@ -610,6 +610,12 @@ CAPSTONES = {            # name: (verb, its parts as a frozen set). Holm and Has
     "Tusensplitter": ("Skott", frozenset({"Drif", "Mer", "Lonn"})),
     "Pilskur":       ("Skott", frozenset({"All", "Mer", "Lonn"})),
     "Skogsbrand":    ("Sveda", frozenset({"All", "Mer", "Styng", "Lonn"})),
+}
+# Bynames: a move within the cap whose spoken name runs past BYNAME_LETTERS gets a name of its own (Nov 20). Which
+# parts each verb accepts settles in the mutation session; then every reachable long name needs a byname here.
+BYNAME_LETTERS = 15
+BYNAMES = {
+    "Geirskott": ("Naglskott", frozenset({"Mer", "Styng"})),   # ON geirr, "spear": a pike-length shaft that pins the leg
 }
 
 # Costs as a share of the hero's own bar (pillars Part 5c): a plain base move costs the base share; each upgrade part

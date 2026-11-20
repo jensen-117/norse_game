@@ -42,6 +42,14 @@ class TestParts(unittest.TestCase):
         self.assertEqual(compile_verb("Sveda", tier="Mer", target="All", styng=True, lonn=True)["name"], "Skogsbrand")
         with self.assertRaises(OverCap): compile_verb("Skott", tier="Mer", target="Flok", lonn=True)
 
+    def test_bynames(self):
+        self.assertEqual(compile_verb("Naglskott", tier="Mer", styng=True)["name"], "Geirskott")
+        self.assertEqual(compile_verb("Sol", lonn=True)["name"], "Blindasol")
+        self.assertEqual(compile_verb("Egga", lonn=True)["name"], "Lonnegga")
+        for cls in KITS:
+            for leg in KITS[cls]:
+                for a in compile_kit(cls, leg): self.assertLessEqual(len(a["name"]), BYNAME_LETTERS, a["name"])
+
     def test_tier_climbs_from_the_verb(self):
         self.assertEqual(compile_verb("Storm")["tier"], "Mer")
         self.assertEqual(compile_verb("Storm", tier="Mer")["tier"], "Jatte")

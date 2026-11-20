@@ -174,6 +174,8 @@ def compile_verb(verb, tier=None, target=None, manners=(), styng=False, lonn=Fal
     eff = own if tier in (None, "Base") else tier if tier == "Halv" else LADDER[min(len(LADDER) - 1, LADDER.index(own) + LADDER.index(tier) - 1)]
     allm = tuple(v.get("manners", ())) + tuple(manners)
     mkw, mpower, _ = merge_manners(allm)
+    if name is None and carved:      # a byname for a long spoken name within the cap (Geirskott)
+        name = next((n for n, (vb, ps) in BYNAMES.items() if vb == verb and ps == frozenset(carved)), None)
     rider, part = (v["rider"] if lonn else (None, None))
     spoken = name or join_morphemes([x for x in (target, None if tier in (None, "Base") else tier, "Styng" if styng else None,
                                                  *manners, part, verb) if x])
@@ -206,7 +208,7 @@ def compile_verb(verb, tier=None, target=None, manners=(), styng=False, lonn=Fal
     else: share = BASE_SHARE[a["cost_type"]] * PART_STEP[a["cost_type"]] ** (steps - (1 if eff == "Halv" else 0))
     a["share"], a["cost"] = share, 0
     a["parts"] = dict(verb=verb, tier=tier or "Base", target=target, manners=tuple(manners), styng=styng, lonn=lonn,
-                      capstone=name)
+                      capstone=name if len(carved) > UPGRADE_CAP else None, byname=name if len(carved) <= UPGRADE_CAP else None)
     return a
 
 def compile_kit(cls, leg):
