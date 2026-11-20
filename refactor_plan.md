@@ -97,6 +97,7 @@ Brings the sim and the Fight Lab from the game we had (recruits who level) to th
 - **Universal actions:** **Meditate** (`MEDITATE_SHARE`, magicals only, group 0), **Egga** (taunt: the protection group; single-target enemy moves that can reach her go to her; the AI knows), **Lya** (Cover, already in).
 - **The Lab:** `make_party` takes a class and a kit snapshot; the hero card shows the sheet.
 - **Then: sweep Layer 1** (hit counts by class, tier and level) picks the level, which sets the MP and HP bars (rounded: 70, not 67).
+- **Sweep Layer 1 run (Nov 20): `sim/sweep.py`, `sweep_report.md`.** Finding: **level is not the lever.** Both sides scale together, so hit counts drift only slowly with level (party hits on Trash 5.9 at L5, 4.4 at L40). Against the targets at L15: party hits to kill run Trash 5.1 (3), Regular 10.1 (6+), Elite 11.9 (12+), Boss 16.7 (18+): the rank HP shape is 1 : 2 : 2.5 : 3.5 where the pace table wants about 1 : 2 : 4 : 6. Enemy hits to kill a hero run about 3x the targets (Trash ~17 vs 6.5, Regular ~17 vs 5, Elite ~12 vs 4, Boss ~8 vs 3). And the five sheets are nearly one body (the Vasara has only 8% more HP and 15% more DEF than a caster): the sheets need authored stat blocks. Decisions pending with Joseph before Layer 2.
 
 ### Wave 4: the signatures (large)
 One mechanic at a time, each with its test and its AI valuation:
