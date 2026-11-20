@@ -14,3 +14,4 @@ project_backup_*.zip
 .ssh/
 .local/
 sim/checks/fp_*.json
+sim/checks/moves_golden*.json

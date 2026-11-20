@@ -136,7 +136,7 @@ const store = {
 const status = (t, err) => { const s = $("#status"); s.textContent = t; s.classList.toggle("err", !!err); };
 
 let py, lab, M;              // Pyodide, the lab module, the panel's lists
-const SIM = ["data.py", "grammar.py", "engine.py", "composer.py", "knowledge.py", "lab.py"];
+const SIM = ["data.py", "words.py", "grammar.py", "engine.py", "composer.py", "knowledge.py", "lab.py"];
 const call = (fn, ...args) => JSON.parse(lab[fn](...args));
 
 /* Python's standard library ships as a JSON file of the modules the rules use (the host doesn't serve archives);

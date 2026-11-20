@@ -1,30 +1,7 @@
 """Encounter v0 -- battle engine."""
 import random
 from data import *
-
-VOWELS = set("aeiouy")
-
-# ================================================================ naming
-def join_morphemes(parts):
-    """Apply the seam rules: identical letters merge; vowel+vowel, second wins."""
-    word = parts[0].lower()
-    for p in parts[1:]:
-        p = p.lower()
-        if word[-1] == p[0]:
-            word = word + p[1:]
-        elif word[-1] in VOWELS and p[0] in VOWELS:
-            word = word[:-1] + p
-        else:
-            word = word + p
-    return word.capitalize()
-
-def spell_name(root, tier, all_=False, direction=None):
-    parts = []
-    if all_: parts.append("All")
-    if tier != "Base": parts.append(tier)
-    if direction: parts.append(direction)
-    parts.append(root)
-    return join_morphemes(parts)
+from words import *        # naming, the move record, and the one compiler every builder below goes through
 
 # ================================================================ math
 def clamp(x, lo, hi): return max(lo, min(hi, x))
@@ -36,19 +13,10 @@ def avg_attr(level): return attr_at(15.5, level)
 
 UNIT_KEYS = ("unit", "src", "target", "instead_of", "swapped", "was")
 
-# ================================================================ actions
-def act(kind, name, **kw):
-    d = dict(kind=kind, name=name, element=None, tier="Base", all=False, cost=0,
-             cost_type="MP", power=0, status=None, stat=None, direction=None,
-             target="enemy", pct_current=0.0)
-    d.update(kw)
-    return d
-
+# ================================================================ actions: thin builders over words.compile_move
 def vakna(tier):
     """The revive ladder (combat_spec Part 10): Halvakna and Vakna reach the Dying, Mervakna and up raise the Dead."""
-    name = join_morphemes([x for x in (None if tier == "Base" else tier, "Vakna") if x]).capitalize()
-    cost = HALVLAK_COST if tier == "Halv" else TIER_COST[tier]
-    return act("revive", name, element="Lak", tier=tier, target="fallen", cost=cost, **VAKNA[tier])
+    return compile_move("revive", "Vakna", tier, **VAKNA[tier])
 
 def item_move(key):
     """An item as a move: fixed power, no cost but the item itself."""
@@ -61,46 +29,29 @@ def item_move(key):
     if k == "damage": a.update(element=it["element"], power=it["power"], all=it.get("all", False), reach="any")
     return a
 
+def ALL(all_): return "All" if all_ else None
+
 def damage_spell(root, tier, all_=False):
-    cost = 0 if tier == "Halv" else TIER_COST[tier] * ELEMENT[root]["cost"]
-    if all_: cost *= ALL_COST_MULT
-    return act("damage", spell_name(root, tier, all_), element=root, tier=tier, all=all_,
-               cost=round(cost), power=TIER_POWER[tier])
+    return compile_move("damage", root, tier, ALL(all_), cost_type="MP")
 
 def heal_spell(tier, all_=False):
-    cost = HALVLAK_COST if tier == "Halv" else TIER_COST[tier]
-    if all_: cost *= ALL_COST_MULT
-    return act("heal", spell_name("Lak", tier, all_), element="Lak", tier=tier, all=all_,
-               cost=round(cost), power=TIER_POWER[tier], target="ally")
+    return compile_move("heal", "Lak", tier, ALL(all_))
 
-STATUS_ROOT = {"Poisoned": "Eitr", "Cursed": "Nid", "Feared": "Ogn", "Blinded": "Blinda",
-               "Disarmed": "Mogl", "Death": "Helvad", "Silenced": "Bann"}
 def cleanse_spell(tier="Base", all_=False):
-    cost = TIER_COST[tier] * (ALL_COST_MULT if all_ else 1)
-    return act("cleanse", spell_name("Skolja", tier, all_), tier=tier, all=all_, cost=round(cost),
-               target="ally")
+    return compile_move("cleanse", "Skolja", tier, ALL(all_))
 
 def status_spell(status, tier, all_=False):
-    cost = TIER_COST[tier] * (ALL_COST_MULT if all_ else 1)
-    return act("status", spell_name(STATUS_ROOT[status], tier, all_), status=status,
-               tier=tier, all=all_, cost=round(cost))
+    return compile_move("status", None, tier, ALL(all_), status=status)
 
-STAT_ROOT = {"ATK": "Kraft", "DEF": "Skold", "MAT": "Seid", "MDF": "Stav",
-             "ACC": "Hitt", "EVA": "Vig", "SPD": "Rask"}
 def stat_spell(stat, up, tier="Base", all_=False):
-    cost = TIER_COST[tier] * (ALL_COST_MULT if all_ else 1)
-    return act("stat", spell_name(STAT_ROOT[stat], tier, all_, "Auk" if up else "Ned"),
-               stat=stat, direction=1 if up else -1, tier=tier, all=all_, cost=round(cost),
-               target="ally" if up else "enemy")
+    return compile_move("stat", None, tier, ALL(all_), stat=stat, up=up)
 
 def strike(dtype, name="Strike", power=10):
-    return act("damage", name, element=dtype, tier="Halv", power=power, cost=0, cost_type="HP")
+    return compile_move("damage", dtype, "Halv", name=name, power=power)
 
 def skill(dtype, name, tier, all_=False, status=None, power=None, pct_current=0.0):
-    cost = TIER_COST[tier] * (ALL_COST_MULT if all_ else 1)
-    return act("damage", name, element=dtype, tier=tier, all=all_, cost=round(cost),
-               cost_type="HP", power=power or TIER_POWER[tier], status=status,
-               pct_current=pct_current)
+    return compile_move("damage", dtype, tier, ALL(all_), status=status, name=name, power=power or None,
+                        pct_current=pct_current)
 
 def top_tier(level):
     return "Jatte" if level >= 50 else "Mer" if level >= 20 else "Base"

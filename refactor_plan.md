@@ -78,7 +78,7 @@ Brings the sim and the Fight Lab from the game we had (recruits who level) to th
 - **Done when:** tests for every shape and rule (`test_statuses.py`), and the family tables moved only where expected.
 
 ### Wave 2: one compiler, and the cost anchors (large)
-**2a. Pure refactor.** The hand builders (`damage_spell`, `heal_spell`, `status_spell`, `stat_spell`, `cleanse_spell`, `skill`, `strike`) become thin wrappers over the compiler, so every hero and enemy move comes from one place. **Done when:** fingerprints identical.
+**2a. Pure refactor.** **Done (Nov 20):** `words.py` holds naming (`join_morphemes`, `word_name`), the move record (`act`), the roots and morpheme tables, and `compile_move`; every builder in engine.py and `grammar.compile_word` goes through it. Checked move by move: `checks/move_golden.py` compares all 4,535 moves and kits the builders make (identical), plus the fingerprint, regress.py, 138 tests, and the page's 48 Auto fights. The page loads `words.py` (index.html `SIM`; lab.py's engine hash includes it). The hand builders (`damage_spell`, `heal_spell`, `status_spell`, `stat_spell`, `cleanse_spell`, `skill`, `strike`) become thin wrappers over the compiler, so every hero and enemy move comes from one place. **Done when:** fingerprints identical.
 
 **2b. The new grammar.**
 - **Word specs for every kind,** not just damage: status (Reyk, Naglskott, Peka), stat (Aukraft, Aukskold, Byr), heal (Lak), cleanse (Skolja), song (Kvad), knot (Knyta), untie (Kuling, Storm, Orkan), displace (Kasta, Svepa), taunt (Egga), cover (Lya), glide (Skrida), wind-up gain (Djupanda).

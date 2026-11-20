@@ -10,34 +10,10 @@ which combinations are worth printing and which are broken before a class tree p
 """
 from itertools import product
 from data import *
-from engine import join_morphemes, act, level_factor
+from words import *          # the morpheme tables and the one compiler live in words.py
+from engine import level_factor
 
-# ---------------------------------------------------------------- morphemes (all tune knobs live here)
-WEAPON = {   # root: (damage type, reach override)
-    "Skar": ("Slash", None), "Kross": ("Crush", None), "Spett": ("Pierce", None), "Skott": ("Pierce", "any"),
-}
 SPELL_ROOTS = [r for r in ELEMENT if r not in MARTIAL and r != "Lak"]
-
-TARGETS = {
-    None:   dict(),
-    "Flok": dict(shape="row", cost=1.5),                         # per-target x0.75 comes from SHAPE_MULT
-    "All":  dict(all=True, cost=ALL_COST_MULT),                  # per-target x0.75 comes from ALL_POWER_MULT
-    "Mark": dict(spot=True),     # targets space: a painted spot (DoT for N rounds), or with Bid a one-shot on the spot.
-}                                # Compiled and named, not yet simulated (parked until the playable board).
-MANNERS = {
-    None:    dict(),
-    "Snar":  dict(group=1, power=0.9),
-    "Tung":  dict(group=-2, power=1.2),
-    "Bid":   dict(bide=True, power=2.6),     # two rounds: wind up, then locked while it fires; lost if broken
-    "Jarf":  dict(power=0.7, cost=1.5, crit_bonus=0.20, crit_mult=3.0),   # 5% base + 20% = 25% crit
-    "Drif":  dict(flurry=dict(per=0.5, max=4, p=0.5, step=0.10)),
-}
-RIDERS = {   # rider morpheme -> status; a rider strike deals RIDER_POWER and rolls the tier's status-line chance
-    None: None, "Eitr": "Poisoned", "Blot": "Bleeding", "Mogl": "Disarmed",
-    "Blinda": "Blinded", "Ogn": "Feared", "Nid": "Cursed",
-}
-RIDER_POWER = 0.7
-HALV_MANNER_COST = 4      # a manner on the free Halv costs a flat 4 (x the manner's cost mult): manners are never free
 
 # ---------------------------------------------------------------- plain English, for enemies (diegetic display)
 EN_ROOT = {"Skar": "Cut", "Kross": "Smash", "Spett": "Thrust", "Skott": "Shot",
@@ -62,32 +38,13 @@ def english(root, tier, target, manner, rider):
     return " ".join(p for p in parts if p)
 
 def name_of(root, tier="Base", target=None, manner=None, rider=None):
-    return join_morphemes([p for p in (target, None if tier == "Base" else tier, manner, rider, root) if p])
+    return word_name(root, tier, target, None, manner, rider)
 
 # ---------------------------------------------------------------- the compiler
 def compile_word(root, tier="Base", target=None, manner=None, rider=None):
-    t, m = TARGETS[target], MANNERS[manner]
-    martial = root in WEAPON
-    if martial:
-        dtype, reach = WEAPON[root]
-        base_cost, cost_type = TIER_COST[tier], "HP"
-    else:
-        dtype, reach = root, None
-        base_cost, cost_type = (0 if tier == "Halv" else TIER_COST[tier] * ELEMENT[root]["cost"]), "MP"
-    power = TIER_POWER[tier] * m.get("power", 1.0) * (RIDER_POWER if rider else 1.0)
-    if tier == "Halv" and manner: base_cost = HALV_MANNER_COST
-    cost = base_cost * t.get("cost", 1.0) * m.get("cost", 1.0)
-    a = act("damage", name_of(root, tier, target, manner, rider), element=dtype, tier=tier,
-            all=t.get("all", False), cost=round(cost), cost_type=cost_type, power=power,
-            status=RIDERS[rider])
+    """A word from the grammar: the move from words.compile_move, plus its English name for enemies."""
+    a = compile_move("damage", root, tier, target, manner, rider, parts=True)
     a["english"] = english(root, tier, target, manner, rider)
-    a["parts"] = dict(root=root, tier=tier, target=target, manner=manner, rider=rider)
-    if reach: a["reach"] = reach
-    if "shape" in t: a["shape"] = t["shape"]
-    if t.get("spot"): a["spot"] = True
-    for k in ("group", "bide", "crit_bonus", "crit_mult"):
-        if k in m: a[k] = m[k]
-    if "flurry" in m: a["flurry"] = dict(m["flurry"])
     return a
 
 def words(roots=None, tiers=TIERS, targets=[t for t in TARGETS if t != "Mark"], manners=MANNERS, riders=RIDERS):

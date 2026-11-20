@@ -12,7 +12,7 @@ S = dict(battle=None, memory=Memory(), know_all=False, seed=1, rng=random.Random
 def _engine_hash():
     import hashlib
     h = hashlib.sha1()
-    for f in ("data.py", "grammar.py", "engine.py"):
+    for f in ("data.py", "words.py", "grammar.py", "engine.py"):
         try: h.update(open(f, "rb").read())
         except OSError: pass
     return h.hexdigest()[:10]
