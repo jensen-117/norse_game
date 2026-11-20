@@ -3,7 +3,7 @@
 Review date: 20 November 2026  
 Repository: [jensen-117/norse_game](https://github.com/jensen-117/norse_game)  
 Current review baseline: [Wave 2b — 8a7afee433626c3fe532d618f2c95f73a219e035](https://github.com/jensen-117/norse_game/commit/8a7afee433626c3fe532d618f2c95f73a219e035)  
-Scope: consolidated technical audit and game-design review through Wave 2b. Repository review was read-only; this report is a separate deliverable. No fixes have been applied.
+Scope: consolidated technical audit and game-design review through Wave 2b. Repository review was read-only; this report is a separate deliverable. **Fixes applied Nov 20 (see Checkpoint summary and each entry's Resolution).**
 
 ## Recommendation
 
@@ -12,6 +12,22 @@ Take a focused bug-fix checkpoint before the next wave wires the new grammar int
 This is not a recommendation to complete every planned feature before continuing. Song, Knots, displacement, and other explicitly deferred signatures remain later-wave work. Independent content and design work can continue while the affected foundations are corrected. A documented rejection of a currently unsupported combination is an acceptable temporary boundary; accepting it and silently doing something else is not.
 
 The project has a coherent identity: the party is the build, words describe its growing capabilities, and the tapestry records the consequences of routing. The engineering strengths are deterministic simulation, substantial regression coverage, native replay, and data-driven mechanics. The main weakness is that successful behavior preservation also preserves old bugs, while new combinations can compile without having a complete execution contract.
+
+## Checkpoint summary (Nov 20, 2026, after the fixes)
+
+**Resolved: all 13 technical findings are Closed**, each with its cause, fix, rationale, commit and verification in its own entry below (IDs kept): C01, C02, C03, C04, C05, C06, C07, C08, C09, C10, C11, A01, A02. The design questions (D01–D07) are validation milestones, not defects, and stay open for the playable-leg milestone; D05's recommendation (a plain-language label beside every spoken name, before/after mutation comparison) is agreed.
+
+**Design decisions taken (Joseph, Nov 20), applied in the fixes:** falling to Dying ends a wind-up (C05); carving adds Mer, finding Jatte, only gear Ur (C08); per-verb target parts from classes.md, no group revive or party-wide self buff yet (C09); manners scale heals, no crits or flurries on heals (C11); Swift + Heavy refused, Patient + one speed manner legal (A02); a nulled or absorbed hit doesn't shatter (C04); knowledge follows a transform without copying across jobs (C06).
+
+**Verification performed at the end of the checkpoint:** 180 tests (36 new in `sim/test_checkpoint.py`, one class per finding, plus `test_lab_parity.py`); the legacy golden of 4,535 moves and kits identical throughout; the fixed-party fingerprint identical except one explained change (below); `regress.py` (480 fights) identical for every latent fix; the page's 48 Auto fights run with no page errors and replay natively after every engine change; `checks/s_c02.py` (restart during playback) and `checks/s_smoke.py` pass; a clean clone prepared only by `tools/prepare_lab.py` boots and plays.
+
+**The one baseline change, explained (C01):** 29 of 288 fixed-party fights differ, all party wins with the same rounds, only in breath, dead and stabilised events: 11 heroes who used to die after victory now stabilise. New baseline `sim/checks/fp_c01.sha1`. No other fix changed any fight in either regression set (C04–C07 are latent there, so their tests carry the proof).
+
+**Remaining:** D01–D07 (design validation, at the playable-leg milestone); the deferred work listed below (Wave 3 class integration, Wave 4 signatures, Wave 6 presentation, Holm and Hasin, the dive economy).
+
+**Can the next wave proceed? Yes**, with two conditions the fixes now enforce:
+1. **A Battle refuses any move that isn't resolvable yet** (`words.unresolved`). Several kit moves are compiled but not playable until their mechanics land: Egga (taunt) and Kvad, Knyta, Skrida, Kasta, Svepa, Hevn, Djupanda, Banskott, Lonnlak, Lonnsveda, plus statuses with no row yet (Pinned, Scorched). Wave 3 must implement Egga and Meditate (its own scope) and run the level sweep's first layer with executable moves only; each Wave 4 mechanic removes its kind or field from the unresolved lists together with a full-turn test.
+2. **Every intentional rule change explains its fingerprint change** in its commit and here, as C01 did.
 
 ## Scope, evidence, and status
 
