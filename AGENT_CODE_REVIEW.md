@@ -15,11 +15,11 @@ The project has a coherent identity: the party is the build, words describe its 
 
 ## Checkpoint summary (Nov 20, 2026, after the fixes)
 
-**Resolved: all 13 technical findings are Closed**, each with its cause, fix, rationale, commit and verification in its own entry below (IDs kept): C01, C02, C03, C04, C05, C06, C07, C08, C09, C10, C11, A01, A02. The design questions (D01–D07) are validation milestones, not defects, and stay open for the playable-leg milestone; D05's recommendation (a plain-language label beside every spoken name, before/after mutation comparison) is agreed.
+**Resolved: all 13 technical findings are Closed** (C05 was reopened by the re-review and closed again with a follow-up), each with its cause, fix, rationale, commit and verification in its own entry below (IDs kept): C01, C02, C03, C04, C05, C06, C07, C08, C09, C10, C11, A01, A02. The design questions (D01–D07) are validation milestones, not defects, and stay open for the playable-leg milestone; D05's recommendation (a plain-language label beside every spoken name, before/after mutation comparison) is agreed.
 
 **Design decisions taken (Joseph, Nov 20), applied in the fixes:** falling to Dying ends a wind-up (C05); carving adds Mer, finding Jatte, only gear Ur (C08); per-verb target parts from classes.md, no group revive or party-wide self buff yet (C09); manners scale heals, no crits or flurries on heals (C11); Swift + Heavy refused, Patient + one speed manner legal (A02); a nulled or absorbed hit doesn't shatter (C04); knowledge follows a transform without copying across jobs (C06).
 
-**Verification performed at the end of the checkpoint:** 180 tests (36 new in `sim/test_checkpoint.py`, one class per finding, plus `test_lab_parity.py`); the legacy golden of 4,535 moves and kits identical throughout; the fixed-party fingerprint identical except one explained change (below); `regress.py` (480 fights) identical for every latent fix; the page's 48 Auto fights run with no page errors and replay natively after every engine change; `checks/s_c02.py` (restart during playback) and `checks/s_smoke.py` pass; a clean clone prepared only by `tools/prepare_lab.py` boots and plays.
+**Verification performed at the end of the checkpoint:** 182 tests (31 in `sim/test_checkpoint.py` after the C05 follow-up, 29 before it, one class per finding; plus `test_lab_parity.py`); the legacy golden of 4,535 moves and kits identical throughout; the fixed-party fingerprint identical except one explained change (below); `regress.py` (480 fights) identical for every latent fix; the page's 48 Auto fights run with no page errors and replay natively after every engine change; `checks/s_c02.py` (restart during playback) and `checks/s_smoke.py` pass; a clean clone prepared only by `tools/prepare_lab.py` boots and plays.
 
 **The one baseline change, explained (C01):** 29 of 288 fixed-party fights differ, all party wins with the same rounds, only in breath, dead and stabilised events: 11 heroes who used to die after victory now stabilise. New baseline `sim/checks/fp_c01.sha1`. No other fix changed any fight in either regression set (C04–C07 are latent there, so their tests carry the proof).
 
@@ -55,7 +55,7 @@ P1 means high-impact correctness or a prerequisite for the relevant next milesto
 | C02 | P1 | Old playback callbacks can commit a new fight | Closed (a4f7c23) |
 | C03 | P1 | Fresh checkout lacks reproducible Lab runtime setup | Closed (fe9e76e) |
 | C04 | P2 | Flurries bypass Shatter | Closed (a0bb56f) |
-| C05 | P2 | Death can preserve a wind-up through revival | Closed (a0bb56f) |
+| C05 | P2 | Death can preserve a wind-up through revival | Closed (762ac97; reopened once) |
 | C06 | P2 | Transformation leaves knowledge under the old identity | Closed (a0bb56f) |
 | C07 | P2 | Encounter generation mishandles family constraints | Closed (a0bb56f) |
 | C08 | P1 | Ur promotion reverses the cost ladder | Closed (64da699) |
@@ -179,6 +179,11 @@ P1 means high-impact correctness or a prerequisite for the relevant next milesto
 - **Decision applied:** falling to Dying interrupts a wind-up immediately (Joseph, Nov 20).
 - **Verification:** `C05_FallingEndsAWindUp`: death then revival can't release (one `bide_lost`); falling to Dying ends it; an unbroken wind-up still releases. Fingerprints identical (no wind-up owner falls mid-charge in those fights).
 - **Limits:** Stun, Frozen and the net still break a wind-up at release time, as before; transformation doesn't (no transforming unit winds up today).
+
+**Reopened (Nov 20, re-review at a280256): Closed again (commit [762ac97](https://github.com/jensen-117/norse_game/commit/762ac97)).**
+- **What the first fix missed:** planning moves a charge from `u.bide` into the round's queue and clears `u.bide`; `interrupt()` checked only `u.bide`, so a unit that fell after planning still released. The re-review's fixture: a charged Draugr fell, crawled on, and fired its old Bidskott for 53 damage with no `bide_lost` (60 in this checkout's fixture).
+- **Fix:** an action-generation token, as the re-review recommended. Planning gives each queued release a fresh token held on the unit (`u.charge`); `interrupt()` clears both the stored wind-up and the queued token, with one `bide_lost`; a release fires only while it holds the unit's current token. A Mogel re-forming replaces the unit's state, so its token changes too. No entry is removed from the resolver's local queue.
+- **Verification:** `C05_FallingEndsAWindUp` adds `test_a_fall_after_planning_cancels_the_queued_release` (the Draugr fixture: no damage, one `bide_lost`) and `test_a_hero_falling_after_planning_loses_the_release`; `test_an_unbroken_wind_up_still_releases` now also checks the hit lands with no `bide_lost`. `test_drattr`'s net test builds its release as planning does. Golden, fingerprint and regress.py identical (no fight in those sets falls between planning and release); page check clean.
 
 ### C06 — Transforming enemies learn under the wrong identity
 
