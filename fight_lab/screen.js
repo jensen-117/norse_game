@@ -772,6 +772,14 @@ const Screen = (() => {
     }
     commitRound();
   }
+  /* Playback sessions (AGENT_CODE_REVIEW C02): every fight is a session. Its continuations are scheduled through later()
+     and checked with live() after every await, so starting a new fight retires everything the old one left pending:
+     no old timer or animation can commit, or write state into, the new fight. */
+  let gen = 0; const timers = new Set();
+  function later(fn, ms) {
+    const g = gen, id = setTimeout(() => { timers.delete(id); if (g === gen) fn(); }, ms); timers.add(id);
+  }
+  function retire() { gen++; for (const id of timers) clearTimeout(id); timers.clear(); busy = false; autoUntil = -1; }
   function autopilot() {                           // every hero without orders Halv-strikes (lab.autofill: spread, random, recorded)
     const r = Lab.call("autofill"); confirmInfo = null; mode = "menu";
     for (const x of r) orders[x.id] = { key: x.key, target: x.target, label: x.target && units[x.target] ? `${x.shown} -> ${units[x.target].name}` : x.shown, short: x.shown, auto: true };
@@ -779,7 +787,7 @@ const Screen = (() => {
     const wait = MOTION.autoflash.dur * speedOf();
     if (!wait) return commitRound();
     busy = true; autoUntil = vt + wait;            // the filled orders blink, then the round plays
-    setTimeout(() => { busy = false; autoUntil = -1; commitRound(); }, wait);
+    later(() => { busy = false; autoUntil = -1; commitRound(); }, wait);
   }
   function commitRound() { const r = Lab.call("commit"); if (r.error) return say(r.error, C.hpLo); play(r); }
   function speedOf() { return Lab.speed() / 220; }
@@ -811,7 +819,11 @@ const Screen = (() => {
   }
   function floatAt(id, s, col, delay = 0) { const u = units[id]; if (!u) return; const b = unitBox(u); if (b) floaters.push({ x: b.cx, y: Math.max(30, b.y - 2), s, col, t: vt + delay }); }   // tall sprites: stay under the tracker
   function refreshTrack() { try { trackRows = Lab.call("preview"); } catch { trackRows = []; } }
-  const sleep = ms => (skipping || !speedF || ms <= 0) ? Promise.resolve() : new Promise(res => setTimeout(res, ms * speedF));
+  const sleep = ms => {                          // a retired session's animations never resume (C02)
+    const g = gen;
+    if (skipping || !speedF || ms <= 0) return g === gen ? Promise.resolve() : new Promise(() => {});
+    return new Promise(res => setTimeout(() => { if (g === gen) res(); }, ms * speedF));
+  };
   async function hitstop(ms) { if (skipping || !speedF) return; freezeUntil = performance.now() + ms * speedF; await sleep(ms); }
   function centre(u) { const b = unitBox(u); return b ? [b.cx, b.y + Math.round(b.h * .55)] : null; }
   function playFx(name, u) {                     // returns ms to the impact frame
@@ -825,6 +837,8 @@ const Screen = (() => {
     "paint", "skip", "silenced", "tick", "down", "reform", "crawl", "pile", "scatter", "reassemble", "dying", "breath", "dead", "revive",
     "stabilised", "item", "mp", "fled", "flee_failed", "retarget", "fizzle", "shatter", "flurry", "cleanse", "immune", "thaw"]);
   async function play(r) {
+    const g = gen, live = () => g === gen;       // this session only: a newer fight retires it
+    if (r.error) { busy = false; return say(r.error, C.hpLo); }
     busy = true; mode = "menu"; pending = null; inspectCard = null; confirmInfo = null; acted = 0; trackOff = 0;
     skipping = false; speedF = speedOf();
     const ev = r.events;
@@ -837,14 +851,16 @@ const Screen = (() => {
       else if (NARRATE.has(e.kind) && e.text) say(e.text, e.kind === "hit" && e.affinity === "weak" ? C.weak : null);
       if (["act", "scatter", "defend", "move", "item", "windup", "skip", "cover"].includes(e.kind)) { acted++; trackSlideT = vt; }
       await step(e, ev[i + 1]);
+      if (!live()) return;
     }
+    if (!live()) return;
     for (const l of r.learned || []) Lab.onLearn(l);
     skipping = false; freezeUntil = 0;
     S = r; syncUnits(r.board); busy = false; orders = {}; opts = {}; acted = 0; trackOff = 0;
     Lab.onState(r);
     if (S.phase === "over") { current = null; trackRows = []; return; }
     refreshTrack();
-    if (Lab.auto() || S.awaiting.length === 0) { setTimeout(() => play(Lab.call("commit")), speedF ? 450 * speedF : 0); return; }
+    if (Lab.auto() || S.awaiting.length === 0) { later(() => play(Lab.call("commit")), speedF ? 450 * speedF : 0); return; }
     for (const id of S.awaiting) opts[id] = Lab.call("options", id);
     current = S.awaiting[0]; mode = "menu";
   }
@@ -928,6 +944,7 @@ const Screen = (() => {
 
   /* ------------------------------------------------------------ a new fight */
   function begin(r, areaName) {
+    retire();                                     // the old fight's continuations can't reach this one
     area = A.areas[areaName] ? areaName : "Neutral";
     fightSeed = (Math.random() * 1e9) | 0; boxWash = null;
     units = {}; lines = []; floaters = []; fxs = []; orders = {}; opts = {}; current = null; mode = "menu"; pending = null; inspectCard = null; confirmInfo = null;
