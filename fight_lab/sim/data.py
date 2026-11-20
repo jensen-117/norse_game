@@ -604,7 +604,7 @@ VERBS = {
 
 # Upgrade parts beyond tier, target and manner (pillars Part 5c). The cap: at most UPGRADE_CAP parts on one move;
 # a capstone is a named set beyond it (found, not carved).
-STYNG_POWER = 0.6        # Styng's added hit on a move that does no damage of its own, as a share of the tier's power
+STYNG_POWER = 0.7        # Styng: a hit added to a move with no damage of its own, at 70% of the tier's power (Lonn never weakens)
 UPGRADE_CAP = 2
 CAPSTONES = {            # name: (verb, its parts as a frozen set). Holm and Hasin settle in the mutation session.
     "Tusensplitter": ("Skott", frozenset({"Drif", "Mer", "Lonn"})),
