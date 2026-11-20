@@ -128,6 +128,25 @@ def _fill(remaining, costs, caps, units_left):
 
 class CompositionError(Exception): pass
 
+@lru_cache(maxsize=None)
+def _feas(remaining, types, caps, units_left, counts, maxes, mins):
+    """Can `remaining` be met exactly from these (cost, family) types under the cost caps, the unit limit and the family
+    rules (review C07)? A family is None when no rule names it, so with no family rules this is _fill."""
+    cnt = dict(counts)
+    if remaining == 0: return all(cnt.get(f, 0) >= m for f, m in mins)
+    if units_left <= 0: return False
+    capd, mx = dict(caps), dict(maxes)
+    for c, f in types:
+        if c > remaining or capd.get(c, 99) <= 0: continue
+        if f is not None and cnt.get(f, 0) >= mx.get(f, 99): continue
+        nc = dict(capd)
+        if c in nc: nc[c] -= 1
+        n2 = dict(cnt)
+        if f is not None: n2[f] = n2.get(f, 0) + 1
+        if _feas(remaining - c, types, tuple(sorted(nc.items())), units_left - 1, tuple(sorted(n2.items())), maxes, mins):
+            return True
+    return False
+
 def compose(rng, pool, rules=None, log=None, tries=200):
     """Roll one pack. Returns a list of catalog entries, in roll order.
     The ranged rule: "exclude" gates out every unit that reaches our Rear; "include" re-rolls until the
@@ -155,15 +174,33 @@ def compose(rng, pool, rules=None, log=None, tries=200):
         return p
     def need_min():   # families still short of their minimum must be picked first
         return [f for f, m in R["family_min"].items() if fam_count.get(f, 0) < m]
+    ruled = set(R["family_max"]) | set(R["family_min"])          # families a rule names (review C07)
+    maxes, mins = tuple(sorted(R["family_max"].items())), tuple(sorted(R["family_min"].items()))
+    types = tuple(sorted({(e["cost"], e["family"] if e["family"] in ruled else None)
+                          for e in pool if e["cost"] not in R["banned_costs"]}, key=str))
+    def fits(e, rem, units):
+        """Could the pack still be finished, every rule kept, after picking e?"""
+        after = dict(caps)
+        if e["cost"] in after: after[e["cost"]] -= 1
+        cnt = {f: fam_count.get(f, 0) + (e["family"] == f) for f in ruled}
+        return _feas(rem - e["cost"], types, tuple(sorted(after.items())), units - 1, tuple(sorted(cnt.items())), maxes, mins)
+    if R["family_min"] and not _feas(remaining, types, tuple(sorted(caps.items())), R["max_units"],
+                                     tuple(sorted((f, 0) for f in ruled)), maxes, mins):
+        raise CompositionError(f"no pack can meet {R['family_min']} from this pool under {R}")
     while remaining > 0:
         p = live_pool()
         short = need_min()
-        if short: p = [e for e in p if e["family"] in short] or p
+        if short:
+            p = [e for e in p if e["family"] in short]
+            if not p: raise CompositionError(f"family_min {short}: none left in the pool")
         units_left = R["max_units"] - len(picks)
         avail = {e["cost"] for e in p}
         faces = []
         for c in (1, 2, 3):
             if c not in avail or c > remaining or caps.get(c, 99) <= 0: continue
+            if ruled:
+                if any(fits(e, remaining, units_left) for e in p if e["cost"] == c): faces.append(c)
+                continue
             after = dict(caps)
             if c in after: after[c] -= 1
             all_costs = {e["cost"] for e in live_pool()}
@@ -172,7 +209,7 @@ def compose(rng, pool, rules=None, log=None, tries=200):
             raise CompositionError(f"cannot fill {remaining} more slots with {sorted(avail)} under {R}")
         c = rng.choice(faces)
         if log is not None: log.append(f"left {remaining}: faces {faces} -> rolled {c}")
-        cands = [e for e in p if e["cost"] == c]
+        cands = [e for e in p if e["cost"] == c and (not ruled or fits(e, remaining, units_left))]
         w = [e["weight"] * R["family_weight"].get(e["family"], 1.0) for e in cands]
         e = rng.choices(cands, weights=w)[0]
         picks.append(e); remaining -= c

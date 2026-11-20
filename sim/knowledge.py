@@ -42,6 +42,11 @@ class Memory:
                 if self.aff.setdefault(key, {}).get(dtype) != result:
                     self.aff[key][dtype] = result
                     learned.append(dict(kind=key, what="affinity", element=dtype, result=result))
+            elif k == "transform":                      # a new job: learn under it from now on (review C06)
+                uid = e.get("unit_id"); w = self._who.get(uid)
+                if not w or w[3] != "enemy" or not e.get("job"): continue
+                self._who[uid] = (w[0], e["job"], w[2], w[3])
+                self.seen.add(kind_of(w[0], e["job"], w[2]))
             elif k in ("down", "crawl", "pile", "reform"):
                 uid = e.get("was_id") if k == "reform" else e.get("unit_id")
                 w = self._who.get(uid)

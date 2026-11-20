@@ -450,6 +450,7 @@ class Battle:
         wasn't beheaded or burned crawls on; a Bein falls into a pile that stands again unless it is crushed.
         `by` is the element of the killing blow (None for ticks and the like)."""
         fam = getattr(t, "family", None)
+        self.interrupt(t, "fell")                      # falling ends a wind-up: Dying, crawling, a pile, a re-form
         if t.side == "party" and USE_DYING:
             if t.wounded:
                 self.die(t, "falls while Wounded"); return
@@ -617,7 +618,14 @@ class Battle:
 
     # ------------------------------------------------------------ resolve one action
     # ------------------------------------------------------------ the fallen hero (combat_spec Part 10)
+    def interrupt(self, u, why):
+        """A unit's pending wind-up is lost at a state change that ends its turns (falling, dying; review C05)."""
+        if u.bide is None: return
+        a = u.bide[0]; u.bide = None; u.stats["bides_lost"] += 1
+        self.emit("bide_lost", f"    {u.name} loses {self.shown(u, a)}!", unit=u.name, move=a["name"], shown=self.shown(u, a), why=why)
+
     def die(self, t, why):
+        self.interrupt(t, "dead")
         t.state, t.breaths, t.hp = "dead", 0, 0
         self.emit("dead", f"      {t.name} dies ({why}).", unit=t.name, why=why)
 
@@ -926,11 +934,7 @@ class Battle:
                 dmg *= rm * (self.shape_mult(a, ti) if len(tgts) > 1 and not a["all"] else 1.0)
                 if t.defending: t.stats["blocked"] += dmg * 0.5; dmg *= 0.5
                 elif t in self.pending_defend: t.stats["late"] += 1       # hit before its own Defend landed
-                sh = next((s for s in t.status if STATUSES.get(s, {}).get("shatter")), None)
-                if sh and aff != "absorb":
-                    dmg *= STATUSES[sh]["shatter"]
-                    del t.status[sh]
-                    self.emit("shatter", f"      Shatter!", unit=t.name)
+                dmg = self.shatter(t, aff, dmg)
                 total += dmg; parts.append(dmg)
                 u.stats[res if res != "hit" else "hits"] += 1
             if aff == "absorb":
@@ -953,6 +957,16 @@ class Battle:
                 self.downed(t, a["element"]); continue
             best = "crit" if "crit" in results else "hit" if "hit" in results else "graze"
             self.riders(u, t, a, best, aff == "weak")
+
+    def shatter(self, t, aff, dmg):
+        """The per-hit Shatter step, shared by every hit path (plain, multi-hit, flurry; review C04): the first hit
+        that actually deals damage (not nulled, not absorbed) ends a shatterable status (Frozen) for its multiplier."""
+        if aff in ("absorb", "null") or dmg <= 0: return dmg
+        sh = next((s for s in t.status if STATUSES.get(s, {}).get("shatter")), None)
+        if not sh: return dmg
+        del t.status[sh]
+        self.emit("shatter", f"      Shatter!", unit=t.name)
+        return dmg * STATUSES[sh]["shatter"]
 
     def hit_once(self, u, a, t, res, per=1.0, shaped=False, spot=None):
         """One landed hit's damage after every multiplier (used by Drif, which lands hits one at a time)."""
@@ -998,7 +1012,7 @@ class Battle:
             if not t.alive: return
             aff = t.affinity(a["element"])
             res = self.roll(u, t, a)
-            dmg = self.hit_once(u, a, t, res, a["flurry"]["per"], shaped, spot or t)
+            dmg = self.shatter(t, aff, self.hit_once(u, a, t, res, a["flurry"]["per"], shaped, spot or t))
             u.stats[res if res != "hit" else "hits"] += 1; u.stats["flurry_hits"] += 1
             if aff == "absorb":
                 t.hp = min(t.maxhp, t.hp + dmg); self.barred.add(u)

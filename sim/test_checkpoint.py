@@ -178,3 +178,121 @@ class A02_ModifierPolicy(unittest.TestCase):
         with self.assertRaises(ValueError): compile_verb("Egga", manners=("Snar",))       # already First
         with self.assertRaises(ValueError): compile_verb("Djupanda", manners=("Bid",))    # already Patient
         with self.assertRaises(ValueError): compile_verb("Reyk", manners=("Tung",))       # nothing to make heavier
+
+# ---------------------------------------------------------------- C04-C07
+from knowledge import Memory, kind_of
+from composer import compose, CompositionError
+
+def frozen_target(seed=4, aff=None):
+    ul = birth("Ullar", 30, random.Random(1)); t = spawn_family("Drattr", "Drattr", 30, job="Spear")
+    t.hp = t.maxhp = 10 ** 6
+    if aff is not None: t.aff = aff
+    b = Battle([ul], [t], random.Random(seed), events=True); b.apply_status(ul, t, "Frozen", 1.0)
+    return b, ul, t
+
+class C04_OneShatterRule(unittest.TestCase):
+    def test_a_flurry_shatters_once(self):
+        b, ul, t = frozen_target()
+        b.flurry(ul, compile_word("Skott", manner="Drif"), t, 3, False)
+        self.assertNotIn("Frozen", t.status)
+        self.assertEqual(sum(e["kind"] == "shatter" for e in b.events), 1)
+
+    def test_a_multi_hit_shatters_once(self):
+        b, ul, t = frozen_target(); ul.cell = ("front", 0)
+        b.resolve(ul, dict(compile_word("Skott"), hits=3, power=2), t, False)
+        self.assertEqual(sum(e["kind"] == "shatter" for e in b.events), 1)
+
+    def test_null_and_absorb_dont_shatter(self):
+        for aff in ({"Pierce": "null"}, {"Pierce": "absorb"}):
+            b, ul, t = frozen_target(aff=aff)
+            b.resolve(ul, compile_word("Skott"), t, False)
+            self.assertIn("Frozen", t.status, aff)
+            b2, ul2, t2 = frozen_target(aff=aff)
+            b2.flurry(ul2, compile_word("Skott", manner="Drif"), t2, 2, False)
+            self.assertIn("Frozen", t2.status, aff)
+
+class C05_FallingEndsAWindUp(unittest.TestCase):
+    def setup(self):
+        ul = birth("Ullar", 10, random.Random(1)); en = spawn_family("Drattr", "Drattr", 10, job="Spear")
+        b = Battle([ul], [en], random.Random(5), events=True); ul.bide = (compile_word("Skott", manner="Bid"), en)
+        return b, ul, en
+
+    def released(self, b, u):
+        b.plan_phase([u] + b.enemies, False)
+        return any(d and d[0].get("_release") for k, x, d in b.remaining if x is u)
+
+    def test_death_then_revival_cannot_release(self):
+        b, ul, en = self.setup(); b.die(ul, "probe"); b.stand_up(ul, .2, True)
+        self.assertFalse(self.released(b, ul))
+        self.assertEqual(sum(e["kind"] == "bide_lost" for e in b.events), 1)
+
+    def test_falling_dying_interrupts(self):
+        b, ul, en = self.setup(); ul.hp = 0; b.downed(ul)
+        self.assertEqual(ul.state, "dying"); self.assertIsNone(ul.bide)
+        b.stand_up(ul, .2, False); self.assertFalse(self.released(b, ul))
+
+    def test_an_unbroken_wind_up_still_releases(self):
+        b, ul, en = self.setup(); self.assertTrue(self.released(b, ul))
+
+class C06_KnowledgeFollowsTheJob(unittest.TestCase):
+    def test_learn_under_the_new_job(self):
+        ul = birth("Ullar", 30, random.Random(1)); net = spawn_family("Drattr", "Drattr", 30, job="Net")
+        net.hp = net.maxhp = 10 ** 6
+        b = Battle([ul], [net], random.Random(6), events=True); m = Memory()
+        m.observe(b.begin("party"))
+        b.resolve(ul, compile_word("Skott"), net, False)                 # learned as the Net
+        b.transform(net, "Spear"); b.resolve(ul, compile_word("Skar"), net, False)
+        m.observe(b.drain())
+        card = m.mask(b.inspect(net.uid))
+        self.assertNotEqual(card["affinities"]["Slash"], "?")            # learned after the transform: shown
+        self.assertIn("Pierce", m.aff[kind_of("Drattr", "Net", None)])  # what was learned before stays
+        self.assertNotIn("Slash", m.aff.get(kind_of("Drattr", "Net", None), {}))
+        m2 = Memory.from_json(m.to_json())
+        self.assertEqual(m2.aff, m.aff)
+        net.hp = 0; b.downed(net); m.observe(b.drain())
+        self.assertEqual(m.kills.get("Drattr|Spear"), 1)                 # credit goes to the job it fell as
+
+def brute(pool, rules):
+    """Every pack (a multiset of pool entries) that meets every rule: the reference solver for C07."""
+    from itertools import combinations_with_replacement as cwr
+    R = dict(budget=6, max_units=6, banned_costs=(), cost_caps={}, family_max={}, family_min={}); R.update(rules)
+    out = []
+    for n in range(1, R["max_units"] + 1):
+        for pk in cwr(range(len(pool)), n):
+            es = [pool[i] for i in pk]
+            if sum(e["cost"] for e in es) != R["budget"]: continue
+            if any(e["cost"] in R["banned_costs"] for e in es): continue
+            if any(sum(e["cost"] == c for e in es) > m for c, m in R["cost_caps"].items()): continue
+            fam = {f: sum(e["family"] == f for e in es) for f in {e["family"] for e in pool} | set(R["family_min"])}
+            if any(fam.get(f, 0) > m for f, m in R["family_max"].items()): continue
+            if any(fam.get(f, 0) < m for f, m in R["family_min"].items()): continue
+            out.append(es)
+    return out
+
+class C07_PacksKeepTheirRules(unittest.TestCase):
+    def test_the_review_cases(self):
+        A, B = dict(family="A", cost=1, weight=1.0, ranged=False), dict(family="B", cost=2, weight=1.0, ranged=False)
+        for seed in (1, 2, 3, 4):
+            got = compose(random.Random(seed), [A, B], dict(budget=2, family_max={"A": 1}))
+            self.assertEqual(got, [B])
+        with self.assertRaises(CompositionError): compose(random.Random(1), [B], dict(budget=2, family_min={"A": 1}))
+
+    def test_against_exhaustive_enumeration(self):
+        rng = random.Random(77)
+        for case in range(300):
+            pool = [dict(family=rng.choice("ABC"), cost=rng.randint(1, 3), weight=1.0, ranged=False)
+                    for _ in range(rng.randint(1, 4))]
+            fams = sorted({e["family"] for e in pool} | {"C"})
+            rules = dict(budget=rng.randint(2, 6), max_units=rng.randint(2, 4))
+            if rng.random() < 0.5: rules["family_max"] = {rng.choice(fams): rng.randint(0, 2)}
+            if rng.random() < 0.5: rules["family_min"] = {rng.choice(fams): rng.randint(1, 2)}
+            if rng.random() < 0.3: rules["cost_caps"] = {rng.randint(1, 3): rng.randint(0, 1)}
+            if rng.random() < 0.2: rules["banned_costs"] = (rng.randint(1, 3),)
+            ok = brute(pool, rules)
+            for seed in range(3):
+                try: got = compose(random.Random(seed), pool, rules)
+                except CompositionError:
+                    self.assertFalse(ok, f"case {case}: failed though {ok[:1]} works; {pool} {rules}"); continue
+                self.assertTrue(ok, f"case {case}: returned a pack where none is legal; {pool} {rules}")
+                key = sorted(map(str, got))
+                self.assertIn(key, [sorted(map(str, x)) for x in ok], f"case {case}: {got} breaks {rules}")
