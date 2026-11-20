@@ -18,14 +18,14 @@ def dummy(level=30, hp=10_000):
 
 class Words(unittest.TestCase):
     def test_names_and_english(self):
-        self.assertEqual(compile_word("Kross", "Mer", rider="Eitr")["name"], "Mereitrkross")
+        self.assertEqual(compile_word("Krosh", "Mer", rider="Eitr")["name"], "Mereitrkrosh")
         self.assertEqual(compile_word("Skott", target="Flok")["english"], "Volley")
-        self.assertEqual(compile_word("Kross", "Mer", "Flok")["name"], "Flokmerkross")
-        self.assertEqual(compile_word("Kross", target="Flok")["name"], "Flokross")     # the seam rule
+        self.assertEqual(compile_word("Krosh", "Mer", "Flok")["name"], "Flokmerkrosh")
+        self.assertEqual(compile_word("Krosh", target="Flok")["name"], "Flokrosh")     # the seam rule
         self.assertEqual(compile_word("Skar", manner="Drif")["english"], "Flurry of Cuts")
 
     def test_numbers(self):
-        j = compile_word("Kross", manner="Jarf")
+        j = compile_word("Krosh", manner="Jarf")
         self.assertEqual(j["cost"], 12); self.assertAlmostEqual(j["power"], 14.0)
         self.assertAlmostEqual(j["crit_bonus"], 0.20); self.assertEqual(j["crit_mult"], 3.0)
         self.assertEqual(compile_word("Skar", manner="Snar")["group"], 1)
@@ -33,12 +33,12 @@ class Words(unittest.TestCase):
         self.assertEqual(compile_word("Skar", "Halv", manner="Jarf")["cost"], 6)
         self.assertEqual(compile_word("Skar", "Halv")["cost"], 0)
         self.assertEqual(compile_word("Skar", manner="Tung")["group"], -2)
-        e = compile_word("Kross", rider="Eitr"); self.assertEqual(e["status"], "Poisoned"); self.assertAlmostEqual(e["power"], 14.0)
+        e = compile_word("Krosh", rider="Eitr"); self.assertEqual(e["status"], "Poisoned"); self.assertAlmostEqual(e["power"], 14.0)
         self.assertEqual(compile_word("Eld", "Mer")["cost_type"], "MP")
         self.assertTrue(compile_word("Skott").get("reach") == "any")
 
     def test_expected_values_match_the_spellbook(self):
-        plain, jarf = compile_word("Kross"), compile_word("Kross", manner="Jarf")
+        plain, jarf = compile_word("Krosh"), compile_word("Krosh", manner="Jarf")
         self.assertAlmostEqual(ev(plain) / 20, 0.925, places=3)
         self.assertAlmostEqual(ev(jarf) / 20, 0.98, places=3)             # 0.7 x (0.1 + 0.55 + 0.75)
         self.assertAlmostEqual(flurry_hits(compile_word("Skar", manner="Drif")["flurry"]), 1.875)
@@ -63,7 +63,7 @@ class Manners(unittest.TestCase):
 
     def test_jarf_crits_more_and_harder(self):
         b = Battle([hero("Berserker", self.rng)], [dummy()], self.rng); h, d = b.party[0], b.enemies[0]
-        j, p = compile_word("Kross", manner="Jarf"), compile_word("Kross")
+        j, p = compile_word("Krosh", manner="Jarf"), compile_word("Krosh")
         crits = sum(b.roll(h, d, j) == "crit" for _ in range(20000)) / 20000
         base = sum(b.roll(h, d, p) == "crit" for _ in range(20000)) / 20000
         self.assertAlmostEqual(crits - base, 0.20, delta=0.02)

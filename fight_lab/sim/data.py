@@ -451,11 +451,11 @@ WEAPONS = {   # weapon: (damage type, range)
     "Greatsword": ("Slash", "Short"), "Sword": ("Slash", "Short"), "Axe": ("Slash", "Short"),
     "Club": ("Crush", "Short"), "Hammer": ("Crush", "Short"), "Staff": ("Crush", "Short"),
 }
-# A root's own weapons, and its range in anyone else's hands: an Ullar who learns Kross clubs with the bow (Short);
+# A root's own weapons, and its range in anyone else's hands: an Ullar who learns Krosh clubs with the bow (Short);
 # an Ullar who learns Spett jabs with an arrow (Short). Skott is a shot: bows only, not learnable without one.
-ROOT_WEAPONS = {"Skar": {"Greatsword", "Sword", "Axe"}, "Kross": {"Club", "Hammer", "Staff"},
+ROOT_WEAPONS = {"Skar": {"Greatsword", "Sword", "Axe"}, "Krosh": {"Club", "Hammer", "Staff"},
                 "Spett": {"Stikk", "Spear"}, "Skott": {"Bow"}}
-ROOT_RANGE = {"Skar": "Short", "Kross": "Short", "Spett": "Short", "Skott": "Long"}
+ROOT_RANGE = {"Skar": "Short", "Krosh": "Short", "Spett": "Short", "Skott": "Long"}
 def root_range(root, weapon):
     """A martial root's range in these hands: the weapon's own when the root belongs to it, else the root's."""
     return WEAPONS[weapon][1] if weapon in ROOT_WEAPONS.get(root, ()) else ROOT_RANGE[root]
@@ -464,7 +464,7 @@ REAR_MELEE_MULT = 0.5
 SHAPE_MULT = {"row": 0.75, "column": 0.85}      # per target, for skills that carry a shape (tune)
 
 # ---------------------------------------------------------------- martial grammar (spellbook Part 2)
-MARTIAL_ROOT = {"Slash": "Skar", "Crush": "Kross", "Pierce": "Spett"}   # bows: Skott
+MARTIAL_ROOT = {"Slash": "Skar", "Crush": "Krosh", "Pierce": "Spett"}   # bows: Skott
 
 # ---------------------------------------------------------------- manners (spellbook Part 2; numbers live in grammar.py)
 # The sim AI scores moves by expected damage, which can't see tempo. These weights stand in for it (AI knob, tune):

@@ -23,8 +23,8 @@ class Weapons(unittest.TestCase):
         self.assertEqual(root_range("Spett", "Stikk"), "Short")
         self.assertEqual(root_range("Spett", "Spear"), "Medium")
         self.assertEqual(root_range("Spett", "Bow"), "Short")      # an Ullar jabbing with an arrow
-        self.assertEqual(root_range("Kross", "Bow"), "Short")      # ...or clubbing with the bow
-        self.assertEqual(root_range("Kross", "Club"), "Short")
+        self.assertEqual(root_range("Krosh", "Bow"), "Short")      # ...or clubbing with the bow
+        self.assertEqual(root_range("Krosh", "Club"), "Short")
         self.assertEqual(root_range("Skott", "Bow"), "Long")
 
     def test_creature_weapons(self):

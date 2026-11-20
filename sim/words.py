@@ -45,7 +45,7 @@ STATUS_ROOT = {"Poisoned": "Eitr", "Cursed": "Nid", "Feared": "Ogn", "Blinded": 
 STAT_ROOT = {"ATK": "Kraft", "DEF": "Skold", "MAT": "Seid", "MDF": "Stav",
              "ACC": "Hitt", "EVA": "Vig", "SPD": "Rask"}
 WEAPON = {   # martial root: (damage type, reach override)
-    "Skar": ("Slash", None), "Kross": ("Crush", None), "Spett": ("Pierce", None), "Skott": ("Pierce", "any"),
+    "Skar": ("Slash", None), "Krosh": ("Crush", None), "Spett": ("Pierce", None), "Skott": ("Pierce", "any"),
 }
 
 # ---------------------------------------------------------------- morphemes (all tune knobs live here)

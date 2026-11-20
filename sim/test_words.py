@@ -17,8 +17,8 @@ class TestWords(unittest.TestCase):
         self.assertEqual(skill("Pierce", "Blotspett", "Base", status="Bleeding", power=14)["cost_type"], "HP")
 
     def test_grammar_words_are_compiled(self):
-        w = compile_word("Kross", "Mer", rider="Eitr")
+        w = compile_word("Krosh", "Mer", rider="Eitr")
         self.assertEqual({k: v for k, v in w.items() if k != "english"},
-                         compile_move("damage", "Kross", "Mer", rider="Eitr", parts=True))
+                         compile_move("damage", "Krosh", "Mer", rider="Eitr", parts=True))
 
 if __name__ == "__main__": unittest.main()

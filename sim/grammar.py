@@ -5,7 +5,7 @@ that modifies the move, so any legal word compiles into a full move (power, cost
 riders, reach) without hand-typing. `assess()` builds every word and scores it, so the grammar can tell us
 which combinations are worth printing and which are broken before a class tree picks them.
 
-    compile_word("Kross", tier="Mer", rider="Eitr")      -> Mereitrkross, a greater poisoned crush
+    compile_word("Krosh", tier="Mer", rider="Eitr")      -> Mereitrkrosh, a greater poisoned crush
     compile_word("Skott", target="Flok")                 -> Flokskott, shown to the player; "Volley" when a skeleton uses it
 """
 from itertools import product
@@ -16,7 +16,7 @@ from engine import level_factor
 SPELL_ROOTS = [r for r in ELEMENT if r not in MARTIAL and r != "Lak"]
 
 # ---------------------------------------------------------------- plain English, for enemies (diegetic display)
-EN_ROOT = {"Skar": "Cut", "Kross": "Smash", "Spett": "Thrust", "Skott": "Shot",
+EN_ROOT = {"Skar": "Cut", "Krosh": "Smash", "Spett": "Thrust", "Skott": "Shot",
            "Eld": "Fire", "Reyk": "Smoke", "Vatn": "Water", "Hrim": "Frost", "Blast": "Wind", "Blixt": "Lightning",
            "Jord": "Stone", "Gro": "Thorn", "Sol": "Sunlight", "Natt": "Shadow", "Aska": "Ash"}
 EN_PLURAL = {"Cut": "Cuts", "Smash": "Smashes", "Thrust": "Thrusts", "Shot": "Shots"}
@@ -24,7 +24,7 @@ EN_TIER = {"Halv": "Light", "Base": "", "Mer": "Great", "Jatte": "Giant", "Ur": 
 EN_MANNER = {"Snar": "Swift", "Tung": "Heavy", "Bid": "Patient", "Jarf": "Reckless"}
 EN_RIDER = {"Eitr": "Venom", "Blot": "Bleeding", "Mogl": "Disarming", "Blinda": "Blinding", "Ogn": "Dread", "Nid": "Cursing"}
 EN_TARGET = {"Flok": "Sweeping", "All": "Storm of", "Mark": "Marked"}
-EN_OVERRIDE = {"Flokskott": "Volley", "Allskott": "Arrow Rain", "Halvskar": "Slash", "Halvkross": "Bash",
+EN_OVERRIDE = {"Flokskott": "Volley", "Allskott": "Arrow Rain", "Halvskar": "Slash", "Halvkrosh": "Bash",
                "Halvspett": "Jab", "Halvskott": "Loose"}
 
 def english(root, tier, target, manner, rider):
@@ -94,10 +94,10 @@ def assess(roots=None, tiers=TIERS):
 
 if __name__ == "__main__":
     import sys
-    for w in [("Kross", "Mer", None, None, "Eitr"), ("Skott", "Base", "Flok", None, None),
-              ("Kross", "Base", None, "Jarf", None), ("Skar", "Jatte", "Flok", "Drif", None),
+    for w in [("Krosh", "Mer", None, None, "Eitr"), ("Skott", "Base", "Flok", None, None),
+              ("Krosh", "Base", None, "Jarf", None), ("Skar", "Jatte", "Flok", "Drif", None),
               ("Skott", "Jatte", None, "Bid", None), ("Eld", "Base", None, "Bid", None),
-              ("Kross", "Mer", "All", None, "Mogl")]:
+              ("Krosh", "Mer", "All", None, "Mogl")]:
         a = compile_word(*w)
         print(f"{a['name']:<22} {a['english']:<32} power {a['power']:5.1f}  cost {a['cost']:>3} {a['cost_type']}"
               f"  group {a.get('group', 0):+d}  ev {ev(a):5.1f}  status {a['status']}")
@@ -106,11 +106,11 @@ if __name__ == "__main__":
     from collections import Counter
     flagged = [r for r in rows if r["flags"]]
     print(f"{len(flagged)} flagged:", dict(Counter(f for r in flagged for f in r["flags"])))
-    print("\nSingle-target Kross by manner: expected damage (cost)")
+    print("\nSingle-target Krosh by manner: expected damage (cost)")
     print(f"  {'':<7}" + "".join(f"{t:>14}" for t in TIERS))
     for mn in MANNERS:
-        print(f"  {str(mn or 'plain'):<7}" + "".join(f"{ev(compile_word('Kross', t, None, mn)):>8.1f} ({compile_word('Kross', t, None, mn)['cost']:>2})" for t in TIERS))
+        print(f"  {str(mn or 'plain'):<7}" + "".join(f"{ev(compile_word('Krosh', t, None, mn)):>8.1f} ({compile_word('Krosh', t, None, mn)['cost']:>2})" for t in TIERS))
     print("\nFlagged, plain single-target words only:")
     for r in flagged:
-        if r["parts"]["target"] is None and r["parts"]["rider"] is None and r["parts"]["root"] == "Kross":
+        if r["parts"]["target"] is None and r["parts"]["rider"] is None and r["parts"]["root"] == "Krosh":
             print(f"  {r['word']:<16} x{r['vs_plain']:.2f} of plain, cost {r['cost']}: {'; '.join(r['flags'])}")
