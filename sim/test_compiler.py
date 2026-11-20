@@ -60,7 +60,7 @@ class TestPrice(unittest.TestCase):
     def test_mp_ladder(self):
         self.assertAlmostEqual(compile_verb("Eld")["share"], 1 / 16)
         self.assertAlmostEqual(compile_verb("Eld", tier="Mer")["share"], 1 / 10)
-        self.assertAlmostEqual(1 / compile_verb("Eld", tier="Jatte")["share"], 6.25, places=2)
+        self.assertAlmostEqual(1 / compile_verb("Eld", tier="Jatte", source="find")["share"], 6.25, places=2)
         self.assertAlmostEqual(1 / compile_verb("Orkan")["share"], 3.9, places=1)
         self.assertEqual(compile_verb("Eld", tier="Halv")["share"], 0.0)              # Halv is free
         self.assertEqual(compile_verb("Djupanda")["share"], 0.0)

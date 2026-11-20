@@ -120,7 +120,7 @@ def compile_move(kind, root=None, tier="Base", target=None, manner=None, rider=N
     elif kind == "stat":
         kw.update(stat=stat, direction=1 if up else -1, target="ally" if up else "enemy")
     elif kind == "revive":
-        kw.update(element="Lak", target="fallen")
+        kw.update(element="Lak", target="fallen", **VAKNA[tier])      # a revive is complete on its own (A01)
         del kw["all"]
     if "shape" in t: kw["shape"] = t["shape"]
     if t.get("spot"): kw["spot"] = True
@@ -129,7 +129,7 @@ def compile_move(kind, root=None, tier="Base", target=None, manner=None, rider=N
     if "flurry" in m: kw["flurry"] = dict(m["flurry"])
     if parts: kw["parts"] = dict(root=root, tier=tier, target=target, manner=manner, rider=rider)
     kw.update(extra)
-    return act(kind, name or word_name(word_root, tier, target, direction, manner, rider), **kw)
+    return finalize(act(kind, name or word_name(word_root, tier, target, direction, manner, rider), **kw))
 
 # ---------------------------------------------------------------- the class verbs (pillars Part 5c; classes.md)
 MARTIAL_CLASSES = {"Ullar", "Vasara", "Nalarbani", "Hersir", "Huskarl", "Berserker"}
@@ -139,8 +139,9 @@ class OverCap(ValueError):
     """More upgrade parts than a move can carry, and no capstone of that shape."""
 
 def merge_manners(manners):
-    """Several manners on one move: the speed group of the non-Bid one; Bid winds up and releases in that group
-    (Bid + Tung: a meteor that lands Heavy). Powers and costs multiply."""
+    """Several manners on one move (already validated: no repeats, one speed manner at most). Bid winds up and
+    releases in the speed manner's group (Bid + Tung: a meteor that lands Heavy), in any order. Powers and costs
+    multiply."""
     out, power, cost = {}, 1.0, 1.0
     for mn in manners:
         m = MANNERS[mn]; power *= m.get("power", 1.0); cost *= m.get("cost", 1.0)
@@ -152,63 +153,143 @@ def merge_manners(manners):
     if out.get("bide") and "group" in out: out["release_group"] = out.pop("group")
     return out, power, cost
 
-def verb_parts(tier, target, manners, styng, lonn):
-    """The upgrade parts carved onto a verb, as names (what the cap counts and capstones match)."""
-    p = [x for x in (None if tier in (None, "Base") else tier, target) if x] + list(manners)
-    return p + (["Styng"] if styng else []) + (["Lonn"] if lonn else [])
-
-def compile_verb(verb, tier=None, target=None, manners=(), styng=False, lonn=False):
-    """A class verb grown by parts (pillars Part 5c): its spoken name, its rules, and its cost as a share of the hero's
-    own bar (priced when the hero is built: engine.price_bars). Raises OverCap for more than UPGRADE_CAP parts, unless
-    the parts make a named capstone."""
-    v = VERBS[verb]
-    carved = verb_parts(tier, target, manners, styng, lonn)
+def normalize(verb, tier=None, target=None, manners=(), styng=False, lonn=False, source="carve"):
+    """Check a verb's parts once (review C08-C11, A02) and return them in one canonical form, which the cap, the name,
+    the effects and the price all read. Raises ValueError, with the reason, for anything unknown, repeated,
+    contradictory, redundant, not allowed on this verb, or beyond what the move's source can reach."""
+    if verb not in VERBS: raise ValueError(f"no verb {verb!r}")
+    v = VERBS[verb]; kind = v["kind"]
+    if source not in SOURCE_TIER: raise ValueError(f"unknown source {source!r} (carve, find, gear)")
+    tier = tier or "Base"
+    if tier not in LADDER: raise ValueError(f"unknown tier {tier!r}")
+    if target is not None and target not in TARGET_PARTS: raise ValueError(f"unknown target part {target!r}")
+    if target is not None and target not in v.get("targets", ()):
+        raise ValueError(f"{verb} can't take {target}" + (" (it already reaches everyone)" if v.get("target") in ("all", "allies") else ""))
+    manners = tuple(manners)
+    for mn in manners:
+        if mn not in MANNERS or mn is None: raise ValueError(f"unknown manner {mn!r}")
+    if len(set(manners)) != len(manners): raise ValueError(f"{verb}: a manner can't be carved twice ({manners})")
+    if len(SPEED_MANNERS & set(manners)) > 1: raise ValueError(f"{verb}: Swift and Heavy contradict each other")
+    for mn in manners:
+        needs = MANNER_NEEDS[mn]
+        if needs is not None and kind not in needs: raise ValueError(f"{verb}: {mn} does nothing to a {kind} move")
+        if mn == "Snar" and (v.get("group", 0) >= 1 or SPEED_GROUP_BY_KIND.get(kind, 0) >= 1):
+            raise ValueError(f"{verb} already acts sooner than Swift")
+        if mn in v.get("manners", ()): raise ValueError(f"{verb} is already {mn}")
     if styng and not v.get("styng"): raise ValueError(f"{verb} takes no Styng")
     if lonn and not v.get("rider"): raise ValueError(f"{verb} has no designated rider")
+    own = v.get("tier", "Base")
+    if tier == "Halv":
+        if own != "Base": raise ValueError(f"{verb} has no Halv fork (it is {own} already)")
+        eff = "Halv"
+    elif tier == "Base": eff = own
+    else:
+        eff = LADDER[LADDER.index(own) + LADDER.index(tier) - LADDER.index("Base")] \
+            if LADDER.index(own) + LADDER.index(tier) - LADDER.index("Base") < len(LADDER) else None
+        if LADDER.index(tier) > LADDER.index(SOURCE_TIER[source]):        # the part itself: carving adds Mer at most
+            raise ValueError(f"{verb}: a {tier} part can't be {source}d (up to {SOURCE_TIER[source]})")
+        if eff is None or (eff == "Ur" and source != "gear"):              # only gear reaches Ur, even by promotion
+            raise ValueError(f"{verb} + {tier} would be {eff or 'past Ur'}: Ur comes only from gear")
+    return dict(verb=verb, tier=tier, eff=eff, own=own, target=target, manners=manners, styng=bool(styng),
+                lonn=bool(lonn), source=source)
+
+def verb_parts(n):
+    """The upgrade parts carved onto a verb, as names: what the cap counts, capstones and bynames match, and the
+    price counts. Canonical, so all four agree (review C10)."""
+    p = [x for x in (None if n["tier"] == "Base" else n["tier"], n["target"]) if x] + list(n["manners"])
+    return p + (["Styng"] if n["styng"] else []) + (["Lonn"] if n["lonn"] else [])
+
+def compile_verb(verb, tier=None, target=None, manners=(), styng=False, lonn=False, source="carve"):
+    """A class verb grown by parts (pillars Part 5c): its spoken name, its rules, and its cost as a share of the hero's
+    own bar (priced when the hero is built: engine.price_bars). The parts are checked first (normalize); more than
+    UPGRADE_CAP of them is OverCap unless they make a named capstone. The result meets the move contract
+    (check_move); `unresolved` lists what still keeps it out of a playable kit (effects that arrive in Wave 4)."""
+    n = normalize(verb, tier, target, manners, styng, lonn, source)
+    v = VERBS[verb]; kind = v["kind"]
+    carved = verb_parts(n)
     name = None
     if len(carved) > UPGRADE_CAP:
-        name = next((n for n, (vb, ps) in CAPSTONES.items() if vb == verb and ps == frozenset(carved)), None)
+        name = next((nm for nm, (vb, ps) in CAPSTONES.items() if vb == verb and ps == frozenset(carved)), None)
         if name is None: raise OverCap(f"{verb} + {carved}: over the cap of {UPGRADE_CAP}, and no capstone")
-    # the tier: a carved rung climbs from the verb's own (Storm is Mer; Merstorm is Jatte)
-    own = v.get("tier", "Base")
-    eff = own if tier in (None, "Base") else tier if tier == "Halv" else LADDER[min(len(LADDER) - 1, LADDER.index(own) + LADDER.index(tier) - 1)]
-    allm = tuple(v.get("manners", ())) + tuple(manners)
-    mkw, mpower, _ = merge_manners(allm)
-    if name is None and carved:      # a byname for a long spoken name within the cap (Geirskott)
-        name = next((n for n, (vb, ps) in BYNAMES.items() if vb == verb and ps == frozenset(carved)), None)
-    rider, part = (v["rider"] if lonn else (None, None))
-    spoken = name or join_morphemes([x for x in (target, None if tier in (None, "Base") else tier, "Styng" if styng else None,
-                                                 *manners, part, verb) if x])
+    elif carved:                     # a byname for a long spoken name within the cap (Geirskott)
+        name = next((nm for nm, (vb, ps) in BYNAMES.items() if vb == verb and ps == frozenset(carved)), None)
+    eff, own = n["eff"], n["own"]
+    mkw, mpower, _ = merge_manners(tuple(v.get("manners", ())) + n["manners"])
+    rider, part = (v["rider"] if n["lonn"] else (None, None))
+    spoken = name or join_morphemes([x for x in (n["target"], None if n["tier"] == "Base" else n["tier"],
+                                                 "Styng" if n["styng"] else None, *n["manners"], part, verb) if x])
+    # who it reaches: eligibility (self, ally, enemy, fallen) and scope (one, row, all) kept apart (review C09)
     vt = v.get("target", "enemy")
-    a = act(v["kind"], spoken, tier=eff, all=(target == "All" or vt in ("all", "allies")),
+    a = act(kind, spoken, tier=eff, all=(n["target"] == "All" or vt in ("all", "allies")),
             target={"self": "self", "ally": "ally", "allies": "ally", "fallen": "fallen", "all": "enemy"}.get(vt, "enemy"),
             element=v.get("element"), status=v.get("status"), stat=v.get("stat"),
             direction=None if v.get("up") is None else (1 if v["up"] else -1))
-    if target == "Flok": a["shape"] = "row"
-    if v["kind"] in ("damage", "answer"): a["power"] = TIER_POWER[eff] * mpower
-    if styng: a["styng"] = TIER_POWER[eff] * STYNG_POWER * mpower       # a hit added to a move with no damage of its own
-    if v["kind"] == "heal": a["power"] = TIER_POWER[eff]
-    if v["kind"] == "revive": a.update(VAKNA[eff])
+    if n["target"] == "Flok": a["shape"] = "row"
+    if kind in SCALES: a["power"] = TIER_POWER[eff] * mpower          # damage, answers and heals all scale (C11)
+    if n["styng"]: a["styng"] = TIER_POWER[eff] * STYNG_POWER * mpower  # a hit added to a move with no damage of its own
+    if kind == "revive": a.update(VAKNA[eff])
     if rider is not None:                                                # what Lonn adds
         if isinstance(rider, tuple): a["also"] = [rider]                 # a second stat stage (Lonnaukraft: DEF up)
         elif rider == "cleanse_one": a["cleanse_one"] = True             # Lonnlak
-        elif v["kind"] == "damage": a["status"] = rider                  # Blotskott: may Bleed
+        elif kind == "damage": a["status"] = rider                       # Blotskott: may Bleed
         else: a["also_status"] = rider                                   # Lonnsveda: Scorched and Feeble
     for k in ("root", "knots", "follow", "pays_on", "push"):
         if k in v: a[k] = v[k]
     if "group" in v: a["group"] = v["group"]
     a.update(mkw)
-    group = a.get("release_group", a.get("group", SPEED_GROUP_BY_KIND.get(v["kind"], 0)))
+    group = a.get("release_group", a.get("group", SPEED_GROUP_BY_KIND.get(kind, 0)))
     a["keywords"] = [k for k in (GROUP_KEYWORD.get(group), "Patient" if a.get("bide") else None) if k]
-    # the price: a share of the hero's own bar
+    # the price: a share of the hero's own bar; every carved part is one step, a rung above the verb's own is one step
     a["cost_type"] = "HP" if v.get("cls") in MARTIAL_CLASSES else "MP"
-    steps = (TIER_WEIGHT.get(eff, 0) - TIER_WEIGHT.get(own, 0) if tier not in (None, "Base", "Halv") else 0) \
-        + (1 if target else 0) + len(manners) + int(styng) + int(lonn) + v.get("weight", 0)
+    steps = (TIER_WEIGHT[eff] - TIER_WEIGHT[own] if n["tier"] != "Halv" else 0) \
+        + (1 if n["target"] else 0) + len(n["manners"]) + int(n["styng"]) + int(n["lonn"]) + v.get("weight", 0)
     if v.get("free") or (eff == "Halv" and steps == 0): share = 0.0
     else: share = BASE_SHARE[a["cost_type"]] * PART_STEP[a["cost_type"]] ** (steps - (1 if eff == "Halv" else 0))
     a["share"], a["cost"] = share, 0
-    a["parts"] = dict(verb=verb, tier=tier or "Base", target=target, manners=tuple(manners), styng=styng, lonn=lonn,
-                      capstone=name if len(carved) > UPGRADE_CAP else None, byname=name if len(carved) <= UPGRADE_CAP else None)
+    a["parts"] = dict(verb=verb, tier=n["tier"], target=n["target"], manners=n["manners"], styng=n["styng"], lonn=n["lonn"],
+                      source=n["source"], capstone=name if len(carved) > UPGRADE_CAP else None,
+                      byname=name if len(carved) <= UPGRADE_CAP else None)
+    a["unresolved"] = unresolved(a)
+    problems = check_move(a)
+    if problems: raise ValueError(f"{spoken}: {'; '.join(problems)}")
+    return a
+
+# ---------------------------------------------------------------- the move contract (review A01)
+# Every move that can enter a fight, from any path (the builders, the grammar, class verbs, items, enemy rows), is one
+# dict with the act() fields plus what its kind needs. check_move() states the contract; unresolved() says what the
+# engine can't yet carry out, so a compiled but unfinished move can't be put in a playable kit (Battle refuses it).
+EXECUTABLE_KINDS = {"damage", "heal", "cleanse", "status", "stat", "revive", "cover", "defend", "move", "flee", "mp"}
+KIND_NEEDS = {"revive": ("reaches", "hp", "wound"), "stat": ("stat", "direction"), "status": ("status",)}
+WAVE4_FIELDS = ("also_status", "cleanse_one", "pays_on", "styng", "knots", "follow", "push")   # effects not yet resolved
+RUNTIME_STATUSES = set(STATUSES) | set(COUNTER_OF) | {"Death"}
+CORE_FIELDS = ("kind", "name", "element", "tier", "all", "cost", "cost_type", "power", "status", "stat", "direction",
+               "target", "pct_current")
+
+def check_move(a):
+    """The contract's structure: what any move must carry to be read by the engine. Returns the problems (empty: OK)."""
+    out = [f"missing {f}" for f in CORE_FIELDS if f not in a]
+    if out: return out
+    out += [f"a {a['kind']} move needs {f}" for f in KIND_NEEDS.get(a["kind"], ()) if a.get(f) is None]
+    if a["cost_type"] not in ("MP", "HP"): out.append(f"cost type {a['cost_type']!r}")
+    if a["target"] not in ("enemy", "ally", "self", "fallen"): out.append(f"target {a['target']!r}")
+    if a["kind"] in ("damage", "heal") and not a.get("spot") and not (a["power"] or a.get("fixed") or a.get("amount")):
+        out.append("no power")
+    return out
+
+def unresolved(a):
+    """What keeps a well-formed move out of a fight for now: a kind or an effect the engine doesn't carry out yet."""
+    out = []
+    if a["kind"] not in EXECUTABLE_KINDS: out.append(f"{a['kind']} moves arrive in Wave 4")
+    for f in WAVE4_FIELDS:
+        if a.get(f): out.append(f"{f} arrives in Wave 4")
+    for st in (a.get("status"),):
+        if st and st not in RUNTIME_STATUSES: out.append(f"{st} has no status row yet")
+    return out
+
+def finalize(a):
+    """The last step of every path that builds an executable move: the contract holds, or this says why not."""
+    problems = check_move(a) + unresolved(a)
+    if problems: raise ValueError(f"{a.get('name')}: {'; '.join(problems)}")
     return a
 
 def compile_kit(cls, leg):

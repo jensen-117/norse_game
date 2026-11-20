@@ -562,38 +562,38 @@ KNOW_MP_KILLS = 40          # ...and its MP
 # Fields: kind; root (the damage type's word, for range and the board: Skott is a bow shot); element (damage type or
 # element); status / stat / up (what it inflicts); target ("self", "ally", "allies", "enemy", "all"); rider; weight
 # (cost steps built into the verb: the untie spells); knots (knot cost); free (costs nothing: Lya, Djupanda);
-# styng (Styng is legal); pays_on (a status the move pays off on: Banskott on the Pinned); hits; group.
+# styng (Styng is legal); targets (the target parts it may carve: none unless listed, review C09); pays_on (a status the move pays off on: Banskott on the Pinned); hits; group.
 # Kinds the engine doesn't resolve yet (taunt, song, knot, glide, displace, windfall, answer) arrive in Wave 4.
 VERBS = {
     # Brennumar (Eld school; magical)
-    "Eld":      dict(cls="Brennumar", kind="damage", element="Eld", rider=("Scorched", "Sveda")),
-    "Reyk":     dict(cls="Brennumar", kind="status", element="Reyk", status="Blinded", rider=("Poisoned", "Eitr"), styng=True),
-    "Sveda":    dict(cls="Brennumar", kind="status", element="Eld", status="Scorched", rider=("Feeble", "Lonn"), styng=True),
+    "Eld":      dict(targets=("Flok", "All"), cls="Brennumar", kind="damage", element="Eld", rider=("Scorched", "Sveda")),
+    "Reyk":     dict(targets=("Flok", "All"), cls="Brennumar", kind="status", element="Reyk", status="Blinded", rider=("Poisoned", "Eitr"), styng=True),
+    "Sveda":    dict(targets=("Flok", "All"), cls="Brennumar", kind="status", element="Eld", status="Scorched", rider=("Feeble", "Lonn"), styng=True),
     "Aukseid":  dict(cls="Brennumar", kind="stat", stat="MAT", up=True, target="self"),
     "Djupanda": dict(cls=None, kind="windfall", manners=("Bid",), free=True, target="self"),     # any magical
     # Ullar (Bow; martial)
-    "Skott":    dict(cls="Ullar", kind="damage", root="Skott", element="Pierce", rider=("Bleeding", "Blot")),
-    "Naglskott": dict(cls="Ullar", kind="status", root="Skott", element="Pierce", status="Pinned", styng=True),
-    "Peka":     dict(cls="Ullar", kind="status", element="Pierce", status="Marked", rider=("Sundered", "Lonn"), styng=True),
-    "Banskott": dict(cls="Ullar", kind="damage", root="Skott", element="Pierce", pays_on="Pinned"),
+    "Skott":    dict(targets=("Flok", "All"), cls="Ullar", kind="damage", root="Skott", element="Pierce", rider=("Bleeding", "Blot")),
+    "Naglskott": dict(targets=("Flok", "All"), cls="Ullar", kind="status", root="Skott", element="Pierce", status="Pinned", styng=True),
+    "Peka":     dict(targets=("Flok", "All"), cls="Ullar", kind="status", element="Pierce", status="Marked", rider=("Sundered", "Lonn"), styng=True),
+    "Banskott": dict(targets=("Flok", "All"), cls="Ullar", kind="damage", root="Skott", element="Pierce", pays_on="Pinned"),
     "Skrida":   dict(cls="Ullar", kind="glide", stat="EVA", up=True, target="self", group=1),
     # Vasara (Hammer; martial)
-    "Krosh":    dict(cls="Vasara", kind="damage", root="Krosh", element="Crush", rider=("Sundered", "Brak")),
+    "Krosh":    dict(targets=("Flok", "All"), cls="Vasara", kind="damage", root="Krosh", element="Crush", rider=("Sundered", "Brak")),
     "Egga":     dict(cls="Vasara", kind="taunt", target="self", rider=("Blinded", "Lonn"), styng=True),
     "Lya":      dict(cls="Vasara", kind="cover", target="ally", free=True),
-    "Aukskold": dict(cls="Vasara", kind="stat", stat="DEF", up=True, target="ally"),
+    "Aukskold": dict(targets=("Flok", "All"), cls="Vasara", kind="stat", stat="DEF", up=True, target="self"),   # herself; Flok her row; All everyone
     "Hevn":     dict(cls="Vasara", kind="answer", root="Krosh", element="Crush"),
     # Dagskald (Sol school, child Lak; magical)
-    "Lak":      dict(cls="Dagskald", kind="heal", element="Lak", target="ally", rider=("cleanse_one", "Lonn")),
-    "Sol":      dict(cls="Dagskald", kind="damage", element="Sol", rider=("Blinded", "Blinda")),   # Blindasol
+    "Lak":      dict(targets=("All",), cls="Dagskald", kind="heal", element="Lak", target="ally", rider=("cleanse_one", "Lonn")),
+    "Sol":      dict(targets=("Flok", "All"), cls="Dagskald", kind="damage", element="Sol", rider=("Blinded", "Blinda")),   # Blindasol
     "Kvad":     dict(cls="Dagskald", kind="song", target="allies"),
-    "Skolja":   dict(cls="Dagskald", kind="cleanse", target="ally"),
+    "Skolja":   dict(targets=("All",), cls="Dagskald", kind="cleanse", target="ally"),
     "Vakna":    dict(cls="Dagskald", kind="revive", target="fallen"),
-    "Aukraft":  dict(cls="Dagskald", kind="stat", stat="ATK", up=True, target="ally", rider=(("DEF", 1), "Lonn")),
+    "Aukraft":  dict(targets=("All",), cls="Dagskald", kind="stat", stat="ATK", up=True, target="ally", rider=(("DEF", 1), "Lonn")),
     # Skurmar (Blast school, child Blixt; magical)
-    "Blast":    dict(cls="Skurmar", kind="damage", element="Blast"),
+    "Blast":    dict(targets=("Flok", "All"), cls="Skurmar", kind="damage", element="Blast"),
     "Knyta":    dict(cls="Skurmar", kind="knot", target="self"),
-    "Blixt":    dict(cls="Skurmar", kind="damage", element="Blixt", rider=("Stunned", "Lonn")),
+    "Blixt":    dict(targets=("Flok", "All"), cls="Skurmar", kind="damage", element="Blixt", rider=("Stunned", "Lonn")),
     "Kuling":   dict(cls="Skurmar", kind="damage", element="Blast", target="all", weight=1, knots=1),
     "Storm":    dict(cls="Skurmar", kind="damage", element="Blast", target="all", weight=2, knots=2, tier="Mer"),
     "Orkan":    dict(cls="Skurmar", kind="damage", element="Blast", target="all", weight=3, knots=3, tier="Mer", follow="Blixt"),
@@ -622,7 +622,20 @@ BYNAMES = {
 # multiplies it by the step; Halv is free. MP: 1/16, 1/10, 1/6, ~1/4. HP: 1/36, 1/24, 1/16, ~1/10.
 BASE_SHARE = {"MP": 1 / 16, "HP": 1 / 36}
 PART_STEP = {"MP": 1.6, "HP": 1.5}
-TIER_WEIGHT = {"Halv": 0, "Base": 0, "Mer": 1, "Jatte": 2}
+TIER_WEIGHT = {"Halv": 0, "Base": 0, "Mer": 1, "Jatte": 2, "Ur": 3}   # every tier priced on purpose (review C08)
+
+# Where a move comes from decides the highest tier PART it may add (pillars Part 5c; review C08): carving adds Mer,
+# a found move (tome, reward) Jatte, gear Ur. A rung climbs from the verb's own (Merorkan: Orkan is Mer, so Jatte), but
+# only gear may result in Ur: Storm + a found Jatte is refused, not a cheap Ur.
+SOURCE_TIER = {"carve": "Mer", "find": "Jatte", "gear": "Ur"}
+
+# Which manners a move can take, by what its effect can use (review C11, A02). Speed manners conflict: one at most.
+# Bid is timing, not speed: Bid with one speed manner is the meteor (Bid + Tung lands Heavy).
+SCALES = {"damage", "answer", "heal"}                 # effects with a power the manners can scale
+HITS = {"damage", "answer"}                           # effects that roll hits (crits, flurries)
+MANNER_NEEDS = {"Snar": None, "Tung": SCALES, "Bid": SCALES, "Jarf": HITS, "Drif": HITS}
+SPEED_MANNERS = {"Snar", "Tung"}
+TARGET_PARTS = {"Flok", "All"}                        # the target parts a class verb can carve (Mark is enemies' paint)
 
 # Speed-group keywords (pillars Part 5c), printed on move cards; the glossary gives the hover line.
 GROUP_KEYWORD = {3: "First", 1: "Swift", -1: "Late", -2: "Heavy", -3: "Last"}

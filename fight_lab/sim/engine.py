@@ -16,7 +16,7 @@ UNIT_KEYS = ("unit", "src", "target", "instead_of", "swapped", "was")
 # ================================================================ actions: thin builders over words.compile_move
 def vakna(tier):
     """The revive ladder (combat_spec Part 10): Halvakna and Vakna reach the Dying, Mervakna and up raise the Dead."""
-    return compile_move("revive", "Vakna", tier, **VAKNA[tier])
+    return compile_move("revive", "Vakna", tier)
 
 def item_move(key):
     """An item as a move: fixed power, no cost but the item itself."""
@@ -27,7 +27,7 @@ def item_move(key):
     if k in ("heal", "mp"): a["amount"] = it["amount"]
     if k == "stat": a.update(stat=it["stat"], direction=it["direction"])
     if k == "damage": a.update(element=it["element"], power=it["power"], all=it.get("all", False), reach="any")
-    return a
+    return finalize(a)
 
 def ALL(all_): return "All" if all_ else None
 
@@ -343,6 +343,10 @@ def spawn(kind, level, name=None):
 class Battle:
     def __init__(self, party, enemies, rng, log=False, events=False):
         self.party, self.enemies, self.rng = party, enemies, rng
+        for u in party + enemies:                    # every move in a fight meets the contract (review A01)
+            for a in u.actions:
+                bad = check_move(a) + (a.get("unresolved") or unresolved(a))
+                if bad: raise ValueError(f"{u.name}'s {a.get('name')} can't be played: {'; '.join(bad)}")
         self.units = party + enemies
         self.spots = {}            # (side, cell) -> dict(src, a, rounds): painted spots (Mark- moves)
         self.lines = [] if log else None
@@ -693,7 +697,10 @@ class Battle:
                       unit=p.name, cell=cell, hp=round(p.hp), maxhp=round(p.maxhp))
 
     def targets_for(self, u, a, chosen):
-        if a["target"] == "self": return [u]
+        if a["target"] == "self":                    # a self move's scope: herself, her row (Flok), or everyone (All)
+            if a["all"]: return self.allies(u)
+            if a.get("shape") == "row" and USE_BOARD: return [x for x in self.allies(u) if x.cell[0] == u.cell[0]]
+            return [u]
         pool = self.allies(u) if a["target"] == "ally" else self.foes(u)
         pool = [x for x in pool if self.reach_mult(u, a, x) is not None]
         if not pool:
@@ -1734,7 +1741,7 @@ def family_move(m):
         a["flurry"] = dict(MANNERS["Drif"]["flurry"])
     if "cost" in opts: a["cost"] = opts["cost"]
     if "also" in opts: a["also"] = [tuple(opts["also"])]
-    return a
+    return finalize(a)
 
 def _family_move(m, opts):
     k = m[0]

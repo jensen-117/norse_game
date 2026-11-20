@@ -35,7 +35,7 @@ P1 means high-impact correctness or a prerequisite for the relevant next milesto
 
 | ID | Priority | Finding | Status / evidence |
 |---|---|---|---|
-| C01 | P1 | Victory can kill a hero before stabilization | Open; executed at 2b |
+| C01 | P1 | Victory can kill a hero before stabilization | Closed (be4118b) |
 | C02 | P1 | Old playback callbacks can commit a new fight | Open; JavaScript harness at 2b |
 | C03 | P1 | Fresh checkout lacks reproducible Lab runtime setup | Open; source and packaging inspection |
 | C04 | P2 | Flurries bypass Shatter | Open; executed at 2b |
@@ -66,6 +66,13 @@ P1 means high-impact correctness or a prerequisite for the relevant next milesto
 **Close when:** Last-breath victory stabilizes correctly; an ongoing fight still loses breaths; flee and bonus-round victory obey the same policy; already Dead heroes are not revived by stabilization; finishing twice cannot emit duplicate rewards or terminal events.
 
 **Source:** [engine.py:1411–1452](https://github.com/jensen-117/norse_game/blob/8a7afee433626c3fe532d618f2c95f73a219e035/sim/engine.py#L1411-L1452).
+
+**Resolution (Nov 20, commit [be4118b](https://github.com/jensen-117/norse_game/commit/be4118b)): Closed.**
+- **Cause:** confirmed as described: `commit()` ran `end_round()` (which takes breaths) before `next_round()` noticed the fight was over and `finish()` stabilised the Dying.
+- **Fix:** `commit()` settles the outcome as soon as a phase leaves the party victorious or fled (`party_settles()`), before any end-of-round timer; `finish()` is idempotent (a second call does nothing). Defeat and draw keep the old order, so the rule for a wiped party is deliberately unchanged (the review's caution about simultaneous defeat).
+- **Verification:** `test_checkpoint.py` `C01_VictorySettlesFirst`: last-breath victory stabilises (Wounded, one `stabilised`, one `end`, a second commit adds nothing); an ongoing fight still loses a breath; a fled fight obeys the same rule; the Dead stay dead. 154 tests; page check (48 Auto fights) clean and replayed natively.
+- **Fingerprint change, explained:** 29 of 288 fights differ, all party wins with the same rounds, differing only in `breath`/`dead`/`stabilised` events; 11 heroes who used to die after victory now stabilise. New baseline `sim/checks/fp_c01.sha1`.
+- **Limits:** the Bonus Round path shares the same settle point (covered by the code path, not a separate fixture).
 
 ### C02 — Playback from an old fight can advance a new fight
 
