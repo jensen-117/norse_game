@@ -63,7 +63,7 @@ Brings the sim and the Fight Lab from the game we had (recruits who level) to th
 - **Done (Nov 20): `sim/fingerprint.py`**, a fixed-party fingerprint (288 fights: four parties, three places, levels 10 and 30; baseline hash in `sim/checks/fp_base.sha1`). `check` names the first fight and event that differs. Was: **a fixed-hero fingerprint:** `regress.py` hires random recruits; add a variant with a fixed party built by the old `birth` path with fixed seeds, so Waves 1–2 can prove "nothing changed".
 
 ### Wave 1: the status engine (large; the foundation)
-**1a. Pure refactor (fingerprint identical).**
+**1a. Pure refactor (fingerprint identical).** **Done (Nov 20):** `STATUSES` and `SKIP_ORDER` in data.py; the engine reads rows for stat effects (`status_stat`), applying (`apply_status`), ticks (`tick_statuses`), skips (`skips`), flags (`has_flag`, `silenced`), Shatter, Fear's group and the Chilled→Frozen chain. Fingerprint identical (288 fights), regress.py identical (480), 125 tests.
 - `STATUSES` table in data.py: every current status as a row (Poisoned, Bleeding, Stunned, Chilled, Frozen, Bound, Feared, Blinded, Cursed, Disarmed, Silenced), with its current behaviour expressed as data (`shape="timed"`, its stat sources, its skip rule, its tick).
 - A small status layer on `Unit` (or a `StatusBook` it owns): `add`, `has`, `stacks`, `sources(stat)`, and three hooks the engine calls: `on_round_start` (ticks: Poisoned), `on_action` (skips: Bound, Frozen, Stunned; Bleeding), `on_round_end` (expiry).
 - `stage(stat)` reads sources from the table instead of hard-coding Chilled, Blinded, Cursed, Disarmed.

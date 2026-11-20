@@ -248,12 +248,13 @@ class Unit:
         self.maxhp *= self.b("HP"); self.hp = self.maxhp
 
     def stage(self, stat):
-        n = self.stages[stat]
-        if "Chilled" in self.status and stat == "SPD": n -= 1
-        if "Blinded" in self.status and stat in ("ACC", "EVA"): n -= 1
-        if "Cursed" in self.status: n -= self.status["Cursed"]["stats"].count(stat)
-        if "Disarmed" in self.status and stat in ("ATK", "MAT"): n -= 1
-        return clamp(n, -5, 5)
+        return clamp(self.stages[stat] + status_stat(self, stat), -5, 5)
+
+    def has_flag(self, flag):
+        """Does any status this unit carries set this flag (no_orders, blocks_mp, breaks_bide...)?"""
+        return any(STATUSES.get(s, {}).get(flag) for s in self.status)
+
+    silenced = property(lambda s: s.has_flag("blocks_mp"))
 
     def speed(self): return self.attrs["SPD"] * self.b("SPD") * stage_mult(self.stage("SPD"))
     def affinity(self, element):
@@ -269,6 +270,15 @@ class Unit:
         if a["cost_type"] == "MP": self.mp -= a["cost"]
         elif a["pct_current"]: self.hp -= max(1, int(self.hp * a["pct_current"]))
         else: self.hp -= a["cost"]
+
+def status_stat(u, stat):
+    """What u's statuses do to one stat, in stages (Chilled: SPD -1; a Curse's rolled stats)."""
+    n = 0
+    for s, inst in u.status.items():
+        row = STATUSES.get(s, {})
+        n += row.get("stats", {}).get(stat, 0)
+        if "pick" in row: n -= inst.get("stats", []).count(stat)
+    return n
 
 def build_aff(resist=(), weak=(), null=(), absorb=()):
     aff = {}
@@ -582,18 +592,7 @@ class Battle:
     # ------------------------------------------------------------ statuses
     def apply_status(self, src, tgt, status, chance):
         if not tgt.alive or self.rng.random() >= chance: return False
-        if status == "Cursed":
-            if "Cursed" in tgt.status: return False
-            stats = [self.rng.choice(["ATK", "MAT", "DEF", "MDF"]) for _ in range(2)]
-            tgt.status["Cursed"] = dict(rounds=STATUS_DURATION, stats=stats)
-        elif status == "Chilled":
-            tgt.status["Chilled"] = dict(rounds=self.rng.randint(*CHILL_DURATION))
-        elif status == "Frozen":
-            tgt.status["Frozen"] = dict(rounds=self.rng.randint(*FREEZE_DURATION))
-        elif status == "Bound":
-            if "Bound" in tgt.status: return False
-            tgt.status["Bound"] = dict(rounds=99)          # until its next action, which it loses
-        elif status == "Death":
+        if status == "Death":
             tgt.hp = 0
             src.stats["statuses"] += 1
             self.emit("status", f"      {tgt.name} is struck down by Helvad!", unit=tgt.name, status="Death", src=src.name)
@@ -601,8 +600,14 @@ class Battle:
         elif status == "AccDown":
             tgt.stages["ACC"] = clamp(tgt.stages["ACC"] - 1, -5, 5)
         else:
-            if status in tgt.status: return False
-            tgt.status[status] = dict(rounds=STATUS_DURATION)
+            row = STATUSES.get(status, dict(duration=STATUS_DURATION, reapply="refuse"))
+            if row["reapply"] == "refuse" and status in tgt.status: return False
+            inst = {}
+            if "pick" in row:
+                pool, n = row["pick"]; inst["stats"] = [self.rng.choice(pool) for _ in range(n)]
+            d = row["duration"]
+            inst["rounds"] = UNTIL_USED if d is None else self.rng.randint(*d) if isinstance(d, tuple) else d
+            tgt.status[status] = inst
         src.stats["statuses"] += 1
         self.emit("status", f"      {tgt.name} is {status}!", unit=tgt.name, status=status, src=src.name)
         return True
@@ -615,11 +620,12 @@ class Battle:
         rider = el["rider"]
         if not rider or a["tier"] == "Halv": return
         chance = RIDER_CHANCE[a["tier"]] * self.wil_ratio(att, tgt)
-        if rider == "Chilled":
-            if "Chilled" in tgt.status and "Frozen" not in tgt.status:
-                self.apply_status(att, tgt, "Frozen", chance)
-            elif "Chilled" not in tgt.status:
-                self.apply_status(att, tgt, "Chilled", 1.0 if was_weak else chance)
+        chain = STATUSES.get(rider, {}).get("chain")
+        if chain:                       # Chilled on the Chilled becomes Frozen; a weakness always lands the first step
+            if rider in tgt.status and chain not in tgt.status:
+                self.apply_status(att, tgt, chain, chance)
+            elif rider not in tgt.status:
+                self.apply_status(att, tgt, rider, 1.0 if was_weak else chance)
         else:
             self.apply_status(att, tgt, rider, chance)
 
@@ -727,35 +733,44 @@ class Battle:
                       move=a["name"], was=chosen.name, target=out[0].name, why="down" if not chosen.alive else "reach")
         return out
 
-    def resolve(self, u, a, chosen, bonus):
-        if not u.alive: return
-        if "Bleeding" in u.status:
-            dmg = max(1, int(u.maxhp * BLEED_TICK))
-            u.hp -= dmg
-            self.emit("tick", f"    {u.name} bleeds for {dmg}.", unit=u.name, status="Bleeding", dmg=dmg, hp=max(0, round(u.hp)))
+    def tick_statuses(self, u, when):
+        """Statuses that cost HP at this moment ("round_start": Poison; "action": Bleeding). False if u went down."""
+        for s, row in STATUSES.items():
+            tk = row.get("tick")
+            if not tk or tk["when"] != when or s not in u.status or not u.alive: continue
+            dmg = max(1, int(u.maxhp * tk["share"])); u.hp -= dmg
+            self.emit("tick", "    " + tk["line"].format(name=u.name, dmg=dmg), unit=u.name, status=s, dmg=dmg, hp=max(0, round(u.hp)))
             if not u.alive:
                 self.downed(u)
-                if not u.alive: return
-        if a.get("_release") and ("Stunned" in u.status or "Frozen" in u.status or "Bound" in u.status):
-            u.status.pop("Bound", None)
+                if not u.alive: return False
+        return True
+
+    def skips(self, u):
+        """Does a status take this action away (the net, ice, a stun)? Checked in SKIP_ORDER; the first that fires wins."""
+        for s in SKIP_ORDER:
+            sk = STATUSES[s].get("skip")
+            if s not in u.status or not sk: continue
+            if sk["chance"] < 1.0 and self.rng.random() >= sk["chance"]: continue
+            if sk["used_up"]: del u.status[s]
+            self.emit("skip", "    " + sk["line"].format(name=u.name), unit=u.name, why=s); return True
+        return False
+
+    def resolve(self, u, a, chosen, bonus):
+        if not u.alive: return
+        if not self.tick_statuses(u, "action"): return
+        if a.get("_release") and u.has_flag("breaks_bide"):
+            for s in [s for s in u.status if STATUSES.get(s, {}).get("bide_pops")]: del u.status[s]
             u.stats["bides_lost"] += 1
             self.emit("bide_lost", f"    {u.name} loses {self.shown(u, a)}!", unit=u.name, move=a["name"], shown=self.shown(u, a)); return
-        if "Bound" in u.status:                       # the net: this action is lost, then it's free
-            del u.status["Bound"]
-            self.emit("skip", f"    {u.name} is caught in the net and loses the action!", unit=u.name, why="Bound"); return
-        if "Frozen" in u.status:
-            self.emit("skip", f"    {u.name} is frozen solid.", unit=u.name, why="Frozen"); return
-        if "Stunned" in u.status and self.rng.random() < STUN_LOSE_CHANCE:
-            del u.status["Stunned"]
-            self.emit("skip", f"    {u.name} is stunned and loses the action!", unit=u.name, why="Stunned"); return
-        if "Silenced" in u.status and a["cost_type"] == "MP" and a["cost"] > 0:
+        if self.skips(u): return
+        if u.silenced and a["cost_type"] == "MP" and a["cost"] > 0:
             free = [x for x in u.actions if x["cost"] == 0]
             if not free:
                 self.emit("skip", f"    {u.name} is silenced and can't act!", unit=u.name, why="Silenced"); return
             a = free[0]; self.emit("silenced", f"    {u.name} is silenced!", unit=u.name)
         if not u.can_afford(a):
             affordable = [x for x in u.actions if u.can_afford(x)
-                          and not ("Silenced" in u.status and x["cost_type"] == "MP" and x["cost"] > 0)]
+                          and not (u.silenced and x["cost_type"] == "MP" and x["cost"] > 0)]
             if not affordable:
                 self.emit("skip", f"    {u.name} has nothing left to use.", unit=u.name, why="spent"); return
             a = min(affordable, key=lambda x: x["cost"])
@@ -914,9 +929,10 @@ class Battle:
                 dmg *= rm * (self.shape_mult(a, ti) if len(tgts) > 1 and not a["all"] else 1.0)
                 if t.defending: t.stats["blocked"] += dmg * 0.5; dmg *= 0.5
                 elif t in self.pending_defend: t.stats["late"] += 1       # hit before its own Defend landed
-                if "Frozen" in t.status and aff != "absorb":
-                    dmg *= SHATTER_MULT
-                    del t.status["Frozen"]
+                sh = next((s for s in t.status if STATUSES.get(s, {}).get("shatter")), None)
+                if sh and aff != "absorb":
+                    dmg *= STATUSES[sh]["shatter"]
+                    del t.status[sh]
                     self.emit("shatter", f"      Shatter!", unit=t.name)
                 total += dmg; parts.append(dmg)
                 u.stats[res if res != "hit" else "hits"] += 1
@@ -1056,7 +1072,7 @@ class Battle:
         for a in u.actions + self.item_actions(u):
             if not u.can_afford(a): continue
             if a.get("once") and (a["name"] in u.once_used or (u.uid, a["name"]) in getattr(self, "once_claims", ())): continue
-            if "Silenced" in u.status and a["cost_type"] == "MP" and a["cost"] > 0: continue
+            if u.silenced and a["cost_type"] == "MP" and a["cost"] > 0: continue
             cost_pen = 0.25 * a["cost"] if a["cost_type"] == "MP" else 0.15 * a["cost"]
             thrift = AI_ITEM_THRIFT if a.get("item") else 1.0
             if a["kind"] == "revive":
@@ -1118,7 +1134,7 @@ class Battle:
                 for f in self.foes(u):
                     if a["status"] in f.status: continue
                     if a["status"] == "Bound":
-                        if "Frozen" in f.status or f in getattr(self, "bind_claims", ()) or f.state != "up": continue
+                        if f.has_flag("no_orders") or f in getattr(self, "bind_claims", ()) or f.state != "up": continue
                         options.append((self.bind_value(u, f, ref) - cost_pen, a, f)); continue
                     s = 0.9 * ref * STATUS_LINE_CHANCE[a["tier"]]
                     options.append((s - cost_pen, a, f))
@@ -1263,7 +1279,10 @@ class Battle:
     def group_of(self, u, a):
         """The speed group an action resolves in (combat_spec Part 3)."""
         g = a.get("group", SPEED_GROUP_BY_KIND.get(a["kind"], 0))
-        if "Feared" in u.status and g < PROTECT_GROUP: g = min(g, FEAR_GROUP)
+        if g < PROTECT_GROUP:                       # Fear drops anything below protection
+            for s in u.status:
+                fg = STATUSES.get(s, {}).get("group")
+                if fg is not None: g = min(g, fg)
         return g
 
     def order(self, entries):
@@ -1321,7 +1340,7 @@ class Battle:
 
     def controls(self, u):
         """Does the player order this unit now? Heroes who can act; the Frozen are skipped (they couldn't)."""
-        return self.control == u.side and u.alive and "Frozen" not in u.status and "Bound" not in u.status
+        return self.control == u.side and u.alive and not u.has_flag("no_orders")
 
     def resolve_phase(self):
         bonus = self.phase_bonus
@@ -1392,10 +1411,7 @@ class Battle:
         self.round += 1; self.intents = {}
         self.emit("round", f"Round {self.round}", n=self.round)
         for u in self.units:
-            if u.alive and "Poisoned" in u.status:
-                dmg = max(1, int(u.maxhp * POISON_TICK)); u.hp -= dmg
-                self.emit("tick", f"    {u.name} takes {dmg} poison damage.", unit=u.name, status="Poisoned", dmg=dmg, hp=max(0, round(u.hp)))
-                if not u.alive: self.downed(u)
+            if u.alive: self.tick_statuses(u, "round_start")
         self.tick_spots(); self.tick_piles()
         self.eligible, self.barred = set(), set()
         for u in self.units: u.defending, u.covered_by = False, None
@@ -1479,7 +1495,7 @@ class Battle:
         return pool
 
     def describe(self, u, a, key, slot):
-        silenced = "Silenced" in u.status and a["cost_type"] == "MP" and a["cost"] > 0
+        silenced = u.silenced and a["cost_type"] == "MP" and a["cost"] > 0
         afford = u.can_afford(a) and not silenced
         tg = self.legal(u, a)
         parts = a.get("parts") or {}

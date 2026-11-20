@@ -385,6 +385,41 @@ PROTECT_GROUP = 3
 FEAR_GROUP = -1
 SPEED_GROUP_BY_KIND = {"defend": 3, "cover": 3, "taunt": 3, "move": 1}
 
+# ---------------------------------------------------------------- statuses as data (refactor_plan Wave 1)
+# The engine reads these rows; it doesn't know a status by name. Fields:
+#   duration   rounds: a number, a (lo, hi) range rolled when applied, or None (until consumed)
+#   reapply    "refuse" (already on: nothing happens) or "overwrite" (rolled fresh)
+#   stats      {stat: stages} while on; or pick=(pool, n): n stats rolled from the pool, one stage down each (Cursed)
+#   tick       share of max HP lost: when="round_start" or "action", with the log line ({name}, {dmg})
+#   skip       loses the action: chance, whether the status is used up, the log line; checked in SKIP_ORDER
+#   breaks_bide  a wind-up is lost if the unit carries it when the wind-up would fire
+#   bide_pops  ...and losing the wind-up uses this status up (the net)
+#   no_orders  the player isn't asked for an order (they couldn't act)
+#   group      actions below the protection group drop to this group (Fear)
+#   blocks_mp  MP moves can't be used (Silence)
+#   shatter    a hit (not absorbed) multiplies its damage by this, and ends the status
+#   chain      a rider of this status, landing on someone who already has it, becomes this status (Chilled -> Frozen)
+STATUSES = {
+    "Poisoned": dict(duration=STATUS_DURATION, reapply="refuse",
+                     tick=dict(when="round_start", share=POISON_TICK, line="{name} takes {dmg} poison damage.")),
+    "Bleeding": dict(duration=STATUS_DURATION, reapply="refuse",
+                     tick=dict(when="action", share=BLEED_TICK, line="{name} bleeds for {dmg}.")),
+    "Stunned":  dict(duration=STATUS_DURATION, reapply="refuse", breaks_bide=True,
+                     skip=dict(chance=STUN_LOSE_CHANCE, used_up=True, line="{name} is stunned and loses the action!")),
+    "Chilled":  dict(duration=CHILL_DURATION, reapply="overwrite", stats={"SPD": -1}, chain="Frozen"),
+    "Frozen":   dict(duration=FREEZE_DURATION, reapply="overwrite", breaks_bide=True, no_orders=True, shatter=SHATTER_MULT,
+                     skip=dict(chance=1.0, used_up=False, line="{name} is frozen solid.")),
+    "Bound":    dict(duration=None, reapply="refuse", breaks_bide=True, bide_pops=True, no_orders=True,
+                     skip=dict(chance=1.0, used_up=True, line="{name} is caught in the net and loses the action!")),
+    "Feared":   dict(duration=STATUS_DURATION, reapply="refuse", group=FEAR_GROUP),
+    "Blinded":  dict(duration=STATUS_DURATION, reapply="refuse", stats={"ACC": -1, "EVA": -1}),
+    "Disarmed": dict(duration=STATUS_DURATION, reapply="refuse", stats={"ATK": -1, "MAT": -1}),
+    "Cursed":   dict(duration=STATUS_DURATION, reapply="refuse", pick=(["ATK", "MAT", "DEF", "MDF"], 2)),
+    "Silenced": dict(duration=STATUS_DURATION, reapply="refuse", blocks_mp=True),
+}
+SKIP_ORDER = ["Bound", "Frozen", "Stunned"]
+UNTIL_USED = 99           # the rounds a status with no duration carries (it ends when used)
+
 # ---------------------------------------------------------------- the board (combat_spec Parts 5 and 6)
 # Two rows of three per side. Every basic attack is single-target; shapes (row, column) belong to skills.
 #   melee (Slash, Crush): reaches the enemy Front only; full from your Front, REAR_MELEE_MULT from your Rear.
