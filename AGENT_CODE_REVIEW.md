@@ -36,7 +36,7 @@ P1 means high-impact correctness or a prerequisite for the relevant next milesto
 | ID | Priority | Finding | Status / evidence |
 |---|---|---|---|
 | C01 | P1 | Victory can kill a hero before stabilization | Closed (be4118b) |
-| C02 | P1 | Old playback callbacks can commit a new fight | Open; JavaScript harness at 2b |
+| C02 | P1 | Old playback callbacks can commit a new fight | Closed (a4f7c23) |
 | C03 | P1 | Fresh checkout lacks reproducible Lab runtime setup | Open; source and packaging inspection |
 | C04 | P2 | Flurries bypass Shatter | Closed (a0bb56f) |
 | C05 | P2 | Death can preserve a wind-up through revival | Closed (a0bb56f) |
@@ -89,6 +89,12 @@ P1 means high-impact correctness or a prerequisite for the relevant next milesto
 **Close when:** Starting B during any wait in A prevents all subsequent A commands and state writes; normal playback and speed-zero playback still complete; repeated restarts leave no live continuation from a retired session.
 
 **Sources:** [screen.js:775–798](https://github.com/jensen-117/norse_game/blob/8a7afee433626c3fe532d618f2c95f73a219e035/fight_lab/screen.js#L775-L798), [827–849](https://github.com/jensen-117/norse_game/blob/8a7afee433626c3fe532d618f2c95f73a219e035/fight_lab/screen.js#L827-L849), [930–935](https://github.com/jensen-117/norse_game/blob/8a7afee433626c3fe532d618f2c95f73a219e035/fight_lab/screen.js#L930-L935), [index.html:310–326](https://github.com/jensen-117/norse_game/blob/8a7afee433626c3fe532d618f2c95f73a219e035/fight_lab/index.html#L310-L326).
+
+**Resolution (Nov 20, commit [a4f7c23](https://github.com/jensen-117/norse_game/commit/a4f7c23)): Closed.**
+- **Cause:** confirmed in a real browser: Auto playback's continuation was a bare `setTimeout` that called the current global battle; starting fight B didn't retire fight A's pending continuation, which then committed against B (B refused for missing orders, and A's playback crashed: three page errors).
+- **Fix:** playback sessions in `screen.js`: `later()` schedules continuations that drop themselves if a newer fight has started; `play()` checks `live()` after every await; a retired session's `sleep()` never resumes, so no stale animation writes into the new fight; `begin()` retires the old session and clears its timers; a refused commit is reported instead of crashing. Auto, autopilot and manual playback use the same rule. (Outer controls still re-arm at `onState`: starting a new fight then is allowed, and now safe.)
+- **Verification:** `sim/checks/s_c02.py` (Playwright): four restarts during A's pending continuation leave B at round 1 awaiting orders with no commits and no page errors; a whole Auto fight at fast speed plays to the end; the 48 instant-speed Auto fights still run and replay natively.
+- **Limits:** tested with real timers in Chromium, not with every animation path individually; the generation check covers them by construction.
 
 ### C03 — A fresh checkout cannot launch the Fight Lab as supplied
 
