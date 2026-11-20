@@ -553,3 +553,98 @@ FLEE_PER_QUARTER = 0.10     # +/- per 25% faster or slower
 FLEE_MIN, FLEE_MAX = 0.10, 0.90
 KNOW_HP_KILLS = 20          # fell this many of a family and rank to see its HP on Inspect
 KNOW_MP_KILLS = 40          # ...and its MP
+
+# ================================================================ the five classes' words (classes.md; refactor_plan Wave 2b)
+# A verb is a class's basic move: its kind, what it touches, and its designated rider. Parts grow it (pillars Part 5c):
+#   tier (Halv, Mer, Jatte; Ur on gear), target (Flok, All), manners (Snar, Tung, Bid, Jarf, Drif), Styng (adds damage),
+#   Lonn (adds the designated rider). A rider is (what it adds, the name part it's spoken with): Skott's Bleeding is
+#   spoken Blot (Blotskott); Peka's Sundered is spoken Lonn (Lonnpeka); Krosh's Sundered is spoken Brak (Brakrosh).
+# Fields: kind; root (the damage type's word, for range and the board: Skott is a bow shot); element (damage type or
+# element); status / stat / up (what it inflicts); target ("self", "ally", "allies", "enemy", "all"); rider; weight
+# (cost steps built into the verb: the untie spells); knots (knot cost); free (costs nothing: Lya, Djupanda);
+# styng (Styng is legal); pays_on (a status the move pays off on: Banskott on the Pinned); hits; group.
+# Kinds the engine doesn't resolve yet (taunt, song, knot, glide, displace, windfall, answer) arrive in Wave 4.
+VERBS = {
+    # Brennumar (Eld school; magical)
+    "Eld":      dict(cls="Brennumar", kind="damage", element="Eld", rider=("Scorched", "Sveda")),
+    "Reyk":     dict(cls="Brennumar", kind="status", element="Reyk", status="Blinded", rider=("Poisoned", "Eitr"), styng=True),
+    "Sveda":    dict(cls="Brennumar", kind="status", element="Eld", status="Scorched", rider=("Feeble", "Lonn"), styng=True),
+    "Aukseid":  dict(cls="Brennumar", kind="stat", stat="MAT", up=True, target="self"),
+    "Djupanda": dict(cls=None, kind="windfall", manners=("Bid",), free=True, target="self"),     # any magical
+    # Ullar (Bow; martial)
+    "Skott":    dict(cls="Ullar", kind="damage", root="Skott", element="Pierce", rider=("Bleeding", "Blot")),
+    "Naglskott": dict(cls="Ullar", kind="status", root="Skott", element="Pierce", status="Pinned", styng=True),
+    "Peka":     dict(cls="Ullar", kind="status", element="Pierce", status="Marked", rider=("Sundered", "Lonn"), styng=True),
+    "Banskott": dict(cls="Ullar", kind="damage", root="Skott", element="Pierce", pays_on="Pinned"),
+    "Skrida":   dict(cls="Ullar", kind="glide", stat="EVA", up=True, target="self", group=1),
+    # Vasara (Hammer; martial)
+    "Krosh":    dict(cls="Vasara", kind="damage", root="Krosh", element="Crush", rider=("Sundered", "Brak")),
+    "Egga":     dict(cls="Vasara", kind="taunt", target="self", rider=("Blinded", "Lonn"), styng=True),
+    "Lya":      dict(cls="Vasara", kind="cover", target="ally", free=True),
+    "Aukskold": dict(cls="Vasara", kind="stat", stat="DEF", up=True, target="ally"),
+    "Hevn":     dict(cls="Vasara", kind="answer", root="Krosh", element="Crush"),
+    # Dagskald (Sol school, child Lak; magical)
+    "Lak":      dict(cls="Dagskald", kind="heal", element="Lak", target="ally", rider=("cleanse_one", "Lonn")),
+    "Sol":      dict(cls="Dagskald", kind="damage", element="Sol", rider=("Blinded", "Lonn")),
+    "Kvad":     dict(cls="Dagskald", kind="song", target="allies"),
+    "Skolja":   dict(cls="Dagskald", kind="cleanse", target="ally"),
+    "Vakna":    dict(cls="Dagskald", kind="revive", target="fallen"),
+    "Aukraft":  dict(cls="Dagskald", kind="stat", stat="ATK", up=True, target="ally", rider=(("DEF", 1), "Lonn")),
+    # Skurmar (Blast school, child Blixt; magical)
+    "Blast":    dict(cls="Skurmar", kind="damage", element="Blast"),
+    "Knyta":    dict(cls="Skurmar", kind="knot", target="self"),
+    "Blixt":    dict(cls="Skurmar", kind="damage", element="Blixt", rider=("Stunned", "Lonn")),
+    "Kuling":   dict(cls="Skurmar", kind="damage", element="Blast", target="all", weight=1, knots=1),
+    "Storm":    dict(cls="Skurmar", kind="damage", element="Blast", target="all", weight=2, knots=2, tier="Mer"),
+    "Orkan":    dict(cls="Skurmar", kind="damage", element="Blast", target="all", weight=3, knots=3, tier="Mer", follow="Blixt"),
+    "Kasta":    dict(cls="Skurmar", kind="displace", push=True, styng=True),
+    "Svepa":    dict(cls="Skurmar", kind="displace", push=False, styng=True),
+    "Byr":      dict(cls="Skurmar", kind="stat", stat="SPD", up=True, target="allies"),
+}
+
+# Upgrade parts beyond tier, target and manner (pillars Part 5c). The cap: at most UPGRADE_CAP parts on one move;
+# a capstone is a named set beyond it (found, not carved).
+STYNG_POWER = 0.6        # Styng's added hit on a move that does no damage of its own, as a share of the tier's power
+UPGRADE_CAP = 2
+CAPSTONES = {            # name: (verb, its parts as a frozen set). Holm and Hasin settle in the mutation session.
+    "Tusensplitter": ("Skott", frozenset({"Drif", "Mer", "Lonn"})),
+    "Pilskur":       ("Skott", frozenset({"All", "Mer", "Lonn"})),
+    "Skogsbrand":    ("Sveda", frozenset({"All", "Mer", "Styng", "Lonn"})),
+}
+
+# Costs as a share of the hero's own bar (pillars Part 5c): a plain base move costs the base share; each upgrade part
+# multiplies it by the step; Halv is free. MP: 1/16, 1/10, 1/6, ~1/4. HP: 1/36, 1/24, 1/16, ~1/10.
+BASE_SHARE = {"MP": 1 / 16, "HP": 1 / 36}
+PART_STEP = {"MP": 1.6, "HP": 1.5}
+TIER_WEIGHT = {"Halv": 0, "Base": 0, "Mer": 1, "Jatte": 2}
+
+# Speed-group keywords (pillars Part 5c), printed on move cards; the glossary gives the hover line.
+GROUP_KEYWORD = {3: "First", 1: "Swift", -1: "Late", -2: "Heavy", -3: "Last"}
+KEYWORDS = {
+    "First": "Acts before nearly every other move, whatever its speed.",
+    "Swift": "Goes before normal moves. Among Swift moves, the faster character goes first.",
+    "Late": "Goes after normal moves.",
+    "Heavy": "Goes after nearly everything.",
+    "Last": "Goes after everything else.",
+    "Patient": "Winds up this round and lands next round. Lost if you're stunned, frozen or netted.",
+}
+
+# Kit snapshots for the sweep (agreed Nov 20): (verb, parts). Defend, Meditate, items, Move and Flee are always there.
+def W(verb, **parts): return (verb, parts)
+KITS = {
+    "Vasara":    {1: [W("Krosh"), W("Egga")],
+                  2: [W("Krosh"), W("Egga"), W("Krosh", lonn=True), W("Lya")],
+                  3: [W("Krosh", lonn=True, manners=("Snar",)), W("Egga", lonn=True), W("Lya"), W("Hevn")]},
+    "Ullar":     {1: [W("Skott"), W("Naglskott")],
+                  2: [W("Skott", lonn=True), W("Naglskott"), W("Peka")],
+                  3: [W("Skott", lonn=True, tier="Mer"), W("Naglskott", styng=True), W("Peka", lonn=True), W("Banskott")]},
+    "Brennumar": {1: [W("Eld"), W("Reyk")],
+                  2: [W("Eld"), W("Reyk"), W("Sveda"), W("Eld", target="All")],
+                  3: [W("Eld", tier="Mer"), W("Eld", target="All"), W("Sveda", lonn=True), W("Djupanda")]},
+    "Dagskald":  {1: [W("Lak"), W("Sol")],
+                  2: [W("Lak"), W("Sol"), W("Kvad")],
+                  3: [W("Lak", lonn=True), W("Sol"), W("Kvad", tier="Mer"), W("Aukraft", target="All")]},
+    "Skurmar":   {1: [W("Blast"), W("Knyta")],
+                  2: [W("Blast"), W("Knyta"), W("Kuling"), W("Blixt")],
+                  3: [W("Blast"), W("Knyta", tier="Mer"), W("Storm"), W("Blixt", lonn=True)]},
+}

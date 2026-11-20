@@ -1306,7 +1306,7 @@ class Battle:
                 if u.bide is None: continue
                 ba, bt = u.bide; u.bide = None
                 if not u.alive: u.stats["bides_lost"] += 1; continue
-                rel = dict(ba, _release=True, cost=0, group=0)
+                rel = dict(ba, _release=True, cost=0, group=ba.get("release_group", 0))   # Bid + Tung lands Heavy
                 remaining.append((0, u, (rel, bt))); locked.add(u); self.intent(u, rel, bt)
         self.claimed, self.paint_claims, self.bind_claims, self.once_claims = set(), set(), set(), set()
         self.waiting = []
@@ -1682,6 +1682,13 @@ def wield(u, weapon):
     if not weapon: return
     for a in u.actions:
         if a["kind"] == "damage" and a.get("element") == WEAPONS[weapon][0] and not a.get("weapon"): arm(a, weapon)
+
+def price_bars(u):
+    """Moves priced as a share of the hero's own bar (pillars Part 5c) get their cost once the bars are known."""
+    for a in u.actions:
+        if "share" in a:
+            bar = u.maxmp if a["cost_type"] == "MP" else u.maxhp
+            a["cost"] = 0 if not a["share"] else max(1, round(a["share"] * bar))
 
 def price_shares(u):
     """Moves priced as a share of max MP (Splash) get their cost once the body is known."""
