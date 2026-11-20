@@ -101,7 +101,9 @@ class Net(unittest.TestCase):
 
     def test_bound_loses_a_wind_up(self):
         self.h.status["Bound"] = dict(rounds=99)
-        a = dict(next(a for a in self.h.actions if a["kind"] == "damage"), _release=True)
+        ba = next(a for a in self.h.actions if a["kind"] == "damage")
+        tok = object(); self.h.charge = (tok, ba)             # queued as planning queues it (C05: a release holds its token)
+        a = dict(ba, _release=True, _charge=tok)
         self.b.resolve(self.h, a, self.n, False)
         self.assertEqual(self.b.events[-1]["kind"], "bide_lost")
 

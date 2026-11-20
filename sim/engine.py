@@ -169,6 +169,7 @@ class Unit:
         self.status = {}          # name -> dict(rounds=..., ...)
         self.defending = False
         self.bide = None          # (action, target) wound up last round, fires this round (Bid- moves)
+        self.charge = None        # the token of a release already queued this round; an interruption clears it (C05)
         self.covered_by = None    # an ally who Covers this unit this round (combat_spec Part 8)
         self.once_used = set()    # once-per-fight moves already spent (Net Throw)
         self.state = "up"          # heroes: up, dying, dead (combat_spec Part 10)
@@ -619,9 +620,12 @@ class Battle:
     # ------------------------------------------------------------ resolve one action
     # ------------------------------------------------------------ the fallen hero (combat_spec Part 10)
     def interrupt(self, u, why):
-        """A unit's pending wind-up is lost at a state change that ends its turns (falling, dying; review C05)."""
-        if u.bide is None: return
-        a = u.bide[0]; u.bide = None; u.stats["bides_lost"] += 1
+        """A unit's charge is lost at a state change that ends its turns (falling, dying; review C05): a wind-up still
+        stored on it, or a release already queued this round (its token no longer matches, so it can't fire)."""
+        charge = getattr(u, "charge", None)
+        if u.bide is None and charge is None: return
+        a = u.bide[0] if u.bide is not None else charge[1]
+        u.bide = None; u.charge = None; u.stats["bides_lost"] += 1
         self.emit("bide_lost", f"    {u.name} loses {self.shown(u, a)}!", unit=u.name, move=a["name"], shown=self.shown(u, a), why=why)
 
     def die(self, t, why):
@@ -761,6 +765,10 @@ class Battle:
 
     def resolve(self, u, a, chosen, bonus):
         if not u.alive: return
+        if a.get("_release"):                         # a release interrupted since it was queued is already lost (C05)
+            held = getattr(u, "charge", None)
+            if held is None or held[0] is not a.get("_charge"): return
+            u.charge = None
         if not self.tick_statuses(u, "action"): return
         if a.get("_release") and u.has_flag("breaks_bide"):
             for s in [s for s in u.status if STATUSES.get(s, {}).get("bide_pops")]: del u.status[s]
@@ -1327,7 +1335,8 @@ class Battle:
                 if u.bide is None: continue
                 ba, bt = u.bide; u.bide = None
                 if not u.alive: u.stats["bides_lost"] += 1; continue
-                rel = dict(ba, _release=True, cost=0, group=ba.get("release_group", 0))   # Bid + Tung lands Heavy
+                token = object(); u.charge = (token, ba)            # the release fires only while this token holds
+                rel = dict(ba, _release=True, cost=0, group=ba.get("release_group", 0), _charge=token)   # Bid + Tung lands Heavy
                 remaining.append((0, u, (rel, bt))); locked.add(u); self.intent(u, rel, bt)
         self.claimed, self.paint_claims, self.bind_claims, self.once_claims = set(), set(), set(), set()
         self.waiting = []

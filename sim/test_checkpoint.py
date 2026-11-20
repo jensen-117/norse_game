@@ -48,7 +48,6 @@ class C01_VictorySettlesFirst(unittest.TestCase):
         b.commit()
         self.assertEqual((b.winner, u1.state), ("party", "dead"))
 
-if __name__ == "__main__": unittest.main()
 
 # ---------------------------------------------------------------- the compiler contract (C08-C11, A01, A02)
 from itertools import combinations
@@ -233,6 +232,31 @@ class C05_FallingEndsAWindUp(unittest.TestCase):
 
     def test_an_unbroken_wind_up_still_releases(self):
         b, ul, en = self.setup(); self.assertTrue(self.released(b, ul))
+        b.resolve_phase()
+        self.assertTrue(any(e["kind"] == "hit" and e.get("src") == ul.name for e in b.events))
+        self.assertEqual(sum(e["kind"] == "bide_lost" for e in b.events), 0)
+
+    def test_a_fall_after_planning_cancels_the_queued_release(self):
+        """The reopened case: the charge already moved into the queue, then its owner falls (a Draugr crawls on)."""
+        ul = birth("Ullar", 10, random.Random(1)); ul.hp = ul.maxhp = 10 ** 6
+        dr = spawn_family("Draugr", "Draugr", 10)
+        b = Battle([ul], [dr], random.Random(5), events=True)
+        dr.bide = (compile_word("Skott", manner="Bid"), ul)
+        b.plan_phase([dr], False); self.assertIsNone(dr.bide)          # queued, no longer stored
+        before = ul.hp
+        dr.hp = 0; b.downed(dr); self.assertTrue(dr.crawling)
+        b.resolve_phase()
+        self.assertEqual(ul.hp, before)                                  # the old charge never lands
+        self.assertEqual(sum(e["kind"] == "bide_lost" for e in b.events), 1)
+
+    def test_a_hero_falling_after_planning_loses_the_release(self):
+        b, ul, en = self.setup(); ul.hp = ul.maxhp
+        b.plan_phase([ul] + b.enemies, False)
+        ul.hp = 0; b.downed(ul); b.stand_up(ul, .5, False)               # fell to Dying, and was raised, before it fired
+        en.hp = en.maxhp = 10 ** 6; before = en.hp
+        b.resolve_phase()
+        self.assertFalse(any(e["kind"] == "hit" and e.get("src") == ul.name for e in b.events))
+        self.assertEqual(sum(e["kind"] == "bide_lost" for e in b.events), 1)
 
 class C06_KnowledgeFollowsTheJob(unittest.TestCase):
     def test_learn_under_the_new_job(self):
@@ -296,3 +320,5 @@ class C07_PacksKeepTheirRules(unittest.TestCase):
                 self.assertTrue(ok, f"case {case}: returned a pack where none is legal; {pool} {rules}")
                 key = sorted(map(str, got))
                 self.assertIn(key, [sorted(map(str, x)) for x in ok], f"case {case}: {got} breaks {rules}")
+
+if __name__ == "__main__": unittest.main()
