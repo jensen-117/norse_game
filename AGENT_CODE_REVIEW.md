@@ -38,16 +38,16 @@ P1 means high-impact correctness or a prerequisite for the relevant next milesto
 | C01 | P1 | Victory can kill a hero before stabilization | Closed (be4118b) |
 | C02 | P1 | Old playback callbacks can commit a new fight | Open; JavaScript harness at 2b |
 | C03 | P1 | Fresh checkout lacks reproducible Lab runtime setup | Open; source and packaging inspection |
-| C04 | P2 | Flurries bypass Shatter | Open; executed at 2b |
-| C05 | P2 | Death can preserve a wind-up through revival | Open; executed at 2b |
-| C06 | P2 | Transformation leaves knowledge under the old identity | Open; executed at 2b |
-| C07 | P2 | Encounter generation mishandles family constraints | Open; executed at 2b |
-| C08 | P1 | Ur promotion reverses the cost ladder | Open; executed at 2b |
-| C09 | P2 | Accepted All variants do not have consistent executable targeting | Open; full-turn reproductions at 2b |
-| C10 | P2 | Duplicate manners bypass exact capstone recipes | Open; executed at 2b |
-| C11 | P2 | Heavy healing pays penalties without its power benefit | Open; full-turn comparison at 2b |
-| A01 | P2 | Compiler coverage and completeness contract remain unclear | Open; source inspection and instrumentation |
-| A02 | P2 | Modifier validation and speed-conflict policy need definition | Open; accepted-input probes; design decision required |
+| C04 | P2 | Flurries bypass Shatter | Closed (a0bb56f) |
+| C05 | P2 | Death can preserve a wind-up through revival | Closed (a0bb56f) |
+| C06 | P2 | Transformation leaves knowledge under the old identity | Closed (a0bb56f) |
+| C07 | P2 | Encounter generation mishandles family constraints | Closed (a0bb56f) |
+| C08 | P1 | Ur promotion reverses the cost ladder | Closed (64da699) |
+| C09 | P2 | Accepted All variants do not have consistent executable targeting | Closed (64da699) |
+| C10 | P2 | Duplicate manners bypass exact capstone recipes | Closed (64da699) |
+| C11 | P2 | Heavy healing pays penalties without its power benefit | Closed (64da699) |
+| A01 | P2 | Compiler coverage and completeness contract remain unclear | Closed (64da699) |
+| A02 | P2 | Modifier validation and speed-conflict policy need definition | Closed (64da699) |
 
 ## Confirmed technical findings
 
@@ -122,6 +122,12 @@ P1 means high-impact correctness or a prerequisite for the relevant next milesto
 
 **Sources:** [engine.py:898–926](https://github.com/jensen-117/norse_game/blob/8a7afee433626c3fe532d618f2c95f73a219e035/sim/engine.py#L898-L926), [950–962](https://github.com/jensen-117/norse_game/blob/8a7afee433626c3fe532d618f2c95f73a219e035/sim/engine.py#L950-L962), [988–1008](https://github.com/jensen-117/norse_game/blob/8a7afee433626c3fe532d618f2c95f73a219e035/sim/engine.py#L988-L1008).
 
+**Resolution (Nov 20, commit [a0bb56f](https://github.com/jensen-117/norse_game/commit/a0bb56f)): Closed.**
+- **Cause:** confirmed: Shatter lived inline in the plain hit loop; the flurry path (`hit_once`) had no Shatter step.
+- **Fix:** `Battle.shatter()` is one per-hit step called by plain hits, multi-hits and flurries: the first hit that actually deals damage, not nulled and not absorbed, ends Frozen for its multiplier, once. Sequencing and riders stay path-specific.
+- **Decision applied:** a nulled or absorbed hit doesn't shatter (it used to on the plain path) (Joseph, Nov 20).
+- **Verification:** `C04_OneShatterRule`: a three-hit flurry shatters once; a three-hit plain move shatters once; null and absorb don't shatter on either path. The fingerprint (288) and regress.py (480) are identical: none of their fights flurries into, or nulls onto, a frozen target.
+
 ### C05 — Death does not immediately cancel a wind-up
 
 **Priority / context:** P2. Existing lifecycle defect, reproduced at 2b. Whether entering Dying should also interrupt a wind-up is a separate design decision.
@@ -137,6 +143,13 @@ P1 means high-impact correctness or a prerequisite for the relevant next milesto
 **Close when:** Death followed by immediate revival cannot release the old charge; interruption is recorded once; a hero that survives uninterrupted still releases normally. Document and test the chosen Dying policy.
 
 **Sources:** [engine.py:616–618](https://github.com/jensen-117/norse_game/blob/8a7afee433626c3fe532d618f2c95f73a219e035/sim/engine.py#L616-L618), [1304–1310](https://github.com/jensen-117/norse_game/blob/8a7afee433626c3fe532d618f2c95f73a219e035/sim/engine.py#L1304-L1310).
+
+**Resolution (Nov 20, commit [a0bb56f](https://github.com/jensen-117/norse_game/commit/a0bb56f)): Closed.**
+- **Cause:** confirmed: `die()` left the wind-up in place; only the next planning pass dropped it, and only if its owner was still down.
+- **Fix:** `Battle.interrupt()` ends a pending wind-up at the state change, with one `bide_lost` event (why: fell or dead). `die()` calls it, and so does `downed()` for every fall: a hero to Dying, a Draugr crawling, a Bein pile, a Mogel re-forming. Planning no longer has anything to catch.
+- **Decision applied:** falling to Dying interrupts a wind-up immediately (Joseph, Nov 20).
+- **Verification:** `C05_FallingEndsAWindUp`: death then revival can't release (one `bide_lost`); falling to Dying ends it; an unbroken wind-up still releases. Fingerprints identical (no wind-up owner falls mid-charge in those fights).
+- **Limits:** Stun, Frozen and the net still break a wind-up at release time, as before; transformation doesn't (no transforming unit winds up today).
 
 ### C06 — Transforming enemies learn under the wrong identity
 
@@ -154,6 +167,12 @@ P1 means high-impact correctness or a prerequisite for the relevant next milesto
 
 **Sources:** [engine.py:973–981](https://github.com/jensen-117/norse_game/blob/8a7afee433626c3fe532d618f2c95f73a219e035/sim/engine.py#L973-L981), [knowledge.py:25–65](https://github.com/jensen-117/norse_game/blob/8a7afee433626c3fe532d618f2c95f73a219e035/sim/knowledge.py#L25-L65).
 
+**Resolution (Nov 20, commit [a0bb56f](https://github.com/jensen-117/norse_game/commit/a0bb56f)): Closed.**
+- **Cause:** confirmed: `Memory.observe()` mapped each unit to its identity at the start and never read `transform`.
+- **Fix:** `transform` events (which carry the new job) update the unit's identity in `Memory`: what's learned afterwards files under the new job, what was learned before stays under the old one, nothing is copied across, and kill credit goes to the job it fell as.
+- **Decision applied:** no knowledge sharing across jobs for now; sharing can come per property later (Joseph, Nov 20).
+- **Verification:** `C06_KnowledgeFollowsTheJob`: after Net becomes Spear, a Slash hit shows on the Spear's sheet; the Net keeps its Pierce entry and gains nothing; save and reload keep the record; the kill counts for the Spear. Reform and crawl handling are unchanged (they already updated or kept identity).
+
 ### C07 — Encounter generation does not reliably enforce family constraints
 
 **Priority / context:** P2; fix before authored routes rely on these constraints. Reproduced at 2b.
@@ -169,6 +188,12 @@ P1 means high-impact correctness or a prerequisite for the relevant next milesto
 **Close when:** Every returned pack satisfies all declared rules; feasible small pools do not fail due to an unlucky first choice; impossible requirements raise a useful error. Compare generated small cases with exhaustive enumeration, including cost caps, family caps, minima, unit limits, and ranged requirements.
 
 **Source:** [composer.py:112–181](https://github.com/jensen-117/norse_game/blob/8a7afee433626c3fe532d618f2c95f73a219e035/sim/composer.py#L112-L181).
+
+**Resolution (Nov 20, commit [a0bb56f](https://github.com/jensen-117/norse_game/commit/a0bb56f)): Closed.**
+- **Cause:** confirmed: the feasibility check counted costs and units but not family rules, and a missing minimum fell back to the open pool.
+- **Fix:** `_feas()` (memoized) decides whether a pack can still be finished under the cost caps, the unit limit and the family maxima and minima; `compose()` offers only cost faces and units that keep it finishable, refuses impossible minimums up front, and never falls back to the open pool. Without family rules it takes exactly the old path, so existing packs roll identically.
+- **Verification:** `C07_PacksKeepTheirRules`: the review's two cases (B alone under family_max A=1; an impossible family_min raises); and 300 generated small problems (127 legal, 173 impossible, with costs, caps, bans, unit limits and family rules) compared with exhaustive enumeration over 3 seeds each: every returned pack is legal and every refusal is truly impossible. The old composer fails both tests. Fingerprints identical.
+- **Limits:** the ranged rule still re-rolls (tries) rather than solving; it isn't a family rule and wasn't in the finding.
 
 ### C08 — Advancing to Ur can make a stronger spell cheaper
 
@@ -194,6 +219,13 @@ Orkan similarly moves from 0.256 to 0.4096 to 0.16. Passing `tier='Ur'` also pro
 
 **Sources:** [words.py:172–206](https://github.com/jensen-117/norse_game/blob/8a7afee433626c3fe532d618f2c95f73a219e035/sim/words.py#L172-L206), [data.py:619](https://github.com/jensen-117/norse_game/blob/8a7afee433626c3fe532d618f2c95f73a219e035/sim/data.py#L619).
 
+**Resolution (Nov 20, commit [64da699](https://github.com/jensen-117/norse_game/commit/64da699)): Closed.**
+- **Cause:** confirmed: tier promotion was arithmetic on the ladder with no limit, and `TIER_WEIGHT` had no Ur, so its price fell back to zero.
+- **Fix:** `normalize()` checks the tier part against the move's source (`SOURCE_TIER`: carving adds Mer, finding Jatte, gear Ur), and refuses any result of Ur unless the source is gear, so promotion can't reach a gear-only tier. Ur has an explicit price weight (3). A rung still climbs from the verb's own (Merorkan: Orkan is Mer, so Jatte), as classes.md requires.
+- **Decision applied:** carving reaches Mer, finding Jatte, only gear Ur (Joseph, Nov 20).
+- **Verification:** `C08_TierAccessAndPrice`: Storm + Jatte is refused unless from gear; a Jatte part can't be carved; for **every verb, tier and source**, an accepted part never exceeds its source and Ur appears only from gear; for every verb, a higher tier never costs less.
+- **Limits:** acquisition context is a parameter the caller passes (`source`); the reward and carving code that will pass it arrives with the dive.
+
 ### C09 — Accepted All variants can affect only the caster or do nothing
 
 **Priority / context:** P2; resolve before exposing these combinations to players. Full-turn reproductions at 2b.
@@ -209,6 +241,13 @@ Orkan similarly moves from 0.256 to 0.4096 to 0.16. Passing `tier='Ur'` also pro
 **Close when:** Every allowed target modifier executes on the declared set; unsupported modifiers fail compilation with a clear reason; already-All moves cannot purchase a redundant All upgrade without an explicit effect. Include no-eligible-target and dead-versus-dying cases.
 
 **Sources:** [words.py:180–185](https://github.com/jensen-117/norse_game/blob/8a7afee433626c3fe532d618f2c95f73a219e035/sim/words.py#L180-L185), [engine.py:695–703](https://github.com/jensen-117/norse_game/blob/8a7afee433626c3fe532d618f2c95f73a219e035/sim/engine.py#L695-L703), [1473–1482](https://github.com/jensen-117/norse_game/blob/8a7afee433626c3fe532d618f2c95f73a219e035/sim/engine.py#L1473-L1482).
+
+**Resolution (Nov 20, commit [64da699](https://github.com/jensen-117/norse_game/commit/64da699)): Closed.**
+- **Cause:** confirmed: All set `all=True` without checking that the verb or the resolver supports it; self targeting returned before scope was read.
+- **Fix:** each verb lists the target parts it may take (`VERBS[...]["targets"]`, from classes.md); anything else is refused at compile, including All on a move that already reaches everyone. Eligibility (self, ally, enemy, fallen) and scope (one, row, all) are separate: a self move's row and All scopes resolve in `targets_for`. Aukskold's own target is now herself, as classes.md says (it was one ally).
+- **Decision applied:** per-verb targets from classes.md; a group revive and a self buff turned party-wide stay out until designed (Joseph, Nov 20).
+- **Verification:** `C09_TargetsDoWhatTheySay`: All on Aukseid, Vakna, Byr, Kvad, Knyta, Egga and Lya is refused; Aukskold reaches herself, her row, or everyone in real turns; an All Lak heals every ally in a real turn.
+- **Limits:** which target parts each verb accepts is provisional data until the mutation session.
 
 ### C10 — Duplicate manners bypass exact capstone recipes
 
@@ -226,6 +265,11 @@ Orkan similarly moves from 0.256 to 0.4096 to 0.16. Passing `tier='Ur'` also pro
 
 **Source:** [words.py:155–170](https://github.com/jensen-117/norse_game/blob/8a7afee433626c3fe532d618f2c95f73a219e035/sim/words.py#L155-L170).
 
+**Resolution (Nov 20, commit [64da699](https://github.com/jensen-117/norse_game/commit/64da699)): Closed.**
+- **Cause:** confirmed: capstone lookup used a set (which drops repeats) while the count and price used the list.
+- **Fix:** `normalize()` refuses repeated manners; the cap, capstone and byname lookup, effects and price all read one canonical part list (`verb_parts`).
+- **Verification:** `C10_RecipesAreExact`: a double Drif is refused; the exact Tusensplitter recipe compiles; a surplus part is OverCap.
+
 ### C11 — Heavy healing receives the penalty without the power benefit
 
 **Priority / context:** P2. Full-turn comparison at 2b. The precise healing multiplier is a design choice; accepting a paid, penalized modifier with no defined benefit is the problem.
@@ -241,6 +285,13 @@ Orkan similarly moves from 0.256 to 0.4096 to 0.16. Passing `tier='Ur'` also pro
 **Close when:** Accepted Heavy/Patient healing has the designed payoff in actual turns, with correct cost and timing; rejected combinations fail before being offered as rewards. Include combinations with multiple manners and distinguish output-power checks from end-to-end healing checks.
 
 **Source:** [words.py:175–188](https://github.com/jensen-117/norse_game/blob/8a7afee433626c3fe532d618f2c95f73a219e035/sim/words.py#L175-L188).
+
+**Resolution (Nov 20, commit [64da699](https://github.com/jensen-117/norse_game/commit/64da699)): Closed.**
+- **Cause:** confirmed: the heal branch took the tier's power and ignored the manners' multiplier.
+- **Fix:** damage, answers and heals all scale with manners (`SCALES`); each manner states what it needs (`MANNER_NEEDS`): Heavy and Patient need a scalable effect, Reckless and Flurry need hits, so they're refused on heals and status moves.
+- **Decision applied:** manners scale healing like damage (it enables the Heavy "prayer" heal); crits and flurries don't apply to heals (Joseph, Nov 20).
+- **Verification:** `C11_ManneredHeals`: in real turns, Tunglak heals exactly 1.2x Lak, costs more, and acts Heavy (-2); Jarf and Drif on Lak are refused.
+- **Limits:** a Patient heal's release is covered by the shared wind-up path, not by its own end-to-end fixture.
 
 ## Architecture and contract findings
 
@@ -262,6 +313,12 @@ This allows extensibility without requiring one enormous compiler function. Simp
 
 **Sources:** [engine.py:17–30](https://github.com/jensen-117/norse_game/blob/8a7afee433626c3fe532d618f2c95f73a219e035/sim/engine.py#L17-L30), [1704–1755](https://github.com/jensen-117/norse_game/blob/8a7afee433626c3fe532d618f2c95f73a219e035/sim/engine.py#L1704-L1755), [words.py:122–132](https://github.com/jensen-117/norse_game/blob/8a7afee433626c3fe532d618f2c95f73a219e035/sim/words.py#L122-L132), [160–210](https://github.com/jensen-117/norse_game/blob/8a7afee433626c3fe532d618f2c95f73a219e035/sim/words.py#L160-L210).
 
+**Resolution (Nov 20, commit [64da699](https://github.com/jensen-117/norse_game/commit/64da699)): Closed.**
+- **Fix:** the move contract lives in `words.py`: `check_move()` (the fields every move and each kind needs) and `unresolved()` (a kind or effect the engine can't yet carry out: Wave 4 kinds, Wave 4 fields, statuses with no row). `finalize()` applies both and is the last step of `compile_move`, `item_move` and `family_move`; class verbs are checked in `compile_verb` and carry their `unresolved` list. `compile_move("revive", ...)` is complete on its own. **Battle refuses any move that breaks the contract or isn't resolvable yet**, so a compiled but unfinished move can't enter a playable kit.
+- **Adapters kept on purpose:** items keep fixed powers, enemies never pay HP, class verbs price as shares; each is a separate input adapter meeting the same contract (the review's recommendation).
+- **Verification:** `A01_OneContract`: every item, Net Throw, a bare compiled revive and every kit move meet the contract; Kvad (a Wave 4 kind) compiles but a Battle with it is refused. The legacy golden (4,535 moves) is identical.
+- **Limits:** Wave 4 must remove each kind and field from the unresolved lists as it implements them, with a full-turn test for each.
+
 ### A02 — Modifier validation and speed-conflict semantics need a clear policy
 
 **Priority / evidence:** P2. Accepted-input probes at 2b. Some behavior is demonstrably permissive; whether order-dependent speed is intended remains a design question.
@@ -279,6 +336,11 @@ This allows extensibility without requiring one enormous compiler function. Simp
 **Close when:** Unknown targets fail clearly; redundant modifiers are rejected or have an explicit benefit; speed conflicts have documented expected results and permutation tests. This work should share the normalization used for C09–C11 rather than introduce a second set of legality rules.
 
 **Source:** [words.py:141–206](https://github.com/jensen-117/norse_game/blob/8a7afee433626c3fe532d618f2c95f73a219e035/sim/words.py#L141-L206).
+
+**Resolution (Nov 20, commit [64da699](https://github.com/jensen-117/norse_game/commit/64da699)): Closed.**
+- **Fix:** `normalize()` refuses unknown targets, tiers and manners; refuses Swift with Heavy in either order; refuses redundant parts (Swift on a First move, Patient on an already Patient move, All on a move that reaches everyone). Patient with one speed manner stays legal and is order-free: it releases in that manner's group.
+- **Decision applied:** Swift + Heavy refused as contradictory; Patient + one speed manner legal (Joseph, Nov 20).
+- **Verification:** `A02_ModifierPolicy`: unknown parts, Swift + Heavy both orders, and redundant parts are refused; Bid + Tung and Tung + Bid give the same release group and price.
 
 ## Game-design findings and validation questions
 
