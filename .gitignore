@@ -13,3 +13,4 @@ project_backup_*.zip
 .claude/
 .ssh/
 .local/
+sim/checks/fp_*.json

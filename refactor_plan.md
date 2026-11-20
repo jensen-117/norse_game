@@ -60,7 +60,7 @@ Brings the sim and the Fight Lab from the game we had (recruits who level) to th
 
 ### Wave 0: housekeeping (small)
 - **Git** for the project (sim, fight_lab, specs, art tools); move the `*_before_*` copies into `sim/attic/` (or drop them once git holds the history). *Joseph's call.*
-- **A fixed-hero fingerprint:** `regress.py` hires random recruits; add a variant with a fixed party built by the old `birth` path with fixed seeds, so Waves 1–2 can prove "nothing changed".
+- **Done (Nov 20): `sim/fingerprint.py`**, a fixed-party fingerprint (288 fights: four parties, three places, levels 10 and 30; baseline hash in `sim/checks/fp_base.sha1`). `check` names the first fight and event that differs. Was: **a fixed-hero fingerprint:** `regress.py` hires random recruits; add a variant with a fixed party built by the old `birth` path with fixed seeds, so Waves 1–2 can prove "nothing changed".
 
 ### Wave 1: the status engine (large; the foundation)
 **1a. Pure refactor (fingerprint identical).**
