@@ -1425,6 +1425,8 @@ class Battle:
                 if self.waiting:
                     self.phase = "bonus"; return self.drain()
                 self.resolve_phase()
+        if self.party_settles():           # a won or fled fight stabilises its Dying before any end-of-round
+            self.finish(); return self.drain()   # timer runs (AGENT_CODE_REVIEW C01); defeat keeps the old order
         self.end_round()
         self.next_round()
         return self.drain()
@@ -1440,7 +1442,13 @@ class Battle:
                 u.status[s]["rounds"] -= 1
                 if u.status[s]["rounds"] <= 0: del u.status[s]
 
+    def party_settles(self):
+        """Is the fight over in a way that stabilises the Dying (the party won, or got away)?"""
+        if self.fled: return True
+        return any(x.alive for x in self.party) and not any(x.alive for x in self.enemies)
+
     def finish(self):
+        if self.phase == "over": return    # settled once: no second stabilise, end event or reward
         winner = "fled" if self.fled else \
             "party" if any(x.alive for x in self.party) and not any(x.alive for x in self.enemies) \
             else "enemy" if not any(x.alive for x in self.party) else "draw"
