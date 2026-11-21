@@ -1113,11 +1113,11 @@ class Battle:
             u.cell = (a["to"], lanes[0]); u.stats["moves"] += 1
             self.emit("move", f"    {u.name} steps up to the {a['to'].capitalize()}.{tag}", unit=u.name, cell=u.cell, advance=True); return
         if a["kind"] == "taunt":                            # Egga: the targets' single-target attacks this round go to her
-            tgts, spot = self.intercept(u, a, tgts)        # Styngegga is an attack: a protector takes it, dare and all (C19)
+            tgts, spot = self.intercept(u, a, tgts)        # Daska (Styngegga) is an attack: a protector takes it, dare and all (C19)
             for t in tgts: t.taunted_by = u
             self.emit("taunt", f"    {u.name} uses {self.shown(u, a)}, daring {', '.join(t.name for t in tgts)} to strike her!{tag}",
                       unit=u.name, move=a["name"], targets=[t.name for t in tgts])
-            for t in tgts:                                  # Lonnegga blinds them as she casts it; Styngegga strikes
+            for t in tgts:                                  # Rodegga blinds them as it lands; Daska strikes
                 if a.get("also_status"): self.apply_status(u, t, a["also_status"], 1.0, STACKS_BY_TIER.get(a["tier"], 1), a["tier"])
                 if a.get("styng") and t.alive: self.styng_hit(u, a, t, tgts, bonus, spot.get(t, t))
             return
@@ -1790,7 +1790,7 @@ class Battle:
         return abs(after - before)
 
     def also_value(self, u, f, a, ref):
-        """A second status riding the first (Lonnsveda's Feeble, Lonnpeka's Sundered, Lonnegga's Blinded)."""
+        """A second status riding the first (Lamsveda's Feeble, Genomskoda's Sundered, Rodegga's Blinded)."""
         st = a["also_status"]
         if self.capped(f, st): return 0.0
         if st in COUNTER_OF and getattr(self, "new_game", False): return self.counter_value(u, f, st, STACKS_BY_TIER.get(a["tier"], 1))

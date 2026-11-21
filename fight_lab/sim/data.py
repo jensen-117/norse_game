@@ -604,7 +604,7 @@ VERBS = {
     "Skrida":   dict(cost=8, cls="Ullar", kind="glide", stat="EVA", up=True, target="cell", group=1),   # aimed at a cell, like Move
     # Vasara (Hammer; martial)
     "Krosh":    dict(cost=16, halv=True, targets=("Flok", "All"), cls="Vasara", kind="damage", root="Krosh", element="Crush", rider=("Sundered", "Brak")),
-    "Egga":     dict(cost=8, targets=("Flok",), cls="Vasara", kind="taunt", root="Krosh", target="enemy", rider=("Blinded", "Lonn"), styng=True),   # taunts one foe, or a row
+    "Egga":     dict(cost=8, targets=("Flok",), cls="Vasara", kind="taunt", root="Krosh", target="enemy", rider=("Blinded", "Rod"), styng=True),   # taunts one foe, or a row; Rodegga: blind with rage (Nov 21)
     "Lya":      dict(cost=8, cls="Vasara", kind="cover", target="ally"),   # Nov 21: 8, to test (a stance you also pay for in hits)
     "Aukskold": dict(cost=8, targets=("Flok", "All"), cls="Vasara", kind="stat", stat="DEF", up=True, target="self"),   # herself; Flok her row; All everyone
     "Hevn":     dict(cost=16, cls="Vasara", kind="damage", answer=True, root="Krosh", element="Crush", halv=True,
@@ -647,7 +647,7 @@ BYNAMES = {
 # (Merdaska, Snargenomskott). An exact capstone or byname still wins. A rider with its own spoken part (Brak, Blot, Lam,
 # Stel) composes in front of the root and needs no entry here.
 ROOT_NAMES = {
-    "Daska":      ("Egga", frozenset({"Lonn"})),        # Swedish daska, to smack: the taunt that Blinds
+    "Daska":      ("Egga", frozenset({"Styng"})),       # Swedish daska, to smack: the taunt that strikes
     "Genomskott": ("Naglskott", frozenset({"Styng"})),  # a through-shot: it hurts and Pins
     "Genomskoda": ("Peka", frozenset({"Lonn"})),        # Swedish genomskada, to see through someone: Marked and Sundered
 }
@@ -753,7 +753,7 @@ PLAIN_GUARD = 60           # the plain foe's DEF and MDF (yardstick.py): no affi
 HERO_POOLS = {"Vasara": (1000, 0), "Ullar": (600, 0), "Brennumar": (500, 150), "Dagskald": (700, 200), "Skurmar": (600, 100)}
 CLASS_SHARE = {"Vasara": 1.0, "Ullar": 0.75, "Brennumar": 0.9, "Dagskald": 0.9, "Skurmar": 0.9}   # melee, ranged, magic
 CLASS_TIER = {"Halv": 0.5, "Base": 1.0, "Mer": 5 / 3}    # a class verb's tier, x its base (Jatte, Ur: TIER_POWER's ratio)
-RIDER_SHARE = 0.6          # a damage move carrying its rider (Lonn) hits at 0.6
+RIDER_SHARE = 0.6          # a move carrying its rider (Lonn) hits, or heals, at 0.6 (heals: Nov 21)
 CLASS_MANNER_POWER = {"Snar": 1.0}   # going first costs a step, not power (Bid, Tung, Jarf keep MANNERS')
 # Costs: one ladder for both resources. A verb's authored rung ("cost") x 2 a step; Halv has its own rung. Steps: Mer +1,
 # Flok +2, All +3 (carved or the verb's own reach: "weight"), a manner +1, Styng +1, the rider +1; a knot spent pays one.

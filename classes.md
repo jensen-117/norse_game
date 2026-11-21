@@ -217,15 +217,15 @@ A Flok-and-talisman build that invested hard (about +2 or +3) sweeps a row of Tr
 
 ## Part 7c: Every Kit Move on the Rules (Nov 21, agreed with Joseph)
 
-**Applied (Nov 21, the hero pass; option B: heroes only, today's foes unchanged until the enemy pass).** Pools, the ladder, power shares and the names are in the engine (`data.py`: HERO_POOLS, KROSH_CLEAN, LAK_CLEAN, CLASS_SHARE, CLASS_TIER, RIDER_SHARE, COST_LADDER, HALV_COST, ROOT_NAMES; each verb's `cost`). Also in: the last-HP rule (the menu shows the cost in red and "LAST SWING"; the AI never spends its last HP) and martial heroes with no MP pool. As built: Styng's added hit is 0.7 of the class's base hit (Genomskott: ~55); an All untie spell takes the All share (0.6). Rungs given to verbs outside the kits, for Joseph to check: Avliva 16, Skrida 8, Aukskold 8, Skolja 6, Vakna 6, Kasta 6, Svepa 6, Medvind 3, Aukseid 3.
+**Applied (Nov 21, the hero pass; option B: heroes only, today's foes unchanged until the enemy pass).** Pools, the ladder, power shares and the names are in the engine (`data.py`: HERO_POOLS, KROSH_CLEAN, LAK_CLEAN, CLASS_SHARE, CLASS_TIER, RIDER_SHARE, COST_LADDER, HALV_COST, ROOT_NAMES; each verb's `cost`). Also in: the last-HP rule (the menu shows the cost in red and "LAST SWING"; the AI never spends its last HP) and martial heroes with no MP pool. As built: Styng's added hit is 0.7 of the class's base hit (Genomskott: ~55); an All untie spell takes the All share (0.6). The rider's 0.6 applies to heals too (Joseph, Nov 21): Solak heals 60. Names (Nov 21): Daska is the striking taunt (Egga + Styng); the Blinding one is Rodegga. Rungs given to verbs outside the kits (Joseph: fine as they are): Avliva 16, Skrida 8, Aukskold 8, Skolja 6, Vakna 6, Kasta 6, Svepa 6, Medvind 3, Aukseid 3.
 
 **The ladder** is one list for both resources: 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64, 96, 128. A step doubles; curation may move a move a **half-step** (x1.5) when its role calls for it, so every price stays on the list. A move's rung comes from its kind (Halv, minor, base); its parts add steps; a knot spent pays one. Past what a hero can pay, it becomes an item.
 
 **Element power**, from the magic base of 0.9: Eld 0.9; Blast 0.9 in two hits (cheaper, less reliable); Blixt **1.0 at 8 MP** (the tiring, spiky one); Sol 0.9; the rest 0.9 until they're designed. Reyk deals no damage of its own (0.6 for Styngreyk's added hit).
 
 **Naming.** The rules build the name; curation renames when a name is long or hard to say (Banskott stays: two syllables that sound good). Two ways, both composing with Mer, Snar, Flok:
-- **A rider with its own word**, in front of the root: Brak-rosh, Blot-skott, **Lam**-sveda (Feeble: lame), **Stel**-blixt (Stunned: stiff). A player can learn the parts: "lam" is Feeble, "stel" is Stun.
-- **A new word for the whole move**, parts attaching to it: **Daska** (Egga + rider: Swedish *daska*, to smack), **Genomskott** (Naglskott + Styng: a through-shot that Pins), **Genomskoda** (Peka + rider: Swedish *genomskada*, to see through someone). Genom- is a soft family (a later spear class might get a Genomspett).
+- **A rider with its own word**, in front of the root: Brak-rosh, Blot-skott, **Lam**-sveda (Feeble: lame), **Stel**-blixt (Stunned: stiff), **Rod**-egga (Blinded: seeing red). A player can learn the parts: "lam" is Feeble, "stel" is Stun. A rider's word belongs to its verb: Blinded is Blinda on Sol (dazzled) and Rod on Egga (rage).
+- **A new word for the whole move**, parts attaching to it: **Daska** (Egga + Styng: Swedish *daska*, to smack: the taunt that strikes; with Rod, Rodaska), **Genomskott** (Naglskott + Styng: a through-shot that Pins), **Genomskoda** (Peka + rider: Swedish *genomskada*, to see through someone). Genom- is a soft family (a later spear class might get a Genomspett).
 
 | Class | Leg | Move | Parts | Cost | Power (clean on the plain foe) | Today |
 |---|---|---|---|---|---|---|
@@ -235,7 +235,7 @@ A Flok-and-talisman build that invested hard (about +2 or +3) sweeps a row of Tr
 | Vasara | 2 | Brakrosh | rider | 32 HP | 0.6 (62), Sundered | 42 HP, 104 |
 | Vasara | 2 | Lya | minor | 8 HP | cover (a later Lonnlya, e.g. Fortified then cover, at 16) | free |
 | Vasara | 3 | Snarbrakrosh | Snar, rider | 64 HP | 0.6 (62), first, Sundered | 63 HP, 93 |
-| Vasara | 3 | Daska | Egga + rider | 16 HP | taunt + rider | Lonnegga, 42 HP |
+| Vasara | 3 | Rodegga | Egga + rider (Rod: blind with rage) | 16 HP | taunt + Blinded | Lonnegga, 42 HP |
 | Vasara | 3 | Hevn | base | 16 HP | 1.0, +25% a hit taken | 28 HP |
 | Ullar | 1 | Halvskott | Halv | 4 HP | 0.375 (39) | free, 99 |
 | Ullar | 1 | Skott | base | 16 HP | 0.75 (78) | 17 HP, 199 |
@@ -258,7 +258,7 @@ A Flok-and-talisman build that invested hard (about +2 or +3) sweeps a row of Tr
 | Dagskald | 1 | Sol | base | 6 MP | 0.9 (94) | 12 MP, 149 |
 | Dagskald | 1 | Lak | base, a half-step up | 8 MP | heals ~100 (one Krosh: 1.5 foe hits) | 12 MP |
 | Dagskald | 2 | Kvad | base | 6 MP | a Song stack: singing is the efficient heal | 12 MP |
-| Dagskald | 3 | Solak | Lak + rider | 16 MP | heal + Nimble | 19 MP |
+| Dagskald | 3 | Solak | Lak + rider | 16 MP | heals 60 (the rider's 0.6) + Nimble | 19 MP |
 | Dagskald | 3 | Merkvad | Mer | 12 MP | +2 stacks | 19 MP |
 | Dagskald | 3 | Allaukraft | minor, All | 24 MP | ATK up, everyone | 31 MP |
 | Skurmar | 1 | Halvblast | Halv | 2 MP | 0.45 (47) | free, 86 |

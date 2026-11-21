@@ -172,7 +172,7 @@ class Riders(unittest.TestCase):
 
     def test_lonnegga_blinds_the_taunted(self):
         v = hero("Vasara", ("Egga", dict(lonn=True))); e1, e2 = dummy(), dummy(); b = fight([v], [e1, e2])
-        orders(b, {v.uid: (key(v, "Daska"), e1.uid)})
+        orders(b, {v.uid: (key(v, "Rodegga"), e1.uid)})
         self.assertEqual((e1.counter_name("ACC"), e2.counter_name("ACC")), ("Blinded 1", None))
 
 # ================================================================ payoffs
@@ -243,7 +243,7 @@ class StatusMoves(unittest.TestCase):
 
     def test_styngegga_strikes_the_taunted(self):
         v = hero("Vasara", ("Egga", dict(styng=True))); e = dummy(); b = fight([v], [e])
-        orders(b, {v.uid: (key(v, "Styngegga"), e.uid)})
+        orders(b, {v.uid: (key(v, "Daska"), e.uid)})
         self.assertEqual([x["unit"] for x in evs(b, "hit", src=v.name)], [e.name])
         self.assertEqual(e.taunted_by, None)                               # (it lasted the round)
         self.assertTrue(evs(b, "taunt"))
@@ -334,7 +334,7 @@ class TheAIUsesThem(unittest.TestCase):
         theirs that Wave 4a made playable is chosen at least once."""
         from composer import catalog, habitat, compose, place, spawn
         cat, seen = catalog(), set()
-        want = {"Banskott", "Genomskott", "Genomskoda", "Lamsveda", "Hevn"}     # Daska, Djupanda: below
+        want = {"Banskott", "Genomskott", "Genomskoda", "Lamsveda", "Hevn"}     # Rodegga, Djupanda: below
         for i in range(40):
             rng = random.Random(500 + i)
             party = [build_hero(c, 3) for c in ("Vasara", "Ullar", "Brennumar")]
@@ -349,7 +349,7 @@ class TheAIUsesThem(unittest.TestCase):
         v, d = hero("Vasara", ("Egga", dict(lonn=True))), hero("Dagskald", "Sol"); d.hp = 0.3 * d.maxhp
         spear = dummy(actions=[skill("Pierce", "Spear", "Mer")]); b = Battle([v, d], [spear], random.Random(1))
         picks = [b.declare(v)[0]["name"] for _ in range(20)]
-        self.assertIn("Daska", picks)
+        self.assertIn("Rodegga", picks)
 
     def test_a_low_brennumar_breathes_deep(self):
         """Djupanda over Meditate when the MP is low: it's worth more, over two turns."""

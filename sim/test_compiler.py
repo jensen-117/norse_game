@@ -3,7 +3,7 @@ import random, unittest
 from engine import *
 
 SPELLED = {   # the kits as classes.md and the Nov 20 kit list spell them
-    "Vasara":    {1: "Krosh Egga", 2: "Krosh Egga Brakrosh Lya", 3: "Snarbrakrosh Daska Lya Hevn"},
+    "Vasara":    {1: "Krosh Egga", 2: "Krosh Egga Brakrosh Lya", 3: "Snarbrakrosh Rodegga Lya Hevn"},
     "Ullar":     {1: "Skott Naglskott", 2: "Blotskott Naglskott Peka", 3: "Merblotskott Genomskott Genomskoda Banskott"},
     "Brennumar": {1: "Eld Reyk", 2: "Eld Reyk Sveda Alleld", 3: "Mereld Alleld Lamsveda Djupanda"},
     "Dagskald":  {1: "Lak Sol", 2: "Lak Sol Kvad", 3: "Solak Sol Merkvad Allaukraft"},
@@ -48,10 +48,12 @@ class TestParts(unittest.TestCase):
         self.assertEqual(compile_verb("Naglskott", tier="Mer", styng=True)["name"], "Geirskott")
         self.assertEqual(compile_verb("Sol", lonn=True)["name"], "Blindasol")
     def test_root_names(self):     # Nov 21: a word for the verb and some parts; further parts attach to it
-        self.assertEqual(compile_verb("Egga", lonn=True)["name"], "Daska")
+        self.assertEqual(compile_verb("Egga", lonn=True)["name"], "Rodegga")          # Blinded spoken Rod: seeing red
+        self.assertEqual(compile_verb("Egga", styng=True)["name"], "Daska")            # the taunt that strikes
+        self.assertEqual(compile_verb("Egga", styng=True, lonn=True)["name"], "Rodaska")   # the grammar folds the doubled d
         self.assertEqual(compile_verb("Peka", lonn=True)["name"], "Genomskoda")
         self.assertEqual(compile_verb("Naglskott", styng=True)["name"], "Genomskott")
-        self.assertEqual(compile_verb("Egga", target="Flok", lonn=True)["name"], "Flokdaska")
+        self.assertEqual(compile_verb("Egga", target="Flok", styng=True)["name"], "Flokdaska")
         self.assertEqual(compile_verb("Naglskott", manners=("Snar",), styng=True)["name"], "Snargenomskott")
         self.assertEqual(compile_verb("Naglskott", tier="Mer", styng=True)["name"], "Geirskott")   # an exact byname wins
 

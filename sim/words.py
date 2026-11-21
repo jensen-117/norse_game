@@ -243,7 +243,8 @@ def compile_verb(verb, tier=None, target=None, manners=(), styng=False, lonn=Fal
         el = ELEMENT[v["element"]]
         a["power"] = TIER_POWER["Base"] * tier_share * share * mpower / (el["power"] * el["hits"]) \
             * (RIDER_SHARE if n["lonn"] else 1.0)
-    elif kind in SCALES: a["power"] = TIER_POWER["Base"] * tier_share * mpower   # heals and answers: the healer's anchor
+    elif kind in SCALES:                                                 # heals: the healer's anchor; a rider costs the same 0.6
+        a["power"] = TIER_POWER["Base"] * tier_share * mpower * (RIDER_SHARE if n["lonn"] else 1.0)
     if n["styng"]: a["styng"] = TIER_POWER["Base"] * tier_share * share * STYNG_POWER * mpower   # a hit added to a move with no damage of its own
     if kind == "revive": a.update(VAKNA[eff])
     if rider is not None:                                                # what Lonn adds

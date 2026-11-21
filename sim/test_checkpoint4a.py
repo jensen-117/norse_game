@@ -231,7 +231,7 @@ class C19_CoverCatchesStyng(unittest.TestCase):
     def test_styngegga_strikes_and_dares_the_protector(self):
         v = hero("Vasara", ("Egga", dict(styng=True)))
         b, e1, e2 = self.fixture(v)
-        b.submit(v.uid, key(v, "Styngegga"), e1.uid)
+        b.submit(v.uid, key(v, "Daska"), e1.uid)
         b.commit()
         hits = [x["unit"] for x in evs(b, "hit", src=v.name)]
         self.assertEqual(hits, [e2.name]); self.assertTrue(evs(b, "covered", unit=e2.name))
@@ -246,7 +246,7 @@ class C19_CoverCatchesStyng(unittest.TestCase):
         """A short Styng strike from the Vasara reaches the Front foe; the coverer from the Rear takes it there."""
         v = hero("Vasara", ("Egga", dict(styng=True))); b, e1, e2 = self.fixture(v)
         e2.cell = ("rear", 1)
-        b.submit(v.uid, key(v, "Styngegga"), e1.uid); b.commit()
+        b.submit(v.uid, key(v, "Daska"), e1.uid); b.commit()
         self.assertEqual([x["unit"] for x in evs(b, "hit", src=v.name)], [e2.name])
         self.assertFalse(evs(b, "out_of_reach"))
 
