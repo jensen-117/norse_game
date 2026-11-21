@@ -129,7 +129,7 @@ def _board_unit(u):
              status=sorted(u.status), family=getattr(u, "family", None), cls=u.cls, element=getattr(u, "element", None),
              rank=getattr(u, "mogel_rank", None) or getattr(u, "rank_name", None) or getattr(u, "rank", None),
              job=getattr(u, "job", None), winding=b.shown(u, u.bide[0]) if u.bide else None, intent=b.intents.get(u.uid),
-             knots=getattr(u, "knots", 0))
+             knots=getattr(u, "knots", 0), song=(u.status.get("Song") or {}).get("stacks", 0))   # the Song's verses (Nov 21)
     if u.side == "party":
         d.update(hp=round(max(0, u.hp)), maxhp=round(u.maxhp), mp=round(u.mp), maxmp=round(u.maxmp),
                  breaths=u.breaths, wounded=u.wounded)

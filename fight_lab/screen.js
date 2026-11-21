@@ -362,6 +362,7 @@ const Screen = (() => {
       if (u.alive) hpbar(bx, b.fy + 2, u.frac);
       if (u.side === "party" && u.state === "dying") { pc.fillStyle = C.hpLo; for (let i = 0; i < u.breaths; i++) pc.fillRect(bx + i * 4, b.fy + 2, 3, 3); }
       if (u.alive && u.knots) { pc.fillStyle = C.white; for (let i = 0; i < u.knots; i++) pc.fillRect(bx + i * 4, b.fy + 5, 3, 2); }   // the Skurmar's knots
+      if (u.alive && u.song) { pc.fillStyle = C.gold; const sy = b.fy + (u.knots ? 8 : 5); for (let i = 0; i < u.song; i++) pc.fillRect(bx + i * 4, sy, 3, 2); }   // the Song's verses (gold)
       const top = headTop(u, b);
       if (u.alive && u.bound) footBadge(u, b, { reason: "bound" });   // netted: shown even mid-playback, where it lands
       else if (u.alive && (!busy || autoUntil > vt)) {   // what they're about to do: Joseph's 13x13 frame at the feet, facing the foe
@@ -923,6 +924,8 @@ const Screen = (() => {
         u.job = e.job; u.key = spriteKey(u); u.dieT = undefined; u.appearT = vt;
         return sleep(MOTION.dissolve.dur);
       }
+      case "song": (e.target_ids || []).forEach((id, i) => { const t = units[id]; if (t) { t.song = (e.stacks || [])[i] || 0; addFx(t, "hop", MOTION.hop.dur, { px: 2 }); } }); return sleep(B.small);
+      case "song_fades": if (u && e.status === "Song") u.song = e.stacks; return sleep(B.small);
       case "knot": if (u) { u.knots = e.knots; if (e.knots > (e.was || 0)) addFx(u, "hop", MOTION.hop.dur); } return sleep(B.small);
       case "mp": if (u) { playFx("spark:Vatn", u); floatAt(e.unit_id, "+" + e.amount + " MP", C.absorb); } return sleep(B.small);
       case "tick": if (u) { u.hp = e.hp; u.frac = u.maxhp ? e.hp / u.maxhp : u.frac; addFx(u, "flash", MOTION.flash.dur); floatAt(e.unit_id, String(e.dmg), C.hpMid); } return sleep(B.small);
