@@ -1,3 +1,503 @@
+# Agent Code Review — Wave 4a bug-fix checkpoint
+
+Review date: 20 November 2026  
+Repository: [jensen-117/norse_game](https://github.com/jensen-117/norse_game)  
+Reviewed main: [05909829250a968db0f4b2fdbed22799f06d8a70](https://github.com/jensen-117/norse_game/commit/05909829250a968db0f4b2fdbed22799f06d8a70)  
+Compared with: [Wave 4 entry, 8e034de](https://github.com/jensen-117/norse_game/commit/8e034dec62b76c9fdf20001e79fd20ae861edfd4)
+
+**Use this as the current checkpoint and handoff.** It incorporates the banked findings and preserves the previous review and resolutions below. Current statuses here supersede older summaries. Repository review was read-only: no repository files, commits or baselines were changed.
+
+## Recommendation and current status
+
+**Pause feature integration for a bug-fix checkpoint here.** Wave 4a adds useful, playable mechanics, but a normal combination of its new recovery move with existing enemy AI can crash a fight. Three further integration defects are independently reproduced. Resolve these alongside the banked action-lifecycle and protection findings before building more interactions on them.
+
+Do not make a global balance adjustment from the current AI usage counts. The AI cannot consider some legal refreshes at all (C17), and defensive wind-up evaluation remains incomplete (C13). Finish the correctness checkpoint, settle the explicit rule decisions below, then rerun the same measurement configuration.
+
+| ID | Priority | Current status | Finding |
+|---|---|---|---|
+| C16 | **P1** | New, reproduced in a complete turn | Djupanda can crash a Bonus Round when a Net Drattr values interrupting it |
+| C05 | P2 | Reopened, still reproduced | An action-time fall can escape wind-up cancellation |
+| C12 | P2 | Open, still reproduced | Egga is bypassed by finishing blows |
+| C13 | P2 | Open, still reproduced | Planning hides queued wind-up threats |
+| C17 | P2 | New, reproduced | AI filters out refreshes and useful compound status moves before scoring them |
+| C18 | P2 | New, reproduced in a complete turn | Skrida can move into a Dying ally's occupied cell |
+| C19 | P2 | New, reproduced in a complete turn | Styng's added hit bypasses Cover |
+| C15 | P2 | Open, still reproduced | A legacy class silently switches the Lab's enemy balance profile |
+| A03 | P3 | Open, unchanged source | Keyboard test resets focus before exercising Enter |
+
+**C14 update:** The stale-result defect is resolved at this snapshot: the refreshed report reproduces exactly with its documented **60 fights per shape**, or **1,800 room fights** total. Source provenance and an automatic drift check remain recommended prevention work. Do not carry forward the previous mismatched 30-fight rows as current results.
+
+C01–C04, C06–C11, A01 and A02 retain their previous Closed status. D01–D08 remain design/measurement work with the updates below. D09 and D10 record this pass's two explicit balance decisions; they are not disguised code defects.
+
+## Independent verification and limits
+
+- **239 unittest cases ran and passed.** The seven Lab modules have identical Git blobs to their sim counterparts, providing the equivalent of the additional filesystem parity test and supporting the reported **240**. The standalone autofill/replay test also passed.
+- The **37 Wave 4a tests** pass. They include complete-turn cases, formula checks and direct AI-choice checks; they are not all end-to-end turn tests.
+- The **4,535 legacy moves/kits**, **288 fixed-party fights**, and **480 wider regression fights** match the previous checkpoint.
+- **49 saved page records replay natively:** 48 Auto fights and the new Naglskott/Sveda menu scenario. Winner, round, log length and full log digest match; engine hash is `9948739d5e`.
+- The committed sweep reproduces at `sweep.report(60)`, including all three party/leg combinations.
+- All nine starting-trio kit snapshots return no excluded moves: Vasara, Ullar and Brennumar, legs 1–3.
+- Targeted probes verify the new failures and the rule arithmetic described below. The new native tests and sources are commit-pinned.
+- Main was rechecked at the end of the investigation and still pointed to the reviewed commit.
+
+**Limits:** No fresh browser session or clean-clone runtime build was performed in this pass. Native replay does not independently verify fresh rendering, startup, focus, or animations. The reported per-move frequencies in “60 fights” were not independently reproduced against a separately specified usage-sampling configuration; the saved sweep itself was reproduced. Legacy invariance remains valuable compatibility evidence, but it does not exercise every new-game interaction.
+
+## C16 — Djupanda crashes the Net Drattr's interruption valuation
+
+**Priority:** P1. Fix before further integration or treating Auto sweeps as robust.
+
+**Cause:** `bind_value()` assumes every stored wind-up is a damage move. Djupanda has kind `windfall`, a self target and no damage element. When the enemy considers throwing its net at that actor, `expected_damage()` indexes `ELEMENT[None]`.
+
+Sources: [engine.py:1202–1209](https://github.com/jensen-117/norse_game/blob/05909829250a968db0f4b2fdbed22799f06d8a70/sim/engine.py#L1202-L1209), [expected damage:638–642](https://github.com/jensen-117/norse_game/blob/05909829250a968db0f4b2fdbed22799f06d8a70/sim/engine.py#L638-L642), [Bonus Round planning:1745–1750](https://github.com/jensen-117/norse_game/blob/05909829250a968db0f4b2fdbed22799f06d8a70/sim/engine.py#L1745-L1750).
+
+**Reproduce:** Run this from the sim directory against the reviewed commit. It uses the actual starting-trio leg-3 kits and an unmodified Net Drattr kit:
+
+```python
+import random
+from engine import Battle, build_hero, spawn_family
+
+v = build_hero("Vasara", 3)
+u = build_hero("Ullar", 3)
+br = build_hero("Brennumar", 3)
+br.mp = 0
+e = spawn_family("Drattr", "Drattr", 50, job="Net")
+b = Battle([v, u, br], [e], random.Random(20), events=True)
+b.begin("party")
+b.submit(v.uid, "guard")
+b.submit(u.uid, "guard")
+key = "m" + str(next(i for i, a in enumerate(br.actions)
+                     if a["name"] == "Djupanda"))
+b.submit(br.uid, key)
+b.commit()  # KeyError: None
+```
+
+**Observed:** The Drattr naturally chooses Spett and hits Pierce-weak Vasara for 52 displayed damage. Brennumar winds up Djupanda. The Drattr earns its Bonus Round, considers its still-available net, and the commit crashes:
+
+`commit → plan_phase → declare → bind_value → expected_damage → KeyError: None`
+
+No replacement enemy move or hand-built release is needed.
+
+**Why it matters:** A valid new kit move combined with existing enemy behavior stops the fight instead of resolving the turn. The current test for a stunned Djupanda does not cover an enemy deciding how to interrupt it.
+
+**Suggested fix and rationale:** Introduce a typed pending-effect valuation: damage wind-ups expose damage threat; recovery wind-ups expose recovery value; future heal, song or other effects use their own utility. The interruption scorer can value preventing any of them without pretending all effects deal damage. A minimal type guard prevents the exception, but returning zero for all non-damage wind-ups should be an explicit temporary approximation, not the final AI contract. Coordinate the representation with C13's stored/queued pending-action query.
+
+**Close when:** The seed-20 complete-turn fixture finishes without an exception; a Net Drattr can sensibly value stopping Djupanda; ordinary damage-wind-up interruption remains covered; normal and Bonus Round planning handle non-damage charges. Add the test before the fix and show it fails on this commit.
+
+## C17 — The AI skips legal refreshes and useful secondary effects
+
+**Priority:** P2. Fix before balance decisions based on rare Scorch or status-move use.
+
+**Cause:** `declare()` skips a status action as soon as `capped(target, main_status)` is true. For every non-counter status, `capped()` means only “already present.” Consequently, the new remaining-burn calculation in `status_value()` cannot be reached for a target already carrying Scorched. The same gate excludes extending Pin and excludes compound moves whose main counter is capped but whose added hit or rider is still useful.
+
+Sources: [early filter, engine.py:1366–1372](https://github.com/jensen-117/norse_game/blob/05909829250a968db0f4b2fdbed22799f06d8a70/sim/engine.py#L1366-L1372), [capped:653–657](https://github.com/jensen-117/norse_game/blob/05909829250a968db0f4b2fdbed22799f06d8a70/sim/engine.py#L653-L657), [remaining-burn valuation:1453–1474](https://github.com/jensen-117/norse_game/blob/05909829250a968db0f4b2fdbed22799f06d8a70/sim/engine.py#L1453-L1474).
+
+**Reproduce:**
+
+1. Build a Brennumar with only Sveda plus the automatic Halveld. Use a neutral, high-HP dummy, as in the existing test helpers.
+2. Apply Scorched, then set its fade step to 2.
+3. Compare `b.status_value(br, sveda, enemy, 100)` with repeated `b.declare(br)` results.
+4. Separately, give Ullar Lonnpeka, cap the target at Marked 3, and leave DEF neutral.
+
+**Observed:** With a 1,000,000-HP dummy, Sveda's computed value is **48,000**, yet all 30 seeded declaration samples choose Halveld. Lonnpeka has positive secondary-effect value but all 30 samples choose Halvskott; the Sundered opportunity never reaches the candidate list.
+
+**Why it matters:** “The AI uses this move sometimes” is insufficient evidence that it understands the move's loop. The Scorch refresh behavior is playable by a person but categorically excluded from Auto decisions, obscuring its sustained pressure.
+
+**Suggested fix and rationale:** Evaluate whether the *whole move* has useful marginal effects: main application, extension/reset, secondary rider, added damage and tempo reward. Keep a capped-counter optimization only when all relevant components are exhausted. Represent status reapplication policies in one place shared with execution so the AI models the chosen heat/duration policy rather than duplicating a different one.
+
+**Close when:** Controlled tests make the AI refresh a nearly faded burn, extend a shorter Pin when worthwhile, and consider Lonnpeka's uncapped Sundered rider or Styng damage despite a capped main effect. Also verify it avoids truly redundant applications. Re-measure usage and sweeps after the change.
+
+## C18 — Skrida treats a Dying ally's cell as empty
+
+**Priority:** P2.
+
+**Cause:** `glide_cell()` builds occupancy from living allies only. Ordinary Move explicitly treats a Dying hero as occupying a cell and refuses that destination. Self-targeted Skrida can therefore put two party members in one cell.
+
+Sources: [glide destination, engine.py:1146–1167](https://github.com/jensen-117/norse_game/blob/05909829250a968db0f4b2fdbed22799f06d8a70/sim/engine.py#L1146-L1167), [ordinary Move's occupancy rule:1864–1873](https://github.com/jensen-117/norse_game/blob/05909829250a968db0f4b2fdbed22799f06d8a70/sim/engine.py#L1864-L1873).
+
+**Reproduce:** Using the existing `test_wave4a` helpers, make Ullar with Skrida, Vasara and Dagskald against a quiet dummy. Begin a party-controlled fight. Place Ullar at front/0, Vasara at front/1 and Dagskald at rear/0. Set Dagskald's HP to zero and call `b.downed(d)`. Order Skrida on Ullar himself and Guard for other awaiting heroes.
+
+**Observed:** Ullar moves to rear/0; the Dying Dagskald remains at rear/0. Vasara keeps the Front occupied, so the Front rule does not prevent this case.
+
+**Why it matters:** It breaks board occupancy and creates ambiguous targets, rendering and later revival behavior. Future forced movement would inherit another inconsistent definition of “empty.”
+
+**Suggested fix and rationale:** Share cell occupancy and movement legality between Move, Skrida and forthcoming displacement. Distinguish vacant, living occupant, fallen occupant, pinned occupant and any special terrain rule. A Dying hero should not disappear from occupancy merely because they cannot act. Recheck the destination at resolution as well as in the UI.
+
+**Close when:** Self Skrida selects a genuinely legal alternative cell or stays put; it never overlaps a Dying ally. Test ordinary movement, explicit swaps, a full rear row, a fall between ordering and resolution, and revival after the attempted glide.
+
+## C19 — Styng's added damage bypasses Cover
+
+**Priority:** P2.
+
+**Cause:** Ordinary damage redirects through Cover before calling `land()`. `styng_hit()` calls `land()` directly. Extracting shared damage arithmetic did not also share the interception step. The status branch only handles the separate `thrown` marker used by nets.
+
+Sources: [normal interception, engine.py:1046–1062](https://github.com/jensen-117/norse_game/blob/05909829250a968db0f4b2fdbed22799f06d8a70/sim/engine.py#L1046-L1062), [Styng direct call:1125–1132](https://github.com/jensen-117/norse_game/blob/05909829250a968db0f4b2fdbed22799f06d8a70/sim/engine.py#L1125-L1132), [status branch:1014–1023](https://github.com/jensen-117/norse_game/blob/05909829250a968db0f4b2fdbed22799f06d8a70/sim/engine.py#L1014-L1023), [Cover rule, combat_spec.md:116–122](https://github.com/jensen-117/norse_game/blob/05909829250a968db0f4b2fdbed22799f06d8a70/combat_spec.md#L116-L122).
+
+**Reproduce:** Use Ullar against two quiet enemy dummies. Give the second enemy a Cover action aimed at the first and queue it normally in the turn's protection group. Order an attack against the first enemy. Compare Skott with Styngnaglskott, keeping the rest of the fixture the same.
+
+**Observed:** Skott emits `covered` and damages the protector (198 in the fixture). Styngnaglskott instead damages the protected target (69 while it is guarding), with no interception event. The rule says single-target hits strike the coverer; no exception for Styng is defined.
+
+**Why it matters:** The attack component of a compound move silently bypasses a core defense. Lya, future rider attacks and enemy protection will become harder to reason about if each path has separate interception behavior.
+
+**Suggested fix and rationale:** Route damage effects through a shared targeting/interception step before the hit calculation. Preserve the protected ally's position for reach, as normal Cover does. Explicitly decide the status component's delivery policy: intercepting the added strike need not silently move a taunt or an independently targeted status to the coverer. Do not simply redirect the entire compound move without that decision.
+
+**Close when:** A single-target Styng hit respects Cover; shape/All effects retain their exceptions; rear coverers use the original target's reach position; events identify the actual damage recipient. Test Styngnaglskott and Styngegga, including the documented policy for their non-damage components.
+
+## Banked findings — status after Wave 4a
+
+The complete earlier reproduction notes remain in the preserved report below.
+
+- **C05 remains open.** The Bleeding/crawling-Draugr probe still fires its interrupted charge for about 72.62 HP with zero loss events. The token is still consumed before action-time ticks at [engine.py:871–877](https://github.com/jensen-117/norse_game/blob/05909829250a968db0f4b2fdbed22799f06d8a70/sim/engine.py#L871-L877). Retain the token through interruptible hooks, revalidate, then consume it at execution.
+- **C12 remains open.** Targeted Egga still lets a taunted Drattr finish Dying Dagskald before target redirection runs; the fixture ends with Dagskald dead. See [929–941](https://github.com/jensen-117/norse_game/blob/05909829250a968db0f4b2fdbed22799f06d8a70/sim/engine.py#L929-L941) and [806–818](https://github.com/jensen-117/norse_game/blob/05909829250a968db0f4b2fdbed22799f06d8a70/sim/engine.py#L806-L818).
+- **C13 remains open.** The pending Bidskott threat still changes from **50.325278934070276 to 0** during planning while its release token remains valid. See [1533–1536](https://github.com/jensen-117/norse_game/blob/05909829250a968db0f4b2fdbed22799f06d8a70/sim/engine.py#L1533-L1536) and [1628–1635](https://github.com/jensen-117/norse_game/blob/05909829250a968db0f4b2fdbed22799f06d8a70/sim/engine.py#L1628-L1635). Fix this alongside C16 using typed pending-effect information.
+- **C15 remains open.** The same all-sheet versus mixed-party test still switches Forndraugr from x1.75 HP / x2.25 damage / one action to x1 HP / x1 damage / three actions, while sheet heroes retain x1.2 damage. See [428–440](https://github.com/jensen-117/norse_game/blob/05909829250a968db0f4b2fdbed22799f06d8a70/sim/engine.py#L428-L440). Make the encounter profile explicit; preserve a deliberate legacy mode.
+- **A03 remains open.** The original keyboard scenario still explicitly focuses the body. The new Wave 4a menu test also does so before clicking targets. Those tests exercise menu actions, not the original click-Fight-then-Enter focus regression. Keep the application fix, and add a dedicated natural-focus test.
+
+### C14 resolution update
+
+**Resolved at commit 0590982, independently verified.** The report was regenerated with 60 trials per room shape. At that sample size, `sweep.report(60)[0]` matches the committed report after line-ending normalization. This is 1,800 room fights across 10 shapes and 3 party/leg configurations.
+
+The original problem—making a decision from a stale saved report—is absent at this snapshot. The preventive recommendation remains: include a source/configuration fingerprint and a check-only drift test. Keep the historical mismatch as evidence of why that guard is useful.
+
+## Review of the five implementation calls
+
+These are recommendations for design decisions, not permission to silently rewrite the specification. Record whichever policies are accepted in the rules, compiler/execution data, move descriptions and tests together.
+
+| Call | Assessment and recommendation |
+|---|---|
+| **1. Pin locks the whole spot** | The implementation consistently intends a cell lock, but the locked written rule says **cannot change rows**. This is a real expansion: it also removes lateral escape from hazards and same-row swaps. My default recommendation is to honor the narrower row lock unless stronger anchoring is explicitly desired. Represent movement restrictions as policy, e.g. row lock versus cell lock, so later roots and displacement do not depend on scattered status-name checks. |
+| **2. Re-Pin keeps the longer duration; Sveda keeps the hotter heat** | Keeping the longer *remaining* Pin duration is sensible and prevents a weaker reapplication from shortening it. Hotter-heat retention has a larger economic consequence: a cheaper application can sustain a stronger burn. I recommend that Sveda resets fade using the applying tier's heat, while Blast refresh preserves existing heat; retaining the maximum instead should be a deliberate combo rule and measured as such (D10). |
+| **3. Hevn counts attacks, resets even on a lost action** | Counting damaging attack actions rather than animation impacts is a reasonable balance rule: two-hit Blast and flurries do not get arbitrary extra weight. Describe it as “attacks that damaged her since her last action opportunity,” not “every hit.” Resetting at a lost action opportunity is consistent with “since her last turn,” but makes stun/Bonus Round timing important. Keep one explicit policy for successful, skipped, interrupted and bonus actions; do not let incidental resolver returns define it. |
+| **4. Weakness applies to every status move; extra stack only on the main status** | This agrees with the broader status-move rule in refactor_plan.md, while classes.md gives Reyk as an example. I recommend keeping the general rule and the single extra main-status increment. Document how non-stack effects translate it: a base Pin on a Pierce-weak foe lasts **3 rounds**, but Scorched currently receives **no extra heat** from the extra-stack parameter. Helvad remains an explicit exception. |
+| **5. A sole Front Skrida holds position but gains Nimble** | Keeping the Front occupied and retaining Nimble is reasonable. The implementation is more nuanced than the summary: with a living ally directly behind in the same lane, self-targeted Skrida **swaps them**, even when Ullar is the sole Front hero. I reproduced rear/0 Ullar and front/0 Dagskald afterward. Describe the invariant as “never empties the Front,” and decide whether self-targeted automatic swaps are intended. Fix C18 regardless. |
+
+Sources: [written Pin, classes.md:68–70](https://github.com/jensen-117/norse_game/blob/05909829250a968db0f4b2fdbed22799f06d8a70/classes.md#L68-L70); [reapplication, engine.py:683–689](https://github.com/jensen-117/norse_game/blob/05909829250a968db0f4b2fdbed22799f06d8a70/sim/engine.py#L683-L689); [attack counting, engine.py:1095](https://github.com/jensen-117/norse_game/blob/05909829250a968db0f4b2fdbed22799f06d8a70/sim/engine.py#L1095); [action reset:1682–1683](https://github.com/jensen-117/norse_game/blob/05909829250a968db0f4b2fdbed22799f06d8a70/sim/engine.py#L1682-L1683); [weak status effects:1019–1044](https://github.com/jensen-117/norse_game/blob/05909829250a968db0f4b2fdbed22799f06d8a70/sim/engine.py#L1019-L1044); [glide selection:1146–1176](https://github.com/jensen-117/norse_game/blob/05909829250a968db0f4b2fdbed22799f06d8a70/sim/engine.py#L1146-L1176).
+
+## D09 — Define precisely what Bidhevn doubles
+
+**Status:** Open balance/rule decision; the arithmetic is verified.
+
+At the same tier, target, attributes and hit-count state:
+
+| Damaging attacks received | Hevn / uncharged base Hevn | Current Bidhevn / uncharged base Hevn |
+|---:|---:|---:|
+| 0 | 1.0 | 2.6 |
+| 1 | 1.25 | 3.25 |
+| 4 or more | 2.0 | 5.2 |
+
+The current Bidhevn is therefore **2.6 times an equally primed Hevn**, not 5.2 times that primed move. The 5.2 figure uses a Hevn with no retaliation bonus as the denominator. That distinction matters when choosing the fix.
+
+Sources: [compiler's manner multiplier, words.py:217–229](https://github.com/jensen-117/norse_game/blob/05909829250a968db0f4b2fdbed22799f06d8a70/sim/words.py#L217-L229); [Hevn payoff, engine.py:627–635](https://github.com/jensen-117/norse_game/blob/05909829250a968db0f4b2fdbed22799f06d8a70/sim/engine.py#L627-L635); [“releases double,” classes.md:94–96](https://github.com/jensen-117/norse_game/blob/05909829250a968db0f4b2fdbed22799f06d8a70/classes.md#L94-L96).
+
+**Recommendation:** If “double” means double the Hevn she would release with the same accumulated retaliation, give this verb's Patient variant an explicit x2 multiplier. That yields **up to x4** an uncharged base Hevn, or exactly x2 a fully primed ordinary Hevn. If the desired total ceiling is x2 uncharged Hevn, that is a different rule; neither a simple x2 manner nor the current +100% payoff produces that ceiling.
+
+Store a permitted per-verb manner scaling policy in the compiler/data rather than changing Bid globally or special-casing the printed name inside damage execution. Keep the accumulation window independent of the multiplier. Retain the current x2.6 behavior for other Bid moves unless a separate design change is intended.
+
+**Validate before settling:** Compare immediate Hevn, Guard-then-Hevn and Bidhevn at controlled incoming attack counts, speeds and interruption rates. Test the exact damage ratio against an equivalently primed Hevn, plus the agreed reset policy for Bonus Rounds and skipped actions. A test asserting the present grammar multiplier only freezes today's behavior; it does not settle what “double” should mean.
+
+## D10 — Measure Scorch's sustained economy, not only one base application
+
+**Status:** Open balance decision. No blanket boss immunity or automatic nerf is recommended from these numbers alone.
+
+A successfully applied, uninterrupted burn over all three ticks removes approximately these shares of the target's initial max HP, before integer rounding:
+
+| Applying tier | Total over 100/50/20 fade |
+|---|---:|
+| Halv | 6.8% |
+| Base | **13.6%** |
+| Mer | 19.04% |
+| Jatte | 25.84% |
+| Ur | 34.0% |
+
+The user's base figure is correct: `0.08 × (1 + 0.5 + 0.2) = 0.136`. Against a target requiring 18.4 average attack actions by the Layer 1 metric, that is approximately 2.5 such actions of damage. It is **conditional on landing and all ticks occurring**, spread over time; it is not automatically 2.5 actions of immediate expected value. Normal landing chance, the opportunity cost, interrupted/killed bodies and cleansing matter. Against an Eld-weak target the guaranteed application plus a Bonus Round materially improves the deal.
+
+**A more important reapplication consequence:** The compiler accepts a free Halvsveda. In a controlled legal custom kit, Mersveda costs 12 MP at the default sheet and establishes heat 1.4; a subsequent Halvsveda costs 0 MP yet retains heat 1.4 and resets the fade. The next full tick remains **11.2% max HP**. This is compiler-supported and reachable through the new custom-kit API, but that two-Sveda setup is not in a shipped kit snapshot or the current Lab kit selector. Do not describe it as a normal current-kit exploit.
+
+Sources: [Scorched data, data.py:399–442](https://github.com/jensen-117/norse_game/blob/05909829250a968db0f4b2fdbed22799f06d8a70/sim/data.py#L399-L442); [stronger heat retained, engine.py:683–689](https://github.com/jensen-117/norse_game/blob/05909829250a968db0f4b2fdbed22799f06d8a70/sim/engine.py#L683-L689); [free Halv pricing, words.py:245–251](https://github.com/jensen-117/norse_game/blob/05909829250a968db0f4b2fdbed22799f06d8a70/sim/words.py#L245-L251).
+
+**Recommendation:** First fix C17 so Auto can consider the mechanics it is supposed to measure. Then compare a scripted player-like policy with the AI on representative single-body bosses and reforming/crawling families: one application, repeated Sveda, stronger-then-cheaper refresh, and Blast maintenance. Track action cost, landing probability, MP/HP economy, ticks realized and fight length.
+
+My preferred initial rule is applying-tier heat on Sveda refresh, with existing heat preserved by Blast. That preserves the intended Brennumar/Skurmar partnership while preventing a weaker recast from inheriting stronger heat for free. If max-heat retention is chosen intentionally, test and price that loop explicitly.
+
+Percentage damage can be a useful identity for fighting durable foes. If it overwhelms the intended choices after those tests, adjust shared data—tick share, scaling or a documented cap based on caster power—rather than adding arbitrary boss-name immunities. Do not choose a new global coefficient from rare-AI-use counts.
+
+## Updated holistic assessment
+
+The nine playable starting-trio snapshots are a meaningful milestone. Pin feeding Banskott, Sunder feeding Pierce, Scorch feeding wind, and protection feeding Hevn form understandable party interactions. The free basic attack and explicit recharge choices support readable resource decisions. Keeping new effects in data and sharing damage calculations are sound directions.
+
+The new defects show where the common boundaries still need work: an effect is more than damage, an attack has targeting and interception before arithmetic, and a board cell can be occupied by someone who cannot act. Fix those concepts once before Kasta/Svepa, Song and Knots create more combinations.
+
+**D08 update:** The old caveat that the starting trio's leg-3 kits omit Lonnegga, Banskott and Lonnsveda is now obsolete: all three classes' leg-1–3 snapshots compile without exclusions. Dagskald and Skurmar still await their remaining signatures. The definitions of Layer 1, win-conditioned room costs and AI-policy results remain as previously reviewed.
+
+The refreshed report shows **35% net HP spent** for the starting trio's smallest fodder room, still above the intended 10–25%; the 4-slot elite costs **55%** among wins versus a 40–50% target. Some survival and leg-3 results improve substantially, but “the sweep is easier than the targets” is not uniformly true across all metrics. Avoid equating a higher win rate with reaching the intended resource pace.
+
+Keep D01/D02/D03's connected-route validation: full bars at the start of isolated fights do not establish healer-free route endurance or whether free recovery encourages stalling. Add representative human or scripted tactical play after the correctness fixes; compare like sample sizes and record the active rules profile.
+
+## Coding-agent handoff
+
+Work through this checkpoint before integrating more Wave 4 effects:
+
+1. Add a failing complete-turn regression for C16, then fix non-damage wind-up valuation. Coordinate pending-effect state with C13.
+2. Finish C05 and C12's interruption/forced-target boundaries; preserve existing resolution history.
+3. Fix C17, C18 and C19 with shared effect-value, occupancy and interception rules. Make each reproduction fail on the reviewed code before changing it.
+4. Resolve C15's explicit Lab profile and A03's natural-focus test.
+5. Record the accepted decisions for Pin movement, reapplication heat, Hevn counting/reset, status weakness and Skrida fallback. D09/D10 contain recommendations; distinguish an approved rule from a coding default.
+6. Rerun tests and browser checks, capture current page records, replay them, and regenerate the sweep only after behavior is settled.
+
+Keep all finding IDs. Append a Resolution block to each fixed item with cause, change, rationale, commit, failing-before evidence and verification. C14's current mismatch is already resolved; add provenance/drift protection rather than reopening it on old numbers.
+
+Verification should include the 240-count suite/parity basis, the separate autofill test, legacy move/fight comparisons, new-game interaction tests, a fresh browser session including keyboard focus and actual status actions, native replays, and a reproducible 60-per-shape report. Explain changed new-game results; do not overwrite them as if they were pure refactors. Unchanged legacy fights alone cannot close new-game defects.
+
+---
+
+## Preserved earlier review and resolution history
+
+The following Wave 4 entry checkpoint and earlier repository report are retained as history. They contain reproduction details for banked findings. This document's top status table and Wave 4a updates take precedence, especially C14's resolution and the starting trio's now-complete kits.
+
+# Agent Code Review — Wave 4 entry checkpoint
+
+Review date: 20 November 2026  
+Repository: [jensen-117/norse_game](https://github.com/jensen-117/norse_game)  
+Reviewed main: [8e034dec62b76c9fdf20001e79fd20ae861edfd4](https://github.com/jensen-117/norse_game/commit/8e034dec62b76c9fdf20001e79fd20ae861edfd4)  
+Previous review: [Wave 3, abaadf7](https://github.com/jensen-117/norse_game/commit/abaadf76ee4aae9c9d525a9b326d42df8bb5e999)
+
+This is a read-only review and handoff. No repository files or commits were changed. The current findings below take precedence over the historical report preserved at the end. In particular, its “all 13 technical findings closed” statement describes the earlier checkpoint; C05 is reopened here. The banked Wave 3 findings C12, C13, A03 and D08 are now incorporated into this document.
+
+## Current recommendation
+
+Take a focused correctness and measurement checkpoint before relying on the next sweep to freeze balance. Fix C05 and C12 together around action resolution, and C13 around visibility of pending actions. Correct the Lab's balance selection (C15), strengthen its keyboard regression test (A03), then regenerate the sweep with provenance (C14).
+
+Independent Wave 4 implementation can continue, but its new effects should enter playable kits only with complete-turn tests and AI evaluation. Do not interpret unchanged legacy fights as proof that new class behavior works: those legacy parties deliberately bypass the new tuning.
+
+There is no P0/P1 finding in this pass. The six open technical entries are:
+
+| ID | Priority | Current status | Finding |
+|---|---|---|---|
+| C05 | P2 | Reopened; earlier fixes retained | A release consumes its cancellation token before Bleeding can interrupt it |
+| C12 | P2 | Open; reverified after targeted Egga | A finishing blow bypasses taunt redirection |
+| C13 | P2 | Open; reverified | Planning hides a queued wind-up from threat evaluation |
+| C14 | P2 | New | The committed sweep report does not reproduce at the reviewed commit |
+| C15 | P2 | New integration finding | Choosing a legacy class silently changes the enemy ruleset in the Lab |
+| A03 | P3 | Open; source rechecked | The browser test removes the focus condition that caused the Enter restart bug |
+
+C01–C04, C06–C11, A01 and A02 retain their prior Closed status; their regression tests pass. This is not a claim that every old resolution was independently re-audited in full. D01–D07 remain design validation work. D08 is partially addressed and updated below.
+
+## Scope and verification
+
+The repository is populated: the pinned tree contains 4,479 tracked blobs/files. Main was rechecked after the investigation and still pointed to the pinned commit.
+
+This pass covered all five commits after the Wave 3 review: initial tuning, the room sweep, class bodies and one action per enemy, rounded approved settings, and targeted Egga / Medvind / Avliva definitions. It reviews Wave 4's entry point, not signatures that have not yet been implemented.
+
+Independent results at the pinned commit:
+
+- **202 unittest cases pass**, plus the standalone autofill/replay test passes. All seven modules loaded by the Lab have identical Git blob hashes to their sim counterparts, including byte-for-byte comparisons of the three changed modules. This supports the reported **204 total checks** when the parity check is counted as one.
+- **4,535 legacy moves/kits are identical** to the Wave 3 snapshot.
+- **288 fixed-party fights and 480 wider regression fights are identical** to the Wave 3 snapshot.
+- **48 committed page Auto records replay natively** with matching winner, rounds, full log digest and line count; engine hash `57674c777c`.
+- The **900 room fights** in `sweep.report(30)` were rerun without writing the report. Layer 1 reproduces; some Layer 2 rows differ from the committed report.
+- Additional probes reproduce C05, C12 and C13, and the C15 profile switch.
+- Medvind applies Quick to one ally, that ally's row with Flok, and the party with All. Flokegga taunts the selected enemy row and leaves the other row alone.
+- Banskott and Avliva are correctly refused by Battle while their conditional mechanics remain unresolved. Their newly approved multipliers are not claimed to be implemented.
+
+**Limits:** This pass ran fetched, commit-pinned Python sources through an in-memory import harness. It did not run a fresh browser interaction session, a clean-clone runtime build, or a human-played dive. Native replay of saved browser records does not establish fresh browser rendering, focus, startup or playback correctness. A03 is a test-coverage finding from source inspection, not a claim that the current Enter fix is broken.
+
+## C05 — A release consumes its cancellation token before an action-time fall
+
+**Priority/status:** P2, reopened. This is an additional boundary of the existing C05 lifecycle issue; do not assign a new ID or erase either previous resolution.
+
+**Context and cause:** The token introduced by commit 762ac97 correctly handles a fall after planning but before `resolve()` starts. However, `resolve()` checks and immediately clears `u.charge`, then calls `tick_statuses(u, "action")`. If Bleeding makes a Draugr fall and crawl, or a Mogel re-form, the unit is alive again when that hook returns. `interrupt()` sees neither a stored wind-up nor a token. The old release then continues.
+
+Sources: [release entry, engine.py:825–835](https://github.com/jensen-117/norse_game/blob/8e034dec62b76c9fdf20001e79fd20ae861edfd4/sim/engine.py#L825-L835), [action ticks:796–806](https://github.com/jensen-117/norse_game/blob/8e034dec62b76c9fdf20001e79fd20ae861edfd4/sim/engine.py#L796-L806), [interruption:675–682](https://github.com/jensen-117/norse_game/blob/8e034dec62b76c9fdf20001e79fd20ae861edfd4/sim/engine.py#L675-L682), [fall/crawl/re-form:500–543](https://github.com/jensen-117/norse_game/blob/8e034dec62b76c9fdf20001e79fd20ae861edfd4/sim/engine.py#L500-L543).
+
+**Reproduce** from the sim directory:
+
+```python
+import random
+from engine import *
+from grammar import compile_word
+
+v, d = build_hero("Vasara"), build_hero("Dagskald")
+e = spawn_family("Draugr", "Draugr", 50)
+b = Battle([v, d], [e], random.Random(1), events=True)
+a = compile_word("Skott", manner="Bid")
+e.actions = [a]
+e.bide = (a, d)
+e.hp = 1
+e.status["Bleeding"] = {"rounds": 3}
+b.begin("party")
+for uid in b.awaiting():
+    b.submit(uid, "guard")
+before = d.hp
+b.commit()
+print(before - d.hp, e.stats["bides_lost"])
+print([x.get("text") for x in b.events if x.get("text")])
+```
+
+**Observed:** Bleeding deals 77; the Draugr falls and crawls; its old Patient Shot still hits for about 72.62 HP (73 displayed). No `bide_lost` event occurs. Replacing the enemy with `spawn_mogel("Stor", "Jord", 50)` also reproduces it: the new Litel body fires the old charge for about 207.48 HP, with zero losses recorded. These are controlled, valid-action lifecycle fixtures, not claims that those exact charges occur in the shipped room kits. The defect also reproduces at the preceding Wave 3 snapshot, so the new tuning did not introduce it.
+
+**Why it matters:** The agreed “falling ends the wind-up at that moment” rule is still dependent on exactly where the fall happens. Wave 4's additional periodic effects and reactions make this boundary more important.
+
+**Suggested fix and rationale:** Retain the release token through all pre-action hooks that can interrupt or replace the actor. Revalidate it after those hooks, then consume it only when execution is committed. Treat this as an action lifecycle rule shared by all families, rather than special-casing Bleeding, Draugr or Mogel. Ensure an interrupted/skipped release cannot leave a stale token behind.
+
+An in-memory diagnostic change retaining and rechecking the token across the damage tick changed the Draugr result to **zero damage and exactly one loss event**. This validates the proposed direction; it is not an applied or fully verified production patch.
+
+**Close when:** Add failing-before/fixed-after full-turn tests for the crawling Draugr and re-forming Mogel during an action tick; retain the existing post-planning fall/revive tests and uninterrupted-hit assertion. Check one loss event, no old release, and no stale charge after skipping or interruption.
+
+## C12 — Egga still does not redirect a finishing blow
+
+**Priority/status:** P2, open; banked from Wave 3 and reproduced against the new targeted Egga.
+
+**Cause:** The branch for attacking a Dying unit executes before `targets_for()`, where taunt redirection lives. A taunted enemy therefore obeys Egga against standing allies but ignores it when finishing a fallen ally.
+
+Sources: [finishing blow before target resolution, engine.py:883–895](https://github.com/jensen-117/norse_game/blob/8e034dec62b76c9fdf20001e79fd20ae861edfd4/sim/engine.py#L883-L895), [taunt redirection:764–776](https://github.com/jensen-117/norse_game/blob/8e034dec62b76c9fdf20001e79fd20ae861edfd4/sim/engine.py#L764-L776).
+
+**Reproduce:** Build Vasara and Dagskald. Give a level-15 Spear Drattr only `dict(strike("Pierce", power=1), cost=0, reach="any")`. Construct an events-enabled Battle with seed 1. Set Dagskald to 0 HP, call `b.downed(d)`, then set `d.breaths = 2`. Begin with party control, order Vasara's `m2` (Egga) on that enemy's UID, then commit.
+
+**Observed:** The enemy naturally declares against Dagskald. Egga resolves first on that enemy, but there is no drawn event. The finishing blow removes one breath and the end-of-round tick removes the second: Dagskald dies. Vasara was alive and reachable.
+
+**Why it matters:** This is exactly when a player would expect protection to matter. The written rule covers the taunted enemy's single-target attacks; it does not exempt finishing blows.
+
+**Suggested fix and rationale:** Determine the effective forced target before branching into fallen-target or ordinary-hit execution. Share the reach and single-target checks instead of adding a second ad hoc Egga check to the finishing branch. Preserve row/all/spot exceptions and the rule that an unreachable taunter cannot redirect the attack.
+
+**Close when:** A full ordered turn verifies a reachable taunter takes the attack and the fallen ally loses only its ordinary end-of-round breath. Also cover an unreachable or fallen taunter, unaffected area attacks, and targeted Egga not affecting an untaunted second foe.
+
+## C13 — Planning makes a still-pending wind-up disappear from AI threat evaluation
+
+**Priority/status:** P2, open; banked from Wave 3 and reverified.
+
+**Cause:** `plan_phase()` moves each stored `bide` into a queued release and sets `u.bide = None` before ordinary actors declare. `bide_threat()` only reads `u.bide`. The queued token holds the action but not its target, so the shared threat query has lost the information it needs.
+
+Sources: [threat query, engine.py:1319–1322](https://github.com/jensen-117/norse_game/blob/8e034dec62b76c9fdf20001e79fd20ae861edfd4/sim/engine.py#L1319-L1322), [planning:1412–1437](https://github.com/jensen-117/norse_game/blob/8e034dec62b76c9fdf20001e79fd20ae861edfd4/sim/engine.py#L1412-L1437), [Egga valuation:1241–1249](https://github.com/jensen-117/norse_game/blob/8e034dec62b76c9fdf20001e79fd20ae861edfd4/sim/engine.py#L1241-L1249), [defensive board options:1324–1337](https://github.com/jensen-117/norse_game/blob/8e034dec62b76c9fdf20001e79fd20ae861edfd4/sim/engine.py#L1324-L1337).
+
+**Reproduce:** Build Vasara and Dagskald plus a level-15 Spear Drattr. Construct a Battle with seed 1. Give the enemy a Bid Skott via `compile_word("Skott", manner="Bid")`, set `e.actions = [a]`, `e.bide = (a, d)`, and `e.actions_per_round = 1`. Compare `b.bide_threat(d)` before and after `b.plan_phase([v, d, e], False)`.
+
+**Observed:** Threat drops from **50.325278934070276 to 0**, even though the release is queued and its token is still held. In the fixture Vasara declares Krosh and Dagskald declares Sol. The defect is the missing threat input; Egga need not always be the optimal choice.
+
+**Why it matters:** Defend, Cover, rotation and the new taunt valuation cannot reliably react to visible wind-ups at their decision point. This weakens both actual Auto behavior and the evidence used for balance.
+
+**Suggested fix and rationale:** Expose active pending actions through one query that survives the stored-to-queued transition and includes actor, target and validity. Publish that state before asking actors to declare. Count a wind-up once, remove it on interruption, and account for its eventual target/reach policy. This can share the lifecycle representation used to fix C05 rather than maintaining a second AI-only copy of charge state.
+
+**Close when:** Threat remains present through planning, disappears immediately on cancellation, is not double counted, and the relevant defensive options receive it. Include a complete-turn fixture demonstrating a sensible defensive response under controlled scores.
+
+## C14 — The committed sweep report is stale after the latest behavior change
+
+**Priority/status:** P2, new; fix before deciding the next balance change.
+
+Sources: [committed result rows, sweep_report.md:50–59](https://github.com/jensen-117/norse_game/blob/8e034dec62b76c9fdf20001e79fd20ae861edfd4/sweep_report.md#L50-L59), [report generation, sim/sweep.py:109–151](https://github.com/jensen-117/norse_game/blob/8e034dec62b76c9fdf20001e79fd20ae861edfd4/sim/sweep.py#L109-L151).
+
+**Reproduce:** From the sim directory, call `sweep.report(30)[0]` and compare it with `../sweep_report.md`. Calling the function instead of the script's main block avoids overwriting the report. Normalize line endings only.
+
+**Observed, starting trio, kit leg 1:**
+
+| Measurement | Committed report | Reproduced at reviewed main |
+|---|---:|---:|
+| Fodder, 3 slots: HP spent on wins | 41% | 42% |
+| Fodder, 5 slots: wins | 80% | 87% |
+| Elite, 4 slots: wins | 47% | 57% |
+| Elite, 4 slots: HP spent on wins | 59% | 63% |
+| Boss, 6 slots: wins | 17% | 13% |
+
+Layer 1 and the starting trio's leg-3 rows reproduce; multiple leg-1 rows do not. The latest targeted-Egga change affects the behavior measured by these rows. The report carries settings but no source fingerprint that exposes this mismatch.
+
+**Why it matters:** The sweep is explicitly being used to choose the next step. A stale result can send that decision in the wrong direction even when tests and legacy fingerprints remain green.
+
+**Suggested fix and rationale:** Regenerate after the correctness fixes, and include reproducible provenance: source hash or commit, sample count, seed policy, party/leg, encounter configuration, kit exclusions and active tuning profile. Add a check-only report comparison that fails on drift without rewriting the expected result. A source hash avoids the circularity of embedding a commit that will itself change when a generated report is committed.
+
+**Close when:** The saved report reproduces with its documented configuration; intentional changes are explained, not merely overwritten; and a rules change can no longer leave the headline report silently stale.
+
+## C15 — The Lab silently switches enemy balance when one legacy class is selected
+
+**Priority/status:** P2, new integration finding. The engine branch is deliberate and tested; the problem is exposing mixed profiles as ordinary party choices without making the ruleset explicit.
+
+**Cause:** Battle enables the new enemy settings only if every party member has `kit_leg`. The Lab still offers all old classes and its “Roll classes” path can select them. A new sheet hero retains its new body and x1.2 damage in a mixed party, while enemies revert to old HP, old damage and multiple actions.
+
+Sources: [profile inference, engine.py:415–427](https://github.com/jensen-117/norse_game/blob/8e034dec62b76c9fdf20001e79fd20ae861edfd4/sim/engine.py#L415-L427), [hero tuning:354–360](https://github.com/jensen-117/norse_game/blob/8e034dec62b76c9fdf20001e79fd20ae861edfd4/sim/engine.py#L354-L360), [Lab class menu:24–26](https://github.com/jensen-117/norse_game/blob/8e034dec62b76c9fdf20001e79fd20ae861edfd4/sim/lab.py#L24-L26), [random class selection and mixed construction:43–68](https://github.com/jensen-117/norse_game/blob/8e034dec62b76c9fdf20001e79fd20ae861edfd4/sim/lab.py#L43-L68), [page class choices, index.html:213](https://github.com/jensen-117/norse_game/blob/8e034dec62b76c9fdf20001e79fd20ae861edfd4/fight_lab/index.html#L213).
+
+**Reproduce:** In the Lab, use Vasara/Ullar/Brennumar at level 50, then replace only Brennumar with Hafrunar. Use the same enemy rank/level. An equivalent direct probe builds the first two heroes with `build_hero`, the third with `build_hero("Brennumar")` or `birth("Hafrunar", 50, Random(1))`, and places a fresh level-50 Forndraugr in each Battle.
+
+**Observed:**
+
+| Enemy setting | All sheet heroes | One Hafrunar replaces Brennumar |
+|---|---:|---:|
+| HP multiplier | 1.75 | 1.0 |
+| Damage multiplier | 2.25 | 1.0 |
+| Actions per round | 1 | 3 |
+| Vasara/Ullar damage multiplier | 1.2 | 1.2 |
+
+**Why it matters:** A party comparison also changes the opposition's rules. A tester can mistake this for class balance, and a random party can enter the hybrid configuration without choosing a different game mode.
+
+**Suggested fix and rationale:** Make the rules/tuning profile explicit at the encounter boundary, and preserve the legacy profile for legacy regression fixtures and records. In the Lab's new-game mode, offer supported sheet classes and roll from that set; expose legacy experiments as a visibly separate mode. If mixed profiles are intentionally useful, label and record them as such. Do not spread class-name exceptions through enemy spawning or silently strip the new heroes' stats.
+
+**Close when:** The Lab cannot silently change profile through a normal class edit or random roll; records identify the profile; legacy records still replay; and profile-selection tests cover both deliberate modes.
+
+## A03 — The browser test masks the Enter-restart regression
+
+**Priority/status:** P3, open; banked from Wave 3.
+
+Source: [sim/checks/s_wave3.py:20–27](https://github.com/jensen-117/norse_game/blob/8e034dec62b76c9fdf20001e79fd20ae861edfd4/sim/checks/s_wave3.py#L20-L27). The current application fix remains present at [fight_lab/index.html:330](https://github.com/jensen-117/norse_game/blob/8e034dec62b76c9fdf20001e79fd20ae861edfd4/fight_lab/index.html#L330).
+
+**Issue:** Immediately after clicking Fight, the test forcibly focuses the body. That removes the focused-button state which caused Enter to restart a fight. The updated test also clicks a canvas target before pressing Enter, further distancing it from that original sequence.
+
+**Reproduce/verify the gap:** In a disposable test context, remove the application's blur fix and run the current Wave 3 test. Its explicit focus reset prevents it from exercising the original trigger. This mutation check was not run in a fresh browser in this pass; the masking operations are directly present in the source.
+
+**Why it matters:** The Meditate and Egga scenario can remain green while the actual keyboard restart bug returns.
+
+**Suggested fix and rationale:** Add a focused regression that clicks Fight and uses keyboard commands/Enter without any test-induced focus transfer or intervening canvas click. Record the fight seed/session identity and assert it remains the same while the round advances. Keep the targeted-Egga scenario for its own purpose. Exercise the user action, not an implementation detail such as whether blur() was called.
+
+**Close when:** Removing the application fix makes the new regression fail, restoring it makes it pass, and the ordinary keyboard and mouse combat scenarios still pass.
+
+## Design review and D08 update
+
+### D08 — Match each balance claim to what its measurement actually measures
+
+**Status:** Partially addressed. The new class bodies, separate enemy actions setting and real room fights materially improve the old Layer-1-only sweep. The earlier concern about old multi-action enemies being implicit in new-game room fights is superseded: those enemies now act once. Do not carry that obsolete criticism forward.
+
+The remaining distinction matters:
+
+- **Layer 1** divides initial HP by expected damage per attack action. It is not a simulation of killing the whole enemy through crawl/re-form/reassembly, nor a count of individual impacts in a multihit attack. Label it “expected attack actions against initial HP” or clearly define the shorthand. See [sweep.py:38–53](https://github.com/jensen-117/norse_game/blob/8e034dec62b76c9fdf20001e79fd20ae861edfd4/sim/sweep.py#L38-L53) and [expected_damage, engine.py:604–608](https://github.com/jensen-117/norse_game/blob/8e034dec62b76c9fdf20001e79fd20ae861edfd4/sim/engine.py#L604-L608).
+- The roster weights available variants rather than equal families: 20 of 54 entries are Ande element/rank variants. Keep overall medians, but add family/tier distributions so the solver cannot conceal a difficult family behind many similar entries.
+- **Layer 2** correctly includes real combat, but HP/MP and rounds are measured only among wins. They are net end-of-fight deficits, not gross damage or expenditure. Healing, Meditate and martial HP costs affect those numbers. Keep the existing win-rate and falls columns beside them.
+- Kits remain intentionally partial. In leg 3, Vasara loses Lonnegga until its rider exists, and Dagskald loses Lonnlak until its cleanse exists. Emit excluded names/reasons in the report. The current leg-3 starting-trio comparison is not evidence for the completed kit's protection loop.
+- “AI floor” is a hypothesis, not a measured bound on human performance. The AI has incomplete defensive behavior (C13), while damage evaluation can read true affinities unavailable to a fresh player's knowledge. Call these “current AI-policy results” until paired human/scripted-policy runs establish a useful comparison.
+
+**Recommendation:** Preserve the approved 1.2 / 2.25 / 1.65 / 1.75 settings while fixing correctness and report freshness. Extend the measurements before another global retune. This keeps the solver useful without treating its four median targets as proof of encounter pacing.
+
+### D01, D02 and D03 — What the current rooms imply for the next playable leg
+
+At the reviewed commit, the starting trio's smallest fodder shape wins 97% of 30 trials but loses about **42% net HP on wins**, versus a 10–25% target, with **0.60 falls per fight**. Its 4-slot elite wins 57%; its 4-slot boss wins 57%. These are warnings about the current AI-played room model, not a proven human difficulty verdict.
+
+The five class identities read more clearly with the new bodies: Vasara absorbs pressure, Ullar trades resilience for speed and damage, Brennumar is fragile, Dagskald has magical resilience, and Skurmar is fast. The grammar still supports recognizable growth and party interactions. The danger is judging those interactions before the signatures and defensive behavior actually participate.
+
+For the next decision:
+
+1. Fix the confirmed behavior and reporting defects, then rerun the same seed set so differences remain attributable.
+2. Play a short connected route with the starting trio and a healer variant, tracking survival, falls, HP/MP after each room, recovery opportunities, and retreat decisions. Fresh full bars in every isolated room do not test route endurance.
+3. Compare room budget, rank mix and enemy count before adjusting global damage again. Enemy action economy is now a visible lever; the large 3-to-6-slot deterioration should inform room authoring.
+4. Add representative scripted choices or human play logs for taunt/protection, resource recovery and target priority. Include the time and reward for stalling, preserving D03's original concern.
+5. Revisit the full leg-3 comparisons when Wave 4 unblocks the defining moves.
+
+D04–D07 remain the earlier design/UI validation milestones; this pass does not establish return banking, mutation comprehension, decision/playback pacing, or accessible keyboard targeting.
+
+## Handoff and acceptance
+
+Work through C05, C12, C13, C15, A03 and C14 using these IDs. Keep existing resolutions and append follow-up Resolution blocks with cause, change, rationale, commit and verification. The targeted-Egga rule and approved tuning settings are the reviewed design baseline; change them only as an explicit design decision.
+
+For each reproduced defect, first add a meaningful test that fails on this reviewed commit. Prefer shared action lifecycle, target-selection and encounter-profile rules over family-specific exceptions. Regenerate the sweep only after the behavior fixes; explain both unchanged and changed results.
+
+Before closing the checkpoint:
+
+- Run the complete test suite, standalone autofill test and Lab parity check.
+- Compare the 4,535 legacy outputs and the 288/480 fight sets; explain any intentional differences.
+- Add or update new-game fixtures that actually exercise the affected behavior; unchanged legacy fixtures cannot close these findings.
+- Run fresh browser smoke and focus/session tests, then capture and replay current Auto records.
+- Reproduce the saved sweep with recorded configuration and source provenance.
+- Update the top summary accurately: distinguish fixed, deferred and design-validation items. Do not mark an item closed solely because the existing tests passed.
+
+---
+
+## Historical review and resolutions — preserved record
+
+The following is the repository's existing AGENT_CODE_REVIEW.md as fetched at the reviewed commit. Its original baseline, recommendations and checkpoint summary are historical. The Wave 4 entry checkpoint above is the current status, including the new C05 reopening and banked/new findings. Earlier resolution text is retained so the coding agent can append evidence rather than lose history.
+
 # Agent Code Review — norse_game
 
 Review date: 20 November 2026  
@@ -624,4 +1124,5 @@ Expected observations at the reviewed, unfixed snapshot: C08's Storm shares are 
 ## Keeping this review current
 
 Retain the IDs when fixing or revisiting findings. Record the fixing commit, the relevant behavioral test, and the verification result before changing an item to Closed. If a design decision changes the expected behavior, record that decision and update the associated test rather than silently treating the old finding as invalid. Keep confirmed defects, architectural follow-ups, and playtest questions separate in later rollups.
+
 
