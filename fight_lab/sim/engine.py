@@ -121,7 +121,10 @@ def plain(a):
         elif reach == "any" and el in MARTIAL: s += " Range Long: reaches anywhere."
         if a.get("hits", 1) > 1: s += f" In {a['hits']} hits."
         if a.get("falloff"): s += " Half damage to the one behind."
-        if a.get("status"): s += f" May leave them {a['status']}."
+        if a.get("status"): s += f" Leaves them {a['status']} on every hit." if a.get("rider_sure") else f" May leave them {a['status']}."
+        if a.get("pays_on"): s += f" x{a['pays']:g} against the {a['pays_on']}."
+        if a.get("pays_below"): s += f" x{a['pays']:g} against a foe under {a['pays_below']:.0%} HP."
+        if a.get("answer"): s += " Stronger for every hit you took since your last turn."
         if parts.get("manner") in PLAIN_MANNER: s += " " + PLAIN_MANNER[parts["manner"]]
         elif a.get("bide"): s += " " + PLAIN_MANNER["Bid"]
         elif a.get("flurry"): s += " " + PLAIN_MANNER["Drif"]
@@ -142,7 +145,11 @@ def plain(a):
         if a["status"] == "Death": return f"A chance to fell {who_foe} outright."
         if a["status"] == "Bound":
             return "Nets one foe: they lose their next action. Acts sooner. Once per fight."
-        return f"May leave {who_foe} {a['status']}."
+        s = f"May leave {who_foe} {a['status']}" + (f" and {a['also_status']}." if a.get("also_status") else ".")
+        if a.get("styng"): s += " With a strike."
+        return s
+    if k == "glide": return "Swift. Step to your other row, or trade places with an ally; gain Nimble."
+    if k == "windfall": return "Patient: breathe deep this turn, and a large share of your MP comes back next turn."
     if k == "cleanse": return f"Washes ailments and lowered stats off {who_ally}."
     if k == "revive":
         reach = "a Dying or Dead ally" if a.get("reaches") == "Dead" else "a Dying ally"
@@ -151,7 +158,10 @@ def plain(a):
     if k == "flee": return "Escape the fight, for certain." if a.get("item") else "Try to run."
     if k == "defend": return "Halve the damage you take this round. Acts first."
     if k == "cover": return "Take the hits meant for one ally this round. Acts first."
-    if k == "taunt": return f"First. {'A row of foes' if a.get('shape') == 'row' else 'One foe'}: their single-target attacks this round must go to you, if they can reach you."
+    if k == "taunt":
+        s = f"First. {'A row of foes' if a.get('shape') == 'row' else 'One foe'}: their single-target attacks this round must go to you, if they can reach you."
+        if a.get("also_status"): s += f" They're left {a['also_status']}."
+        return s + (" With a strike." if a.get("styng") else "")
     if k == "meditate": return "Recover some MP. Takes your turn."
     if k == "move": return "Step to another spot, or swap with the ally there."
     return ""
@@ -179,6 +189,7 @@ class Unit:
         self.charge = None        # the token of a release already queued this round; an interruption clears it (C05)
         self.covered_by = None    # an ally who Covers this unit this round (combat_spec Part 8)
         self.once_used = set()    # once-per-fight moves already spent (Net Throw)
+        self.hits_taken = 0       # attacks that hurt it since its last action (Hevn answers them)
         self.state = "up"          # heroes: up, dying, dead (combat_spec Part 10)
         self.breaths = 0
         self.wounded = False
@@ -226,6 +237,7 @@ class Unit:
         return f"{name} {abs(n)}" if name else None
 
     silenced = property(lambda s: s.has_flag("blocks_mp"))
+    rooted = property(lambda s: s.has_flag("rooted"))       # Pinned: it can't leave its spot
 
     def speed(self): return self.attrs["SPD"] * self.b("SPD") * stage_mult(self.stage("SPD"))
     def affinity(self, element):
@@ -338,20 +350,21 @@ def sheet_affinity(cls):
     if c["kind"] == "magical": return build_aff(**SCHOOL_AFFINITY[c["school"]])
     return build_aff(**CLASS_AFFINITY[cls])
 
-def build_hero(cls, leg=1, level=None, playable=True, name=None):
+def build_hero(cls, leg=1, level=None, playable=True, name=None, kit=None):
     """A hero of the new game (refactor_plan Wave 3): a class sheet and a kit snapshot (data.KITS), priced by the
     hero's own bars. With playable=True, moves the engine can't carry out yet are left out of the kit and listed in
     u.excluded with their reasons; a Battle refuses them either way. Every hero also has a free Halv basic attack
-    (BASIC_VERB) outside the four slots, and the universal actions (Defend, Meditate for magicals, items, Move, Flee)."""
+    (BASIC_VERB) outside the four slots, and the universal actions (Defend, Meditate for magicals, items, Move, Flee).
+    `kit` replaces the leg's snapshot with (verb, parts) pairs (tests; later the Lab's kit builder)."""
     from words import compile_kit
     c = CLASSES[cls]; L = level or SHEET_LEVEL
-    kit = compile_kit(cls, leg)
+    kit = [compile_verb(v, **parts) for v, parts in kit] if kit is not None else compile_kit(cls, leg)   # kit: (verb, parts)
     excluded = [(a["name"], a["unresolved"]) for a in kit if a["unresolved"]] if playable else []
     if playable: kit = [a for a in kit if not a["unresolved"]]
     basic = compile_verb(BASIC_VERB[cls], tier="Halv")
     u = Unit(name or cls, "party", L, sheet_attrs(cls, L), c["atk"], c["mat"], sheet_affinity(cls), [basic] + kit, cls=cls)
     for a in u.actions:                    # a martial verb's range: its root in this class's weapon (Skott on a Bow: Long)
-        if a["kind"] == "damage" and a.get("root") and c.get("weapon"):
+        if a.get("root") and c.get("weapon"):                  # damage, and a status move's arrow (Naglskott, Peka)
             a["reach"] = RANGES[root_range(a["root"], c["weapon"])]; a["weapon"] = c["weapon"]
     u.kit_leg, u.excluded = leg, excluded
     u.dmg_mult = HERO_POWER.get(cls, 1.0)            # baked into the character, not a buff
@@ -428,7 +441,11 @@ class Battle:
 
     def wants_front(self, u):
         """Front-liners: martial heroes, and enemies whose damage is mostly martial (Mogel, Draugr...)."""
-        if u.side == "party": return CLASSES.get(u.cls, {}).get("kind") == "martial"
+        if u.side == "party":
+            c = CLASSES.get(u.cls, {})
+            if getattr(u, "kit_leg", None) is not None:          # a new-game hero stands where its weapon's range says
+                return c.get("kind") == "martial" and WEAPONS.get(c.get("weapon"), (None, "Short"))[1] != "Long"
+            return c.get("kind") == "martial"
         if getattr(u, "family", None) == "Mogel": return True
         dmg = [a for a in u.actions if a["kind"] == "damage"]
         melee = sum(a["element"] in MARTIAL and a.get("reach") != "any" for a in dmg)   # archers keep back
@@ -599,7 +616,24 @@ class Battle:
         dmg = a["power"] * el["power"] * (A / D) * level_factor(att.level)
         if a["all"]: dmg *= ALL_POWER_MULT
         if not a.get("fixed"): dmg *= getattr(att, "dmg_mult", 1.0)   # hero power / enemy damage (new game); items fixed
-        return dmg
+        return dmg * self.payoff(att, dfn, a)
+
+    def carries(self, t, status):
+        """Does t carry this status now? A named counter counts while it leans its way (Marked: EVA below zero)."""
+        if status in COUNTER_OF:
+            stat, sign = COUNTER_OF[status]; return t.stage(stat) * sign > 0
+        return status in t.status
+
+    def payoff(self, att, dfn, a):
+        """What a move's condition adds (Wave 4a), read wherever damage is (so the AI sees it too): Banskott on the
+        Pinned, Avliva on a foe under half HP, Hevn per hit she took, and Pierce through a lowered guard (new game)."""
+        m = 1.0
+        if a.get("pays_on") and self.carries(dfn, a["pays_on"]): m *= a["pays"]
+        if a.get("pays_below") and dfn.hp < a["pays_below"] * dfn.maxhp: m *= a["pays"]
+        if a.get("answer"): m *= 1 + min(HEVN_CAP, HEVN_PER_HIT * att.hits_taken)
+        if a["element"] == "Pierce" and getattr(self, "new_game", False):
+            m *= 1 + PIERCE_GAP * max(0, -dfn.stage("DEF"))      # Pierce finds the gaps
+        return m
 
     def expected_damage(self, att, dfn, a):
         aff = dfn.affinity(a["element"])
@@ -622,7 +656,7 @@ class Battle:
         stat, sign = COUNTER_OF[status]
         return t.stage(stat) * sign >= STACK_CAP
 
-    def apply_status(self, src, tgt, status, chance, stacks=1):
+    def apply_status(self, src, tgt, status, chance, stacks=1, tier=None):
         if not tgt.alive or self.rng.random() >= chance: return False
         if STATUSES.get(status, {}).get("boss_immune") and getattr(tgt, "rank", None) == "Drott":
             self.emit("immune", f"      {tgt.name} shrugs off {status}.", unit=tgt.name, status=status); return False
@@ -647,7 +681,12 @@ class Battle:
                 pool, n = row["pick"]; inst["stats"] = [self.rng.choice(pool) for _ in range(n)]
             d = row["duration"]
             inst["rounds"] = UNTIL_USED if d is None else self.rng.randint(*d) if isinstance(d, tuple) else d
+            if row.get("per_stack"): inst["rounds"] += row["per_stack"] * (stacks - 1)       # a Mer Pin lasts longer
             if "fade" in row: inst["step"] = 0
+            if row.get("heat"): inst["heat"] = TIER_POWER[tier or "Base"] / TIER_POWER["Base"]   # Sveda's tier sets the heat
+            old = tgt.status.get(status)
+            if old is not None and row["reapply"] == "refresh": inst["rounds"] = max(inst["rounds"], old["rounds"])
+            if old is not None and row["reapply"] == "reset": inst["heat"] = max(inst.get("heat", 1.0), old.get("heat", 1.0))
             tgt.status[status] = inst
         src.stats["statuses"] += 1
         self.emit("status", f"      {tgt.name} is {status}!", unit=tgt.name, status=status, src=src.name)
@@ -656,8 +695,11 @@ class Battle:
     def riders(self, att, tgt, a, result, was_weak):
         el = ELEMENT[a["element"]]
         if result == "graze" or not tgt.alive: return
-        if a["status"]:      # martial skill with a status (Blot)
-            self.apply_status(att, tgt, a["status"], STATUS_LINE_CHANCE[a["tier"]] * self.wil_ratio(att, tgt))
+        if a["status"] and a.get("rider_sure"):      # a counter rider lands on every hit, a stack a tier (Brakrosh)
+            self.apply_status(att, tgt, a["status"], 1.0, STACKS_BY_TIER.get(a["tier"], 1), a["tier"])
+        elif a["status"]:    # martial skill with a status (Blot)
+            self.apply_status(att, tgt, a["status"], STATUS_LINE_CHANCE[a["tier"]] * self.wil_ratio(att, tgt), tier=a["tier"])
+        if a.get("styng_hit"): return       # Styng's added hit carries no element rider: the status move is the effect
         rider = el["rider"]
         if not rider or a["tier"] == "Halv": return
         chance = RIDER_CHANCE[a["tier"]] * self.wil_ratio(att, tgt)
@@ -798,7 +840,11 @@ class Battle:
         for s, row in STATUSES.items():
             tk = row.get("tick")
             if not tk or tk["when"] != when or s not in u.status or not u.alive: continue
-            dmg = max(1, int(u.maxhp * tk["share"])); u.hp -= dmg
+            share = tk["share"]
+            if "fade" in row:                              # Scorched: 100%, 50%, 20% of its heat, then out
+                inst = u.status[s]; share *= inst.get("heat", 1.0) * row["fade"][inst["step"]]; inst["step"] += 1
+                if inst["step"] >= len(row["fade"]): del u.status[s]
+            dmg = max(1, int(u.maxhp * share)); u.hp -= dmg
             self.emit("tick", "    " + tk["line"].format(name=u.name, dmg=dmg), unit=u.name, status=s, dmg=dmg, hp=max(0, round(u.hp)))
             if not u.alive:
                 self.downed(u)
@@ -894,6 +940,7 @@ class Battle:
             chosen = None
         tgts = self.targets_for(u, a, chosen)
         if not tgts: return
+        if a["kind"] in ("move", "glide") and self.held(u, a, tgts): return      # Pinned: no one leaves a pinned spot
         u.pay(a)
         if a.get("once"): u.once_used.add(a["name"])
         u.stats["actions"] += 1
@@ -919,7 +966,16 @@ class Battle:
         if a["kind"] == "taunt":                            # Egga: the targets' single-target attacks this round go to her
             for t in tgts: t.taunted_by = u
             self.emit("taunt", f"    {u.name} uses {self.shown(u, a)}, daring {', '.join(t.name for t in tgts)} to strike her!{tag}",
-                      unit=u.name, move=a["name"], targets=[t.name for t in tgts]); return
+                      unit=u.name, move=a["name"], targets=[t.name for t in tgts])
+            for t in tgts:                                  # Lonnegga blinds them as she casts it; Styngegga strikes
+                if a.get("also_status"): self.apply_status(u, t, a["also_status"], 1.0, STACKS_BY_TIER.get(a["tier"], 1), a["tier"])
+                if a.get("styng") and t.alive: self.styng_hit(u, a, t, tgts, bonus)
+            return
+        if a["kind"] == "glide":
+            self.glide(u, a, tgts[0], tag); return
+        if a["kind"] == "windfall":                         # Djupanda's release: the deep breath lands
+            got = min(a["amount"] * u.maxmp, u.maxmp - u.mp); u.mp += got
+            self.emit("mp", f"    {u.name} breathes out: {got:.0f} MP back.{tag}", unit=u.name, amount=round(got), move=a["name"]); return
         if a["kind"] == "meditate":
             got = min(a["amount"] * u.maxmp, u.maxmp - u.mp); u.mp += got
             self.emit("mp", f"    {u.name} meditates, recovering {got:.0f} MP.{tag}", unit=u.name, amount=round(got), move="Meditate"); return
@@ -962,19 +1018,30 @@ class Battle:
                     tgts = [c]
             for t in tgts:
                 stacks = STACKS_BY_TIER.get(a["tier"], 1)
-                if a.get("sure"):
-                    self.apply_status(u, t, a["status"], 1.0, stacks); continue
-                res = self.roll(u, t)
-                if res == "crit" and CRIT_EARNS_BONUS and not bonus: self.eligible.add(u)
-                if res == "graze":
-                    self.emit("resist", f"      {t.name} shrugs it off.", unit=t.name); continue
-                if a["status"] == "Death":
-                    aff = {"resist": 0.5, "weak": 1.5, "null": 0.0, "absorb": 0.0}.get(t.affinity("Aska"), 1.0)
-                    chance = HELVAD_CHANCE * self.wil_ratio(u, t) * aff
+                if a.get("styng"):                          # Styng: a hit at 70% of the tier's power, then the status
+                    self.styng_hit(u, a, t, tgts, bonus)
+                    if not t.alive: continue
+                if self.status_weak(u, a, t):               # the weakness pays status moves too (classes.md: Reyk)
+                    if not bonus: self.eligible.add(u); u.stats["weak"] += 1
+                    self.emit("weak", f"      {t.name} is weak to it: it takes hold!", unit=t.name, src=u.name, element=a["element"])
+                    landed = self.apply_status(u, t, a["status"], 1.0, stacks + 1, a["tier"])
+                elif a.get("sure"):
+                    landed = self.apply_status(u, t, a["status"], 1.0, stacks, a["tier"])
                 else:
-                    chance = STATUS_LINE_CHANCE[a["tier"]] * self.wil_ratio(u, t)
-                if self.apply_status(u, t, a["status"], chance, stacks) and not t.alive:
-                    self.downed(t)
+                    res = self.roll(u, t)
+                    if res == "crit" and CRIT_EARNS_BONUS and not bonus: self.eligible.add(u)
+                    if res == "graze":
+                        self.emit("resist", f"      {t.name} shrugs it off.", unit=t.name); continue
+                    if a["status"] == "Death":
+                        aff = {"resist": 0.5, "weak": 1.5, "null": 0.0, "absorb": 0.0}.get(t.affinity("Aska"), 1.0)
+                        chance = HELVAD_CHANCE * self.wil_ratio(u, t) * aff
+                    else:
+                        chance = STATUS_LINE_CHANCE[a["tier"]] * self.wil_ratio(u, t)
+                    landed = self.apply_status(u, t, a["status"], chance, stacks, a["tier"])
+                    if landed and not t.alive:
+                        self.downed(t); continue
+                if landed and a.get("also_status") and t.alive:     # Lonnsveda's Feeble, Lonnpeka's Sundered
+                    self.apply_status(u, t, a["also_status"], 1.0, stacks, a["tier"])
             return
         # damage
         self.emit("act", f"    {u.name} uses {self.shown(u, a)}.{tag}", unit=u.name, move=a["name"], shown=self.shown(u, a), move_kind="damage", element=a["element"], targets=[t.name for t in tgts], bonus=bonus, tier=a.get("tier"), all=a["all"])
@@ -992,45 +1059,121 @@ class Battle:
             return
         for ti, t in enumerate(tgts):
             if not t.alive: continue
-            aff = t.affinity(a["element"])
-            total, results, parts = 0.0, [], []
-            for _ in range(a.get("hits") or ELEMENT[a["element"]]["hits"]):
-                res = self.roll(u, t, a)
-                results.append(res)
-                dmg = self.raw_damage(u, t, a)
-                var = ELEMENT[a["element"]]["var"]
-                dmg *= 1 + self.rng.uniform(-var, var)
-                dmg *= {"graze": GRAZE_MULT, "hit": 1.0, "crit": a.get("crit_mult", CRIT_MULT)}[res]
-                dmg *= {"weak": 1.5, "resist": 0.5, "null": 0.0, "absorb": 1.0, "normal": 1.0}[aff]
-                rm = self.reach_mult(u, a, reach_as.get(t, t))
-                if rm is None: u.stats["illegal"] += 1; rm = 0.0
-                if rm < 1.0: u.stats["rear_melee"] += 1
-                dmg *= rm * (self.shape_mult(a, ti) if len(tgts) > 1 and not a["all"] else 1.0)
-                if t.defending: t.stats["blocked"] += dmg * 0.5; dmg *= 0.5
-                elif t in self.pending_defend: t.stats["late"] += 1       # hit before its own Defend landed
-                dmg = self.shatter(t, aff, dmg)
-                total += dmg; parts.append(dmg)
-                u.stats[res if res != "hit" else "hits"] += 1
-            if aff == "absorb":
-                t.hp = min(t.maxhp, t.hp + total)
-                self.emit("absorb", f"      {t.name} absorbs it, healing {total:.0f}!", unit=t.name, src=u.name, element=a["element"], amount=round(total), hp=round(t.hp))
-                self.barred.add(u)
-                if not bonus: self.eligible.add(t)
-                continue
-            t.hp -= total
-            u.stats["dealt"] += total
-            label = "/".join(r.capitalize() for r in results)
-            extra = " Weak!" if aff == "weak" else " Resist." if aff == "resist" else " Null!" if aff == "null" else ""
-            self.emit("hit", f"      {label} on {t.name}: {total:.0f}.{extra} ({max(0, t.hp):.0f}/{t.maxhp:.0f})", src=u.name, unit=t.name, element=a["element"], results=results, affinity=aff, dmg=round(total), hp=max(0, round(t.hp)), maxhp=round(t.maxhp),
-                      parts=split_shown(parts, total) if len(parts) > 1 else None)
-            if aff == "null": self.barred.add(u)
-            if (aff == "weak" or (CRIT_EARNS_BONUS and "crit" in results)) and not bonus:
-                self.eligible.add(u)
-                if aff == "weak": u.stats["weak"] += 1
-            if not t.alive:
-                self.downed(t, a["element"]); continue
-            best = "crit" if "crit" in results else "hit" if "hit" in results else "graze"
-            self.riders(u, t, a, best, aff == "weak")
+            self.land(u, a, t, self.shape_mult(a, ti) if len(tgts) > 1 and not a["all"] else 1.0, reach_as.get(t, t), bonus)
+
+    def land(self, u, a, t, share, spot, bonus):
+        """One damage move's hits on one target, every multiplier, the log, and what follows (riders, a fall, a
+        flare). `share` is the target's part of a shaped move; `spot` is where reach is measured (a coverer stands in
+        for the ally). Shared by plain damage and by Styng's added hit on a status move."""
+        aff = t.affinity(a["element"])
+        total, results, parts = 0.0, [], []
+        for _ in range(a.get("hits") or ELEMENT[a["element"]]["hits"]):
+            res = self.roll(u, t, a)
+            results.append(res)
+            dmg = self.raw_damage(u, t, a)
+            var = ELEMENT[a["element"]]["var"]
+            dmg *= 1 + self.rng.uniform(-var, var)
+            dmg *= {"graze": GRAZE_MULT, "hit": 1.0, "crit": a.get("crit_mult", CRIT_MULT)}[res]
+            dmg *= {"weak": 1.5, "resist": 0.5, "null": 0.0, "absorb": 1.0, "normal": 1.0}[aff]
+            rm = self.reach_mult(u, a, spot)
+            if rm is None: u.stats["illegal"] += 1; rm = 0.0
+            if rm < 1.0: u.stats["rear_melee"] += 1
+            dmg *= rm * share
+            if t.defending: t.stats["blocked"] += dmg * 0.5; dmg *= 0.5
+            elif t in self.pending_defend: t.stats["late"] += 1       # hit before its own Defend landed
+            dmg = self.shatter(t, aff, dmg)
+            total += dmg; parts.append(dmg)
+            u.stats[res if res != "hit" else "hits"] += 1
+        if aff == "absorb":
+            t.hp = min(t.maxhp, t.hp + total)
+            self.emit("absorb", f"      {t.name} absorbs it, healing {total:.0f}!", unit=t.name, src=u.name, element=a["element"], amount=round(total), hp=round(t.hp))
+            self.barred.add(u)
+            if not bonus: self.eligible.add(t)
+            return
+        t.hp -= total
+        u.stats["dealt"] += total
+        if total > 0: t.hits_taken += 1
+        label = "/".join(r.capitalize() for r in results)
+        extra = " Weak!" if aff == "weak" else " Resist." if aff == "resist" else " Null!" if aff == "null" else ""
+        self.emit("hit", f"      {label} on {t.name}: {total:.0f}.{extra} ({max(0, t.hp):.0f}/{t.maxhp:.0f})", src=u.name, unit=t.name, element=a["element"], results=results, affinity=aff, dmg=round(total), hp=max(0, round(t.hp)), maxhp=round(t.maxhp),
+                  parts=split_shown(parts, total) if len(parts) > 1 else None)
+        if aff == "null": self.barred.add(u)
+        if (aff == "weak" or (CRIT_EARNS_BONUS and "crit" in results)) and not bonus:
+            self.eligible.add(u)
+            if aff == "weak": u.stats["weak"] += 1
+        if not t.alive:
+            self.downed(t, a["element"]); return
+        best = "crit" if "crit" in results else "hit" if "hit" in results else "graze"
+        self.flare(t, a, best, aff)
+        self.riders(u, t, a, best, aff == "weak")
+
+    def flare(self, t, a, result, aff):
+        """A hit of a status's flare element (not a graze, not nulled or absorbed) sets its fade back to the first
+        step: wind on a Scorch."""
+        if result == "graze" or aff in ("null", "absorb"): return
+        for s, inst in t.status.items():
+            if STATUSES.get(s, {}).get("flare") == a["element"] and inst.get("step", 0) > 0:
+                inst["step"] = 0
+                self.emit("flare", f"      The wind fans {t.name}'s {s} back to full!", unit=t.name, status=s)
+
+    def status_weak(self, u, a, t):
+        """A status move against a foe weak to its element (new game): it lands for sure, a stack deeper, and earns
+        the Bonus Round. Helvad keeps its own rule (its chance already reads the Aska affinity)."""
+        return getattr(self, "new_game", False) and a.get("element") and a["status"] != "Death" \
+            and t.affinity(a["element"]) == "weak"
+
+    def styng_hit(self, u, a, t, tgts, bonus):
+        """Styng's added hit on a move with no damage of its own (a status move, Egga): the move's damage type (or
+        its weapon's) at a["styng"] power, through the shared damage path. No element rider: the move is the effect."""
+        hit = {k: v for k, v in a.items() if k not in ("rider_sure", "also_status", "pays_on", "pays_below", "answer", "bide")}
+        hit.update(kind="damage", element=a["styng_el"], power=a["styng"], status=None, styng_hit=True)
+        if self.reach_mult(u, hit, t) is None:
+            self.emit("out_of_reach", f"      {t.name} is out of reach of the strike.", unit=u.name, target=t.name); return
+        self.land(u, hit, t, self.shape_mult(hit, tgts.index(t)) if len(tgts) > 1 and not a["all"] else 1.0, t, bonus)
+
+    def held(self, u, a, tgts):
+        """Pinned (rooted): it can't leave its spot, and no one can swap with it. True (and said) if this move is held."""
+        other = None
+        if a["kind"] == "move" and "cell" in a:
+            other = next((x for x in self.team_of(u) if x.alive and x is not u and x.cell == a["cell"]), None)
+        elif a["kind"] == "glide" and tgts[0] is not u: other = tgts[0]
+        who = u if u.rooted else other if other is not None and other.rooted else None
+        if who is None: return False
+        tail = "" if who is u else f": {u.name} can't trade places with them"
+        self.emit("rooted", f"    {who.name} is pinned in place{tail}.", unit=u.name, pinned=who.name, move=a["name"])
+        return True
+
+    def glide_cell(self, u):
+        """Where a glide takes u by itself: the other row, its own lane first; (cell, ally there or None), or None."""
+        row = "rear" if u.cell[0] == "front" else "front"
+        lanes = [u.cell[1]] + [l for l in range(3) if l != u.cell[1]]
+        team = [x for x in self.team_of(u) if x.alive and x is not u]
+        for l in lanes:
+            if not any(x.cell == (row, l) for x in team):
+                if u.cell[0] == "front" and not self.front_ok_without(u): break   # never leave the Front empty
+                return (row, l), None
+        other = next((x for x in team if x.cell == (row, u.cell[1])), None)  # the row is full: trade with the one in line
+        return ((row, u.cell[1]), other) if other is not None and not other.rooted else None
+
+    def glide(self, u, a, t, tag):
+        """Skrida: Swift; step a row either way (on himself) or swap with an ally (on them), and gain Nimble."""
+        if t is u:
+            to = self.glide_cell(u)
+            dest, other = to if to else (None, None)
+        else:
+            dest, other = t.cell, t
+        if dest is not None:
+            if other is not None: other.cell = u.cell; u.stats["swaps"] += 1
+            u.cell = dest; u.stats["moves"] += 1
+            self.emit("move", f"    {u.name} glides {'past ' + other.name if other else 'to the ' + dest[0].capitalize()}.{tag}",
+                      unit=u.name, cell=dest, swapped=other.name if other else None, other_cell=other.cell if other else None,
+                      move=a["name"])
+        else:
+            self.emit("act", f"    {u.name} uses {self.shown(u, a)}, holding the line.{tag}", unit=u.name, move=a["name"],
+                      shown=self.shown(u, a), move_kind="glide", element=None, targets=[u.name], bonus=bool(tag))
+        self.push(u, a["stat"], a["direction"] * STACKS_BY_TIER.get(a["tier"], 1))
+        self.emit("status", f"      {u.name} is {u.counter_name(a['stat']) or a['stat']}!", unit=u.name,
+                  status=STAT_NAMES[a["stat"]][1], stat=a["stat"], stacks=u.stage(a["stat"]), src=u.name)
 
     def shatter(self, t, aff, dmg):
         """The per-hit Shatter step, shared by every hit path (plain, multi-hit, flurry; review C04): the first hit
@@ -1093,6 +1236,7 @@ class Battle:
                 if not bonus: self.eligible.add(t)
                 self.emit("absorb", f"      {t.name} absorbs it, healing {dmg:.0f}!", unit=t.name, src=u.name, element=a["element"], amount=round(dmg), hp=round(t.hp)); return
             t.hp -= dmg; u.stats["dealt"] += dmg
+            if i == 0 and dmg > 0: t.hits_taken += 1                   # one attack, one hit taken (Hevn)
             self.emit("hit", f"      {res.capitalize()} on {t.name}: {dmg:.0f}.{' Weak!' if aff == 'weak' else ''} ({max(0, t.hp):.0f}/{t.maxhp:.0f})", src=u.name, unit=t.name, element=a["element"], results=[res], affinity=aff, dmg=round(dmg), hp=max(0, round(t.hp)), maxhp=round(t.maxhp))
             if aff == "null": self.barred.add(u); return
             if aff == "weak" and not bonus:
@@ -1100,6 +1244,7 @@ class Battle:
                 self.eligible.add(u)
             if not t.alive:
                 self.downed(t, a["element"]); continue
+            self.flare(t, a, res, aff)
             self.riders(u, t, a, res, aff == "weak")
 
     # ------------------------------------------------------------ spots (Mark-: targets space, not bodies)
@@ -1126,6 +1271,7 @@ class Battle:
         dmg = self.spot_damage(u, t, a, SPOT_IMPACT) * {"graze": GRAZE_MULT, "hit": 1.0, "crit": CRIT_MULT}[res]
         if t.defending: dmg *= 0.5
         t.hp -= dmg; u.stats["dealt"] += dmg
+        if dmg > 0: t.hits_taken += 1
         self.emit("hit", f"      {res.capitalize()} on {t.name}: {dmg:.0f}. ({max(0, t.hp):.0f}/{t.maxhp:.0f})", src=u.name, unit=t.name, element=a["element"], results=[res], affinity="normal", spot=True, dmg=round(dmg), hp=max(0, round(t.hp)), maxhp=round(t.maxhp))
         if not t.alive: self.downed(t, a["element"])
 
@@ -1204,7 +1350,9 @@ class Battle:
                             s = self.expected_damage(u, f, a) * self.reach_mult(u, a, f)
                         if f.affinity(a["element"]) == "weak": s *= 1.5     # tempo value
                         if s >= f.hp: s *= 1.3
-                        if a["status"] and not self.capped(f, a["status"]): s += 0.4 * ref
+                        if a.get("rider_sure") and getattr(self, "new_game", False):    # Brakrosh: the Sundered it leaves
+                            s += self.counter_value(u, f, a["status"], STACKS_BY_TIER.get(a["tier"], 1))
+                        elif a["status"] and not self.capped(f, a["status"]): s += 0.4 * ref
                         s *= AI_MANNER_VALUE.get((a.get("parts") or {}).get("manner"), 1.0)
                         options.append((s - cost_pen, a, f))
             elif a["kind"] == "heal":
@@ -1221,8 +1369,7 @@ class Battle:
                     if a["status"] == "Bound":
                         if f.has_flag("no_orders") or f in getattr(self, "bind_claims", ()) or f.state != "up": continue
                         options.append((self.bind_value(u, f, ref) - cost_pen, a, f)); continue
-                    s = 0.9 * ref * STATUS_LINE_CHANCE[a["tier"]]
-                    options.append((s - cost_pen, a, f))
+                    options.append((self.status_value(u, a, f, ref) - cost_pen, a, f))
             elif a["kind"] == "stat":
                 pool = self.allies(u) if a["direction"] > 0 else self.foes(u)
                 for x in pool:
@@ -1245,7 +1392,20 @@ class Battle:
                         if f.taunted_by is not None: continue
                         threat = max((self.expected_damage(f, x, m) for x in hurt for m in f.actions
                                       if m["kind"] == "damage" and not m["all"] and not m.get("shape")), default=0)
-                        if threat: options.append((AI_TAUNT_VALUE * threat - cost_pen, a, f))
+                        if not threat: continue
+                        s = AI_TAUNT_VALUE * threat + self.styng_value(u, a, f)
+                        if a.get("also_status"): s += self.also_value(u, f, a, ref)
+                        options.append((s - cost_pen, a, f))
+            elif a["kind"] == "glide":                          # Skrida: out of the Front, if he'd rather be behind it
+                if u.rooted: continue                            # (from the Rear it would only step into the blades)
+                to = self.glide_cell(u)
+                if u.cell[0] == "front" and not self.wants_front(u) and to is not None and to[0][0] == "rear":
+                    nimble = 0.15 * ref if u.stage(a["stat"]) < STACK_CAP else 0.0
+                    options.append((AI_GLIDE_VALUE * ref + nimble - cost_pen, a, u))
+            elif a["kind"] == "windfall":                       # Djupanda: Meditate's worth, larger, over two turns
+                if u.mp < 0.5 * u.maxmp:
+                    s = AI_MEDITATE_VALUE * ref * a["amount"] / MEDITATE_SHARE * (1 - u.mp / u.maxmp) * AI_MANNER_VALUE["Bid"]
+                    options.append((s - cost_pen, a, u))
         if self.can_meditate(u) and u.mp < u.maxmp:                # the universal Meditate
             share = min(MEDITATE_SHARE, (u.maxmp - u.mp) / u.maxmp)
             if u.mp < 0.5 * u.maxmp: options.append((AI_MEDITATE_VALUE * ref * share / MEDITATE_SHARE * (1 - u.mp / u.maxmp), meditate(), u))
@@ -1258,6 +1418,60 @@ class Battle:
         options.sort(key=lambda o: -o[0])
         pick = options[0] if self.rng.random() < 0.8 else self.rng.choice(options[:3])
         return pick[1], pick[2]
+
+    def styng_value(self, u, a, f):
+        """The expected damage of Styng's added hit (0 for a move without one, or out of reach)."""
+        if not a.get("styng"): return 0.0
+        hit = dict(a, kind="damage", element=a["styng_el"], power=a["styng"], status=None)
+        for k in ("pays_on", "pays_below", "answer"): hit.pop(k, None)
+        rm = self.reach_mult(u, hit, f)
+        return 0.0 if rm is None else self.expected_damage(u, f, hit) * rm
+
+    def counter_value(self, u, f, status, stacks):
+        """What pushing a named counter on f is worth for about a round (new game): the change in what our side's
+        best blows do to it (DEF, EVA, MDF down), or in its best blow on us (ATK, ACC, MAT down). SPD: neither."""
+        stat, sign = COUNTER_OF[status]
+        if f.stage(stat) * sign >= STACK_CAP or stat == "SPD": return 0.0
+        mine = stat in ("DEF", "EVA", "MDF")
+        def dealt():
+            if mine:
+                return sum(max((self.expected_damage(x, f, m) * (self.reach_mult(x, m, f) or 0) for m in x.actions
+                                if m["kind"] == "damage" and not m.get("bide")), default=0.0) for x in self.allies(u))
+            return max((self.expected_damage(f, x, m) for x in self.allies(u) for m in f.actions if m["kind"] == "damage"), default=0.0)
+        before = dealt(); old = f.stages[stat]
+        f.stages[stat] = clamp(old + sign * stacks, -STACK_CAP, STACK_CAP)
+        after = dealt(); f.stages[stat] = old
+        return abs(after - before)
+
+    def also_value(self, u, f, a, ref):
+        """A second status riding the first (Lonnsveda's Feeble, Lonnpeka's Sundered, Lonnegga's Blinded)."""
+        st = a["also_status"]
+        if self.capped(f, st): return 0.0
+        if st in COUNTER_OF and getattr(self, "new_game", False): return self.counter_value(u, f, st, STACKS_BY_TIER.get(a["tier"], 1))
+        return AI_ALSO_VALUE * ref
+
+    def status_value(self, u, a, f, ref):
+        """What landing a status move on f is worth to the AI: the chance it lands, what it does (a Scorch: the HP it
+        would burn), Styng's hit, a second status riding it, someone on the side who cashes it in, a weakness."""
+        weak = self.status_weak(u, a, f)
+        chance = 1.0 if weak or a.get("sure") else STATUS_LINE_CHANCE[a["tier"]]
+        row = STATUSES.get(a["status"], {})
+        if a["status"] in COUNTER_OF and getattr(self, "new_game", False):   # a counter: what its stacks change
+            s = self.counter_value(u, f, a["status"], STACKS_BY_TIER.get(a["tier"], 1) + (1 if weak else 0))
+        elif row.get("tick") and "fade" in row:          # Scorched: the burn, less what's still burning
+            heat = TIER_POWER[a["tier"]] / TIER_POWER["Base"]
+            left = f.status.get(a["status"])
+            now = sum(row["fade"][left["step"]:]) * left.get("heat", 1.0) if left else 0.0
+            burn = f.maxhp * row["tick"]["share"] * max(0.0, sum(row["fade"]) * heat - now)
+            s = AI_DOT_VALUE * min(burn, f.hp)
+        else:
+            s = 0.9 * ref
+        s *= chance
+        if a.get("also_status"): s += self.also_value(u, f, a, ref) * chance
+        if any(m.get("pays_on") == a["status"] for x in self.allies(u) for m in x.actions) and not self.carries(f, a["status"]):
+            s += AI_PAYOFF_VALUE * ref * chance
+        if weak: s *= 1.5                                  # tempo: the Bonus Round
+        return s + self.styng_value(u, a, f)
 
     def reason(self, u, a, t):
         """Why the AI chose this: (code, plain English). Read after the choice, so the scoring stays one place.
@@ -1329,6 +1543,7 @@ class Battle:
         out = []
         team = [x for x in self.team_of(u) if x.alive]
         frac = lambda x: x.hp / x.maxhp
+        fixed = lambda x: x.rooted                              # Pinned: no step, no swap, with it or by it
         melee = self.wants_front(u)
         mine = self.bide_threat(u)
         def swap(x, hurt): return act("move", "Swap", target="self", cell=x.cell, rescue=hurt)
@@ -1339,7 +1554,7 @@ class Battle:
             if x is u: continue
             # Swap: the hurt one is in the Front, the healthy melee one behind it
             front, back = (u, x) if u.cell[0] == "front" else (x, u)
-            if front.cell[0] == "front" and back.cell[0] == "rear" and self.wants_front(back) \
+            if not fixed(u) and not fixed(x) and front.cell[0] == "front" and back.cell[0] == "rear" and self.wants_front(back) \
                     and frac(front) < ROT_HURT and frac(back) > ROT_HEALTHY and front not in claimed:
                 gain = (frac(back) - frac(front)) * ref * ROT_SWAP_VALUE
                 if self.painted(front): gain *= 0.3              # the fresh unit would stand in the slime
@@ -1359,6 +1574,7 @@ class Battle:
                 if s > 0: out.append((s, dict(own, rescue=x) if own else act("cover", "Cover", target="ally", rescue=x), x))
         taken = {x.cell for x in team}
         sp = self.painted(u)
+        if fixed(u): return out                                  # pinned: the rest are steps
         if sp:                                                   # step off a painted spot, within the row
             clean = [(u.cell[0], l) for l in range(3) if (u.cell[0], l) not in taken and not self.painted(u, (u.cell[0], l))]
             if clean:
@@ -1398,7 +1614,7 @@ class Battle:
         for team in (self.party, self.enemies):
             alive = [x for x in team if x.alive]
             if not alive or any(x.cell[0] == "front" for x in alive): continue
-            melee = [x for x in alive if x in actors and self.wants_front(x)]
+            melee = [x for x in alive if x in actors and self.wants_front(x) and not x.rooted]
             if melee: out.add(max(melee, key=lambda x: x.hp))
         return out
 
@@ -1464,6 +1680,7 @@ class Battle:
                     and not a.get("item"):
                 a, tgt = self.declare(u)
             self.resolve(u, a, tgt, bonus)
+            u.hits_taken = 0                             # its action came: Hevn counts from here
             if a.get("then") and a["name"] in getattr(u, "once_used", ()) and u.alive and getattr(u, "job", None) != a["then"]:
                 self.transform(u, a["then"])
             if a["kind"] == "defend": self.pending_defend.discard(u)   # landed, or lost to Stun/Frozen
@@ -1651,6 +1868,7 @@ class Battle:
                     who = next((x for x in self.team_of(u) if x is not u and getattr(x, "cell", None) == c and x.state != "dead"
                                 and (x.alive or x.state == "dying")), None)
                     if who is not None and not who.alive: continue           # a fallen hero lies there
+                    if u.rooted or (who is not None and who.rooted): continue   # Pinned: no one leaves a pinned spot
                     if who is None and r != u.cell[0] and not self.front_ok_without(u): continue   # never empty the Front
                     cells.append(dict(cell=[r, l], swap=who.uid if who else None, swap_name=who.name if who else None))
         out["move"] = dict(key="move", slot="move", name="Move", group=self.group_of(u, act("move", "Move")), aim="cell", cells=cells)

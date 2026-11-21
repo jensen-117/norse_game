@@ -41,50 +41,50 @@ HERO_POWER **x1.21**, ENEMY_DAMAGE **x2.23**, TIER_HP **Elite x1.61, Boss x1.72*
 
 ## Layer 2: room shapes, played by the AI (a floor: it plays worse than a person)
 
-30 fights per shape (kind, slots), rotating the Barrow, the Wildwood and the Rapids; every enemy acts once a round (ENEMY_ACTIONS 1); every fight from full HP and MP; rounds and HP and MP spent are for wins. Room costs the pace table wants, played well: fodder 10-25% of the party's HP, elite 40-50%, boss most of it.
+60 fights per shape (kind, slots), rotating the Barrow, the Wildwood and the Rapids; every enemy acts once a round (ENEMY_ACTIONS 1); every fight from full HP and MP; rounds and HP and MP spent are for wins. Room costs the pace table wants, played well: fodder 10-25% of the party's HP, elite 40-50%, boss most of it.
 
 **The starting three, kit leg 1:**
 
 | Room (slots) | Wins | Rounds | HP spent | MP spent | Falls per fight |
 |---|---|---|---|---|---|
-| fodder (3) | 97% | 3 | 41% | 17% | 0.60 |
-| fodder (4) | 90% | 4 | 53% | 24% | 1.10 |
-| fodder (5) | 80% | 5 | 68% | 32% | 1.50 |
-| fodder (6) | 37% | 6 | 76% | 49% | 2.50 |
-| elite (4) | 47% | 4 | 59% | 32% | 2.17 |
-| elite (5) | 30% | 6 | 76% | 40% | 2.47 |
-| elite (6) | 7% | 9 | 68% | 59% | 2.87 |
-| boss (4) | 57% | 5 | 67% | 42% | 2.03 |
-| boss (5) | 43% | 6 | 80% | 43% | 2.43 |
-| boss (6) | 17% | 7 | 76% | 60% | 2.77 |
+| fodder (3) | 100% | 3 | 35% | 16% | 0.10 |
+| fodder (4) | 93% | 3.5 | 49% | 21% | 0.42 |
+| fodder (5) | 83% | 5 | 59% | 27% | 1.08 |
+| fodder (6) | 55% | 5 | 67% | 37% | 1.77 |
+| elite (4) | 77% | 4.5 | 55% | 26% | 1.02 |
+| elite (5) | 52% | 4 | 65% | 34% | 1.87 |
+| elite (6) | 28% | 6 | 75% | 34% | 2.48 |
+| boss (4) | 65% | 5 | 59% | 33% | 1.52 |
+| boss (5) | 42% | 5 | 61% | 32% | 2.15 |
+| boss (6) | 25% | 5 | 71% | 45% | 2.60 |
 
 **The starting three, kit leg 3:**
 
 | Room (slots) | Wins | Rounds | HP spent | MP spent | Falls per fight |
 |---|---|---|---|---|---|
-| fodder (3) | 97% | 2 | 37% | 20% | 0.33 |
-| fodder (4) | 97% | 3 | 49% | 27% | 0.70 |
-| fodder (5) | 90% | 3 | 61% | 39% | 1.00 |
-| fodder (6) | 73% | 4 | 71% | 50% | 1.60 |
-| elite (4) | 87% | 4 | 62% | 40% | 1.30 |
-| elite (5) | 70% | 4 | 70% | 45% | 1.80 |
-| elite (6) | 27% | 6.5 | 85% | 66% | 2.70 |
-| boss (4) | 90% | 3 | 63% | 45% | 1.07 |
-| boss (5) | 73% | 4 | 69% | 45% | 1.53 |
-| boss (6) | 47% | 4 | 76% | 65% | 2.27 |
+| fodder (3) | 100% | 2 | 29% | 19% | 0.02 |
+| fodder (4) | 95% | 3 | 38% | 25% | 0.25 |
+| fodder (5) | 95% | 3 | 50% | 31% | 0.37 |
+| fodder (6) | 88% | 3 | 60% | 34% | 0.70 |
+| elite (4) | 93% | 3 | 48% | 29% | 0.53 |
+| elite (5) | 88% | 4 | 60% | 35% | 0.90 |
+| elite (6) | 62% | 4 | 67% | 39% | 1.68 |
+| boss (4) | 92% | 3 | 52% | 33% | 0.72 |
+| boss (5) | 88% | 4 | 60% | 39% | 1.08 |
+| boss (6) | 67% | 4 | 64% | 47% | 1.57 |
 
 **Vasara, Dagskald, Brennumar, kit leg 1:**
 
 | Room (slots) | Wins | Rounds | HP spent | MP spent | Falls per fight |
 |---|---|---|---|---|---|
-| fodder (3) | 100% | 3 | 38% | 23% | 0.40 |
-| fodder (4) | 80% | 3.5 | 36% | 28% | 0.83 |
-| fodder (5) | 67% | 4 | 46% | 35% | 1.40 |
-| fodder (6) | 60% | 5 | 51% | 42% | 1.70 |
-| elite (4) | 73% | 5 | 46% | 40% | 0.97 |
-| elite (5) | 53% | 4.5 | 59% | 48% | 1.80 |
-| elite (6) | 30% | 8 | 61% | 59% | 2.47 |
-| boss (4) | 63% | 4 | 41% | 40% | 1.33 |
-| boss (5) | 57% | 6 | 53% | 50% | 1.73 |
-| boss (6) | 40% | 6 | 60% | 56% | 2.07 |
+| fodder (3) | 100% | 3 | 35% | 24% | 0.35 |
+| fodder (4) | 82% | 4 | 38% | 29% | 0.82 |
+| fodder (5) | 67% | 4 | 48% | 36% | 1.40 |
+| fodder (6) | 60% | 5 | 55% | 44% | 1.72 |
+| elite (4) | 75% | 5 | 47% | 40% | 1.05 |
+| elite (5) | 50% | 5 | 61% | 47% | 1.97 |
+| elite (6) | 30% | 8 | 61% | 57% | 2.43 |
+| boss (4) | 62% | 4 | 44% | 40% | 1.37 |
+| boss (5) | 53% | 5.5 | 50% | 52% | 1.78 |
+| boss (6) | 40% | 6 | 62% | 59% | 2.17 |
 

@@ -835,7 +835,9 @@ const Screen = (() => {
   const fxFor = el => HIT_FX[el] || (FX["burst:" + el] ? "burst:" + el : "burst:Martial");
   const NARRATE = new Set(["act", "transform", "hit", "absorb", "heal", "stat", "status", "resist", "defend", "cover", "covered", "move", "windup", "bide_lost",
     "paint", "skip", "silenced", "tick", "down", "reform", "crawl", "pile", "scatter", "reassemble", "dying", "breath", "dead", "revive",
-    "stabilised", "item", "mp", "fled", "flee_failed", "retarget", "fizzle", "shatter", "flurry", "cleanse", "immune", "thaw"]);
+    "stabilised", "item", "mp", "fled", "flee_failed", "retarget", "fizzle", "shatter", "flurry", "cleanse", "immune", "thaw",
+    "taunt", "drawn", "flare", "rooted", "weak", "out_of_reach"]);
+  const UPS = new Set(["Mighty", "Fortified", "Keen", "Nimble", "Quick"]);   // the counters' up names
   async function play(r) {
     const g = gen, live = () => g === gen;       // this session only: a newer fight retires it
     if (r.error) { busy = false; return say(r.error, C.hpLo); }
@@ -901,6 +903,7 @@ const Screen = (() => {
         return sleep(B.heal);
       case "status":
         if (u && e.status === "Bound") { u.bound = true; u.boundT = vt; addFx(u, "squash", MOTION.squash.dur, { rows: 2 }); return sleep(B.hit); }   // netted
+        if (u && UPS.has(e.status)) { playFx("spark:Gro", u); return sleep(B.small); }       // Nimble from a glide
         if (u) { playFx("spark:Natt", u); addFx(u, "shake", MOTION.shake.dur * .6); } return sleep(B.small);
       case "skip": if (u && e.why === "Bound") { u.bound = false; addFx(u, "shake", MOTION.shake.dur); } return sleep(B.line);
       case "transform": {                              // the net is spent: a beat, fade out, the spear, fade in

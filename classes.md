@@ -66,7 +66,7 @@ The first four classes (the vertical slice), designed the same way: **fantasy â†
 **Nagl is a prefix any stabbing weapon can carry** (Naglskott, Naglspett): a pin travels with points, not with the Ullar.
 
 **Signature mechanic: Pinned** (new status).
-- **Slowed and rooted:** one Speed stage down for a few rounds, **and it can't change rows.** No Frozen chain (unlike Chilled).
+- **Slowed and rooted:** one Speed stage down for a few rounds, **and it can't change rows.** No Frozen chain (unlike Chilled). *As built (Wave 4a): rooted to its spot: no Move, Swap or Advance (lanes too), and no one can swap with it. Two rounds, three at Mer.*
 - **Touches:** the **Vasara's** Taunt (a Pinned enemy can't step out of reach of her hammer), and his own Banskott.
 
 **Second status: Marked** (shared: anyone's hits benefit).

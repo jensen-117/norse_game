@@ -231,9 +231,13 @@ def compile_verb(verb, tier=None, target=None, manners=(), styng=False, lonn=Fal
     if rider is not None:                                                # what Lonn adds
         if isinstance(rider, tuple): a["also"] = [rider]                 # a second stat stage (Lonnaukraft: DEF up)
         elif rider == "cleanse_one": a["cleanse_one"] = True             # Lonnlak
-        elif kind == "damage": a["status"] = rider                       # Blotskott: may Bleed
+        elif kind == "damage":
+            a["status"] = rider                                          # Blotskott: may Bleed
+            if rider in COUNTER_OF: a["rider_sure"] = True               # Brakrosh: a counter rider lands on every hit
         else: a["also_status"] = rider                                   # Lonnsveda: Scorched and Feeble
-    for k in ("root", "knots", "follow", "pays_on", "pays_below", "push"):
+    if n["styng"]:                                                       # the added hit's damage type: the verb's, else its weapon's
+        a["styng_el"] = v.get("element") or WEAPON[v["root"]][0]
+    for k in ("root", "knots", "follow", "pays_on", "pays_below", "pays", "answer", "amount", "push"):
         if k in v: a[k] = v[k]
     if "group" in v: a["group"] = v["group"]
     a.update(mkw)
@@ -259,9 +263,11 @@ def compile_verb(verb, tier=None, target=None, manners=(), styng=False, lonn=Fal
 # dict with the act() fields plus what its kind needs. check_move() states the contract; unresolved() says what the
 # engine can't yet carry out, so a compiled but unfinished move can't be put in a playable kit (Battle refuses it).
 EXECUTABLE_KINDS = {"damage", "heal", "cleanse", "status", "stat", "revive", "cover", "defend", "move", "flee", "mp",
-                    "taunt", "meditate"}                     # Wave 3: Egga and Meditate
-KIND_NEEDS = {"revive": ("reaches", "hp", "wound"), "stat": ("stat", "direction"), "status": ("status",)}
-WAVE4_FIELDS = ("also_status", "cleanse_one", "pays_on", "pays_below", "styng", "knots", "follow", "push")   # effects not yet resolved
+                    "taunt", "meditate",                     # Wave 3: Egga and Meditate
+                    "glide", "windfall"}                     # Wave 4a: Skrida and Djupanda
+KIND_NEEDS = {"revive": ("reaches", "hp", "wound"), "stat": ("stat", "direction"), "status": ("status",),
+              "glide": ("stat", "direction"), "windfall": ("amount",)}
+WAVE4_FIELDS = ("cleanse_one", "knots", "follow", "push")   # effects not yet resolved (4a resolved also_status, pays_on, pays_below, styng)
 RUNTIME_STATUSES = set(STATUSES) | set(COUNTER_OF) | {"Death"}
 CORE_FIELDS = ("kind", "name", "element", "tier", "all", "cost", "cost_type", "power", "status", "stat", "direction",
                "target", "pct_current")
