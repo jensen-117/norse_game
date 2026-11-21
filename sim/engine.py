@@ -1144,7 +1144,7 @@ class Battle:
                 t.hp += h; u.stats["healed"] += h; healed.append(dict(unit=t.name, amount=round(h), hp=round(t.hp)))
             self.emit("heal", f"    {u.name} casts {a['name']}, healing {', '.join(t.name for t in tgts)}.{tag}",
                       unit=u.name, move=a["name"], element=a["element"], targets=healed)
-            for st, d in a.get("also") or []:              # Solak: the light makes them harder to hit
+            for st, d in a.get("also") or []:              # Skimra: the light makes them harder to hit
                 n = STACKS_BY_TIER.get(a["tier"], 1)
                 for t in tgts:
                     self.push(t, st, d * n)
@@ -1626,7 +1626,7 @@ class Battle:
             elif a["kind"] == "heal":
                 hurt = [x for x in self.allies(u) if x.hp < 0.5 * x.maxhp]
                 bright = lambda xs: sum(0.15 * ref for x in xs for st, d in (a.get("also") or [])
-                                        if x.stage(st) * d < STACK_CAP)          # Solak's Nimble on those it reaches
+                                        if x.stage(st) * d < STACK_CAP)          # Skimra's Nimble on those it reaches
                 if a["all"]:
                     xs = self.allies(u)
                     s = sum(min(self.heal_amount(u, a), x.maxhp - x.hp) for x in xs if x.hp < 0.7 * x.maxhp)

@@ -610,7 +610,7 @@ VERBS = {
     "Hevn":     dict(cost=16, cls="Vasara", kind="damage", answer=True, root="Krosh", element="Crush", halv=True,
                      manner_power={"Bid": 2.0}),   # +HEVN_PER_HIT a hit taken; Bidhevn releases double (Nov 20)
     # Dagskald (Sol school, child Lak; magical)
-    "Lak":      dict(cost=8, targets=("Flok", "All"), cls="Dagskald", kind="heal", element="Lak", target="ally", rider=(("EVA", 1), "Sol")),   # Solak: and Nimble (Nov 20)
+    "Lak":      dict(cost=8, targets=("Flok", "All"), cls="Dagskald", kind="heal", element="Lak", target="ally", rider=(("EVA", 3), "Sol")),   # Skimra: and Nimble 3 (Nov 21: the panic button)
     "Sol":      dict(cost=6, halv=True, targets=("Flok", "All"), cls="Dagskald", kind="damage", element="Sol", rider=("Blinded", "Blinda")),   # Blindasol
     "Kvad":     dict(cost=6, targets=("Flok", "All"), cls="Dagskald", kind="song", target="ally"),   # a Song stack a tier on one ally (Nov 20)
     "Skolja":   dict(cost=6, targets=("All",), cls="Dagskald", kind="cleanse", target="ally"),
@@ -650,6 +650,7 @@ ROOT_NAMES = {
     "Daska":      ("Egga", frozenset({"Styng"})),       # Swedish daska, to smack: the taunt that strikes
     "Genomskott": ("Naglskott", frozenset({"Styng"})),  # a through-shot: it hurts and Pins
     "Genomskoda": ("Peka", frozenset({"Lonn"})),        # Swedish genomskada, to see through someone: Marked and Sundered
+    "Skimra":     ("Lak", frozenset({"Lonn"})),         # Swedish skimra, to shimmer: the light bent around you (was Solak)
 }
 
 TIER_WEIGHT = {"Halv": 0, "Base": 0, "Mer": 1, "Jatte": 2, "Ur": 3}   # every tier priced on purpose (review C08)

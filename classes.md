@@ -217,7 +217,7 @@ A Flok-and-talisman build that invested hard (about +2 or +3) sweeps a row of Tr
 
 ## Part 7c: Every Kit Move on the Rules (Nov 21, agreed with Joseph)
 
-**Applied (Nov 21, the hero pass; option B: heroes only, today's foes unchanged until the enemy pass).** Pools, the ladder, power shares and the names are in the engine (`data.py`: HERO_POOLS, KROSH_CLEAN, LAK_CLEAN, CLASS_SHARE, CLASS_TIER, RIDER_SHARE, COST_LADDER, HALV_COST, ROOT_NAMES; each verb's `cost`). Also in: the last-HP rule (the menu shows the cost in red and "LAST SWING"; the AI never spends its last HP) and martial heroes with no MP pool. As built: Styng's added hit is 0.7 of the class's base hit (Genomskott: ~55); an All untie spell takes the All share (0.6). The rider's 0.6 applies to heals too (Joseph, Nov 21): Solak heals 60. Names (Nov 21): Daska is the striking taunt (Egga + Styng); the Blinding one is Rodegga. Rungs given to verbs outside the kits (Joseph: fine as they are): Avliva 16, Skrida 8, Aukskold 8, Skolja 6, Vakna 6, Kasta 6, Svepa 6, Medvind 3, Aukseid 3.
+**Applied (Nov 21, the hero pass; option B: heroes only, today's foes unchanged until the enemy pass).** Pools, the ladder, power shares and the names are in the engine (`data.py`: HERO_POOLS, KROSH_CLEAN, LAK_CLEAN, CLASS_SHARE, CLASS_TIER, RIDER_SHARE, COST_LADDER, HALV_COST, ROOT_NAMES; each verb's `cost`). Also in: the last-HP rule (the menu shows the cost in red and "LAST SWING"; the AI never spends its last HP) and martial heroes with no MP pool. As built: Styng's added hit is 0.7 of the class's base hit (Genomskott: ~55); an All untie spell takes the All share (0.6). The rider's 0.6 applies to heals too (Joseph, Nov 21): Solak heals 60. Names (Nov 21): Daska is the striking taunt (Egga + Styng); the Blinding one is Rodegga. Skimra (Swedish *skimra*, to shimmer) is Lak + Nimble 3, was Solak; its twin, Strala (to beam: a Dagskald spell that Marks), waits on the dodge question. Rungs given to verbs outside the kits (Joseph: fine as they are): Avliva 16, Skrida 8, Aukskold 8, Skolja 6, Vakna 6, Kasta 6, Svepa 6, Medvind 3, Aukseid 3.
 
 **The ladder** is one list for both resources: 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64, 96, 128. A step doubles; curation may move a move a **half-step** (x1.5) when its role calls for it, so every price stays on the list. A move's rung comes from its kind (Halv, minor, base); its parts add steps; a knot spent pays one. Past what a hero can pay, it becomes an item.
 
@@ -258,7 +258,7 @@ A Flok-and-talisman build that invested hard (about +2 or +3) sweeps a row of Tr
 | Dagskald | 1 | Sol | base | 6 MP | 0.9 (94) | 12 MP, 149 |
 | Dagskald | 1 | Lak | base, a half-step up | 8 MP | heals ~100 (one Krosh: 1.5 foe hits) | 12 MP |
 | Dagskald | 2 | Kvad | base | 6 MP | a Song stack: singing is the efficient heal | 12 MP |
-| Dagskald | 3 | Solak | Lak + rider | 16 MP | heals 60 (the rider's 0.6) + Nimble | 19 MP |
+| Dagskald | 3 | Skimra | Lak + rider (the shimmer: was Solak) | 16 MP | heals 60 (the rider's 0.6) + Nimble 3: the panic button | Solak, 19 MP |
 | Dagskald | 3 | Merkvad | Mer | 12 MP | +2 stacks | 19 MP |
 | Dagskald | 3 | Allaukraft | minor, All | 24 MP | ATK up, everyone | 31 MP |
 | Skurmar | 1 | Halvblast | Halv | 2 MP | 0.45 (47) | free, 86 |

@@ -1,7 +1,7 @@
 """Wave 4b: the Dagskald, tested in complete turns (classes.md Part 5; Joseph, Nov 20).
 
 Kvad (verses on the singer; each verse heals each living ally a third of his Base Lak at round start; a verse fades
-each round he doesn't sing; the song ends when he falls), Solak (Lak with Lonn: and Nimble; Flok and All), heals read
+each round he doesn't sing; the song ends when he falls), Skimra, was Solak (Lak with Lonn: and Nimble 3; Flok and All), heals read
 WIS in the new game, and Blindasol (Sol with Lonn: a Blinded stack on every hit that doesn't graze).
 """
 import random, unittest
@@ -92,20 +92,20 @@ class Singing(unittest.TestCase):
 
 class Solak(unittest.TestCase):
     def test_names_and_shapes(self):
-        for parts, name, shape, all_ in ((dict(lonn=True), "Solak", None, False), (dict(lonn=True, target="Flok"), "Floksolak", "row", False),
-                                         (dict(lonn=True, target="All"), "Allsolak", None, True), (dict(lonn=True, tier="Mer"), "Mersolak", None, False)):
+        for parts, name, shape, all_ in ((dict(lonn=True), "Skimra", None, False), (dict(lonn=True, target="Flok"), "Flokskimra", "row", False),
+                                         (dict(lonn=True, target="All"), "Allskimra", None, True), (dict(lonn=True, tier="Mer"), "Merskimra", None, False)):
             a = compile_verb("Lak", **parts); self.assertEqual((a["name"], a.get("shape"), a["all"]), (name, shape, all_))
         self.assertIn("Nimble", plain(compile_verb("Lak", lonn=True)))
 
     def test_heals_and_leaves_them_nimble(self):
         d, v = hero("Dagskald", ("Lak", dict(lonn=True))), hero("Vasara", "Krosh"); b = fight([d, v], [dummy()])
         v.hp = 0.3 * v.maxhp; hp = v.hp
-        orders(b, {d.uid: (key(d, "Solak"), v.uid)})
-        self.assertGreater(v.hp, hp); self.assertEqual(v.counter_name("EVA"), "Nimble 1"); self.assertIsNone(d.counter_name("EVA"))
+        orders(b, {d.uid: (key(d, "Skimra"), v.uid)})
+        self.assertGreater(v.hp, hp); self.assertEqual(v.counter_name("EVA"), "Nimble 3"); self.assertIsNone(d.counter_name("EVA"))
 
-    def test_mersolak_two_stacks(self):
+    def test_merskimra_stays_at_the_cap(self):     # Nimble 3 is already the cap (Nov 21): Mer adds heal, not Nimble
         d, v = hero("Dagskald", ("Lak", dict(lonn=True, tier="Mer"))), hero("Vasara", "Krosh"); b = fight([d, v], [dummy()])
-        orders(b, {d.uid: (key(d, "Mersolak"), v.uid)}); self.assertEqual(v.counter_name("EVA"), "Nimble 2")
+        orders(b, {d.uid: (key(d, "Merskimra"), v.uid)}); self.assertEqual(v.counter_name("EVA"), "Nimble 3")
 
     def test_floksolak_heals_a_row_at_the_row_share(self):
         d, v, u = hero("Dagskald", ("Lak", dict(lonn=True, target="Flok"))), hero("Vasara", "Krosh"), hero("Ullar", "Skott")
@@ -113,11 +113,11 @@ class Solak(unittest.TestCase):
         d.cell, v.cell, u.cell = ("rear", 0), ("front", 0), ("front", 1)
         for x in (d, v, u): x.hp = 0.3 * x.maxhp
         hp = {x.name: x.hp for x in (d, v, u)}
-        orders(b, {d.uid: (key(d, "Floksolak"), v.uid)})
+        orders(b, {d.uid: (key(d, "Flokskimra"), v.uid)})
         a = d.actions[1]; h = b.heal_amount(d, a)
         self.assertAlmostEqual(h, b.heal_amount(d, dict(a, shape=None)) * SHAPE_MULT["row"])
         self.assertAlmostEqual(v.hp - hp[v.name], h); self.assertAlmostEqual(u.hp - hp[u.name], h)
-        self.assertEqual(d.hp, hp[d.name]); self.assertEqual((v.counter_name("EVA"), u.counter_name("EVA")), ("Nimble 1", "Nimble 1"))
+        self.assertEqual(d.hp, hp[d.name]); self.assertEqual((v.counter_name("EVA"), u.counter_name("EVA")), ("Nimble 3", "Nimble 3"))
 
 class WisHeals(unittest.TestCase):
     def test_the_new_game_heals_from_wis(self):
@@ -180,6 +180,6 @@ class TheAISings(unittest.TestCase):
             foes = spawn(place(compose(rng, habitat(cat, ("Barrow", "Wildwood", "Rapids")[i % 3]))), ENEMY_LEVEL)
             b = Battle(party, foes, rng, events=True); b.fight()
             seen |= {e.get("move") for e in b.events if e["kind"] == "intent" and e.get("unit") == "Dagskald"}
-        self.assertTrue({"Merkvad", "Solak"} <= seen, seen)
+        self.assertTrue({"Merkvad", "Skimra"} <= seen, seen)
 
 if __name__ == "__main__": unittest.main()
