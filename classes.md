@@ -207,6 +207,70 @@ A Flok-and-talisman build that invested hard (about +2 or +3) sweeps a row of Tr
 
 **The plain foe** (the measuring dummy): no affinities, no body quirks, DEF = MDF (CON = WIS = 60), other attributes average.
 
+**Locked (Nov 21):**
+- **Pools** as above, except martial MP is **0**. The way in is a talisman (an "Odinseye Effigy": +50 MP, about 16 casts of a 3 and 8 of a 6). Martials don't Meditate, so a spellblade refills only through items and omens. A hero with no MP pool simply doesn't get anything that reads one (one helper for "how much of the pool is missing", which is nothing when there's no pool).
+- **Power, as a share of a clean Krosh (104):** martial melee 1.0; ranged 0.75; magic base 0.9 (a weakness hit, 135, one-shots Trash; a neutral one doesn't); Halv 0.5 of its base; a rider x0.6; Mer x1.67 (Mer and a rider land back at 1.0); a row 0.75 a target, an All 0.6 a target.
+- **Cost = the rung x 2^steps.** HP ladder: Halv **4**, minor (no damage) **8**, base **16**, then 32, 64, 128. MP ladder: Halv **2**, minor **3**, base **6**, then 12, 24, 48. Steps: a rider +1, Mer +1, Styng +1, Snar +1, Flok +2, All +3; **a knot spent pays one step** (the untie spells). Halv is cheaper per point than base on both sides: the efficient, slow choice.
+- **Past the top of the ladder, a move becomes an item.** Allblottskott is the Shrapnel Bomb: found or bought, a pouch slot, fixed power.
+- **The last-HP rule:** a move is usable while its cost is at most twice your current HP; paying more than you have drops you (to Dying: a body on the floor, the rows shift, the party's damage falls). At 1 HP even Halv (4) is locked.
+- **One ladder per resource; the pools do the weighting.** Ullar pays the Vasara's numbers out of 600 HP; the Skurmar gets fewer casts than Brennumar, the Dagskald more.
+
+## Part 7c: Every Kit Move on the Rules (Nov 21, draft for Joseph's mark-up)
+
+Cost by the ladder; power as x Krosh and its clean hit on the plain foe. *Today* is the live game. **Flagged** rows are where the rules don't settle it.
+
+| Class | Leg | Move | Parts | Cost | Power (clean) | Today |
+|---|---|---|---|---|---|---|
+| Vasara | 1 | Halvkrosh | Halv | 4 HP | 0.5 (52) | free, 52 |
+| Vasara | 1 | Krosh | base | 16 HP | 1.0 (104) | 28 HP, 104 |
+| Vasara | 1 | Egga | minor | 8 HP | taunt | 28 HP |
+| Vasara | 2 | Brakrosh | rider | 32 HP | 0.6 (62), Sundered | 42 HP, 104 |
+| Vasara | 2 | Lya | **flagged** | free? | cover | free |
+| Vasara | 3 | Snarbrakrosh | Snar, rider | 64 HP | 0.6 (62), first, Sundered | 63 HP, 93 |
+| Vasara | 3 | Lonnegga | minor, rider | 16 HP | taunt + rider | 42 HP |
+| Vasara | 3 | Hevn | base | 16 HP | 1.0, +25% a hit taken | 28 HP |
+| Ullar | 1 | Halvskott | Halv | 4 HP | 0.375 (39) | free, 99 |
+| Ullar | 1 | Skott | base | 16 HP | 0.75 (78) | 17 HP, 199 |
+| Ullar | 1 | Naglskott | minor | 8 HP | Pinned | 17 HP |
+| Ullar | 2 | Blotskott | rider | 32 HP | 0.45 (47), Bleeding | 25 HP |
+| Ullar | 2 | Peka | minor | 8 HP | Marked | 17 HP |
+| Ullar | 3 | Merblotskott | Mer, rider | 64 HP | 0.75 (78), Bleeding | 38 HP, 278 |
+| Ullar | 3 | Styngnaglskott | minor, Styng | 16 HP | Pinned + Styng's hit | 25 HP |
+| Ullar | 3 | Lonnpeka | minor, rider | 16 HP | Marked + rider | 25 HP |
+| Ullar | 3 | Banskott | base | 16 HP | 0.75, x on the Pinned | 17 HP |
+| Brennumar | 1 | Halveld | Halv | 2 MP | 0.45 (47) | free, 124 |
+| Brennumar | 1 | Eld | base | 6 MP | 0.9 (94) | 7 MP, 248 |
+| Brennumar | 1 | Reyk | minor | 3 MP | Blinded | 7 MP |
+| Brennumar | 2 | Sveda | **flagged** | 6 MP? | Scorched | 7 MP |
+| Brennumar | 2 | Alleld | All | **48 MP, flagged** | 0.54 (56) a target | 19 MP |
+| Brennumar | 3 | Mereld | Mer | 12 MP | 1.5 (156) | 12 MP, 347 |
+| Brennumar | 3 | Lonnsveda | Sveda, rider | 12 MP? | Scorched + rider | 12 MP |
+| Brennumar | 3 | Djupanda | windfall | free | MP back | free |
+| Dagskald | 1 | Halvsol | Halv | 2 MP | 0.45 (47) | free, 75 |
+| Dagskald | 1 | Sol | base | 6 MP | 0.9 (94) | 12 MP, 149 |
+| Dagskald | 1 | Lak | base | 6 MP | **heal: flagged** | 12 MP |
+| Dagskald | 2 | Kvad | base | 6 MP | a Song stack | 12 MP |
+| Dagskald | 3 | Solak | base, rider | 12 MP | heal + Nimble | 19 MP |
+| Dagskald | 3 | Merkvad | Mer | 12 MP | +2 stacks | 19 MP |
+| Dagskald | 3 | Allaukraft | minor, All | 24 MP | ATK up, everyone | 31 MP |
+| Skurmar | 1 | Halvblast | Halv | 2 MP | 0.45 (47) | free, 86 |
+| Skurmar | 1 | Blast | base | 6 MP | 0.9 (94), two hits | 7 MP, 172 |
+| Skurmar | 1 | Knyta | minor | 3 MP | one knot | 7 MP |
+| Skurmar | 2 | Kuling | All, 1 knot | 24 MP | 0.54 (56) a target | 12 MP |
+| Skurmar | 2 | Blixt | base | 6 MP | **0.9? flagged** | 7 MP |
+| Skurmar | 3 | Merknyta | minor, Mer | 6 MP | two knots | 12 MP |
+| Skurmar | 3 | Storm | Mer, All, 2 knots | 24 MP | 0.9 (94) a target | 19 MP, 180 |
+| Skurmar | 3 | Lonnblixt | base, rider | 12 MP | 0.54, Stunned | 12 MP, 238 |
+| (Skurmar) | - | Orkan | Mer, All, follow, 3 knots | 24 MP | Storm + an All Blixt | - |
+
+**Flagged:**
+- **Lya:** a stance, like Guard (free and universal). Keep it free, or the minor rung (8)?
+- **Sveda:** it deals damage, over time, so the draft puts it at the base rung (6), not minor (3).
+- **Alleld at 48** is a third of Brennumar's pool: the "bomb, pay up" tier, about 3 a full tank. Today it's a leg-2 staple at 19.
+- **Heals have no anchor yet.** A proposal: a base Lak heals about one Krosh (~100), one and a half normal foe hits.
+- **Element powers:** today Eld is x1.15, Blixt x1.25, Reyk x0.8. The draft puts every base spell at 0.9 and lets each element's traits (Blast's two hits, Blixt's Stun and its graze rules) carry identity. Keep any element's edge?
+- **Orkan's 24** falls out of the knot rule: Mer +1, All +3, follow +1, three knots -3 = two steps. Kuling, Storm and Orkan all cost 24; the knots buy the power.
+
 ---
 
 ## Part 8: What Comes Next
