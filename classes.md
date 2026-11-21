@@ -217,7 +217,7 @@ A Flok-and-talisman build that invested hard (about +2 or +3) sweeps a row of Tr
 
 ## Part 7c: Every Kit Move on the Rules (Nov 21, agreed with Joseph)
 
-**Applied (Nov 21, the hero pass; option B: heroes only, today's foes unchanged until the enemy pass).** Pools, the ladder, power shares and the names are in the engine (`data.py`: HERO_POOLS, KROSH_CLEAN, LAK_CLEAN, CLASS_SHARE, CLASS_TIER, RIDER_SHARE, COST_LADDER, HALV_COST, ROOT_NAMES; each verb's `cost`). Also in: the last-HP rule (the menu shows the cost in red and "LAST SWING"; the AI never spends its last HP) and martial heroes with no MP pool. As built: Styng's added hit is 0.7 of the class's base hit (Genomskott: ~55); an All untie spell takes the All share (0.6). The rider's 0.6 applies to heals too (Joseph, Nov 21): Solak heals 60. Names (Nov 21): Daska is the striking taunt (Egga + Styng); the Blinding one is Rodegga. Skimra (Swedish *skimra*, to shimmer) is Lak + Nimble 3, was Solak; its twin, Strala (to beam: a Dagskald spell that Marks), waits on the dodge question. Rungs given to verbs outside the kits (Joseph: fine as they are): Avliva 16, Skrida 8, Aukskold 8, Skolja 6, Vakna 6, Kasta 6, Svepa 6, Medvind 3, Aukseid 3.
+**Applied (Nov 21, the hero pass; option B: heroes only, today's foes unchanged until the enemy pass).** Pools, the ladder, power shares and the names are in the engine (`data.py`: HERO_POOLS, KROSH_CLEAN, LAK_CLEAN, CLASS_SHARE, CLASS_TIER, RIDER_SHARE, COST_LADDER, HALV_COST, ROOT_NAMES; each verb's `cost`). Also in: the last-HP rule (the menu shows the cost in red and "LAST SWING"; the AI never spends its last HP) and martial heroes with no MP pool. As built: Styng's added hit is 0.7 of the class's base hit (Genomskott: ~55); an All untie spell takes the All share (0.6). The rider's 0.6 applies to heals too (Joseph, Nov 21): Solak heals 60. Names (Nov 21): Daska is the striking taunt (Egga + Styng); the Blinding one is Rodegga. Gyllenlykt (the Golden Lantern) is Lak + Nimble 3, was Solak; its twin, Bannenlykt (the Banishing Lantern: a Dagskald spell that Marks), waits on the accuracy rules (Part 7d). Rungs given to verbs outside the kits (Joseph: fine as they are): Avliva 16, Skrida 8, Aukskold 8, Skolja 6, Vakna 6, Kasta 6, Svepa 6, Medvind 3, Aukseid 3.
 
 **The ladder** is one list for both resources: 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64, 96, 128. A step doubles; curation may move a move a **half-step** (x1.5) when its role calls for it, so every price stays on the list. A move's rung comes from its kind (Halv, minor, base); its parts add steps; a knot spent pays one. Past what a hero can pay, it becomes an item.
 
@@ -258,7 +258,7 @@ A Flok-and-talisman build that invested hard (about +2 or +3) sweeps a row of Tr
 | Dagskald | 1 | Sol | base | 6 MP | 0.9 (94) | 12 MP, 149 |
 | Dagskald | 1 | Lak | base, a half-step up | 8 MP | heals ~100 (one Krosh: 1.5 foe hits) | 12 MP |
 | Dagskald | 2 | Kvad | base | 6 MP | a Song stack: singing is the efficient heal | 12 MP |
-| Dagskald | 3 | Skimra | Lak + rider (the shimmer: was Solak) | 16 MP | heals 60 (the rider's 0.6) + Nimble 3: the panic button | Solak, 19 MP |
+| Dagskald | 3 | Gyllenlykt | Lak + rider (the Golden Lantern: was Solak) | 16 MP | heals 60 (the rider's 0.6) + Nimble 3: the panic button | Solak, 19 MP |
 | Dagskald | 3 | Merkvad | Mer | 12 MP | +2 stacks | 19 MP |
 | Dagskald | 3 | Allaukraft | minor, All | 24 MP | ATK up, everyone | 31 MP |
 | Skurmar | 1 | Halvblast | Halv | 2 MP | 0.45 (47) | free, 86 |
@@ -272,6 +272,26 @@ A Flok-and-talisman build that invested hard (about +2 or +3) sweeps a row of Tr
 | (Skurmar) | - | Orkan | Mer, All, follow, 3 knots | 24 MP | Storm + an All Blixt | - |
 
 Past the ladder: a Flok Stelblixt is 64 MP (out of reach on a 100 pool); an All one (128) and Allblottskott are items (the Shrapnel Bomb).
+
+## Part 7d: Accuracy and Speed (Nov 21, agreed; to build after Joseph's calibration fights)
+
+**Why:** a stage on the accuracy side moved only the graze roll (10% a stage, a graze halves a hit): Nimble 3 cut damage taken by 16%, where Fortified 1 cuts 25%; Marked topped out at +13%. Every Blinded in the kits (Reyk, Blindasol, Rodegga) was a fifth as strong as a power stage.
+
+**The rule:** four counters, two effects, a flat 1 in 3. Stacks are duration (and win the tug-of-war), never strength.
+
+| | Pushed up | Pushed down |
+|---|---|---|
+| **EVA** (you, as a target) | **Nimble:** attacks on you whiff (no damage) 1 in 3 | **Marked:** attacks on you crit 1 in 3, and don't graze |
+| **ACC** (you, attacking) | **Keen:** your attacks crit 1 in 3, and don't graze | **Blinded:** your attacks whiff 1 in 3 |
+
+- Opposite ends of one counter net on the unit (Keen 1 and Blinded 1: ACC 0, neither).
+- Attacker against target: the attacker's ACC minus the target's EVA. Ahead: crit 1 in 3. Behind: whiff 1 in 3. Even: the plain roll. A Keen attacker on a Nimble target cancels, and so does a Blinded one on a Marked target.
+- Answers it opens: moves that can't miss; Drif (many small hits) smooths whiffs; enemies with Nimble as a signature that asks the party to bring them.
+- Expected value: Nimble -33% damage taken (between Fortified 1 and 2); Marked about +28% (near Sundered's +33%).
+
+**Speed:** out of the roll. SPD ranks who moves first in a round, and nothing else (graze becomes a flat base roll). Heroes and foes get an authored SPD on an easy ladder, shown as pips (SPD ||| is plainly slower than SPD |||||). Open: ties at the same pips, what Quick and Slowed do on a pip ladder, and fleeing (it reads SPD today).
+
+**Flavor:** Kajasken, a god of the far north (Joseph's myth), and his two lanterns: **Gyllenlykt**, the Golden Lantern (it mends and hides: Lak + Nimble 3), and **Bannenlykt**, the Banishing Lantern (it reveals and weakens: a Dagskald spell that Marks).
 
 ---
 

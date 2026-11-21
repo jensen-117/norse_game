@@ -6,7 +6,7 @@ SPELLED = {   # the kits as classes.md and the Nov 20 kit list spell them
     "Vasara":    {1: "Krosh Egga", 2: "Krosh Egga Brakrosh Lya", 3: "Snarbrakrosh Rodegga Lya Hevn"},
     "Ullar":     {1: "Skott Naglskott", 2: "Blotskott Naglskott Peka", 3: "Merblotskott Genomskott Genomskoda Banskott"},
     "Brennumar": {1: "Eld Reyk", 2: "Eld Reyk Sveda Alleld", 3: "Mereld Alleld Lamsveda Djupanda"},
-    "Dagskald":  {1: "Lak Sol", 2: "Lak Sol Kvad", 3: "Skimra Sol Merkvad Allaukraft"},
+    "Dagskald":  {1: "Lak Sol", 2: "Lak Sol Kvad", 3: "Gyllenlykt Sol Merkvad Allaukraft"},
     "Skurmar":   {1: "Blast Knyta", 2: "Blast Knyta Kuling Blixt", 3: "Blast Merknyta Storm Stelblixt"},   # names: Nov 21
 }
 
@@ -29,8 +29,8 @@ class TestParts(unittest.TestCase):
         self.assertEqual(compile_verb("Skott", lonn=True)["status"], "Bleeding")
         self.assertEqual(compile_verb("Sveda", lonn=True)["also_status"], "Feeble")
         self.assertEqual(compile_verb("Aukraft", lonn=True)["also"], [("DEF", 1)])
-        lak = compile_verb("Lak", lonn=True)                                      # Skimra (was Solak): Lak and Nimble 3 (Nov 21)
-        self.assertEqual((lak["name"], lak["also"]), ("Skimra", [("EVA", 3)]))
+        lak = compile_verb("Lak", lonn=True)                                      # Gyllenlykt (was Solak): Lak and Nimble 3 (Nov 21)
+        self.assertEqual((lak["name"], lak["also"]), ("Gyllenlykt", [("EVA", 3)]))
 
     def test_illegal_parts(self):
         with self.assertRaises(ValueError): compile_verb("Eld", styng=True)       # no Styngeld: Eld is the damage
