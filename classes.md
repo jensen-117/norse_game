@@ -289,7 +289,9 @@ Past the ladder: a Flok Stelblixt is 64 MP (out of reach on a 100 pool); an All 
 - Answers it opens: moves that can't miss; Drif (many small hits) smooths whiffs; enemies with Nimble as a signature that asks the party to bring them.
 - Expected value: Nimble -33% damage taken (between Fortified 1 and 2); Marked about +28% (near Sundered's +33%).
 
-**Speed:** out of the roll. SPD ranks who moves first in a round, and nothing else (graze becomes a flat base roll). Heroes and foes get an authored SPD on an easy ladder, shown as pips (SPD ||| is plainly slower than SPD |||||). Open: ties at the same pips, what Quick and Slowed do on a pip ladder, and fleeing (it reads SPD today).
+**Speed:** out of the roll. SPD ranks who moves first in a round, and nothing else (graze becomes a flat base roll). SPD stays a number on the sheet (Quick and Slowed work as now); an exact tie goes to the party (Joseph: simple, predictable, no carve-out for elites or bosses). Fleeing still reads SPD.
+
+**Pips (a display, not a mechanic):** inspect shows each attribute as a bar of up to 10 pips for reading strength at a glance (the Vasara's ATK |||||||| beside a boss's ||||||||||). Proposed scale: 5 pips is the plain foe at level 50, each pip a fixed step, capped at 10, so a count means the same on every sheet. Replaces the page backlog's 1-5 tick idea.
 
 **Flavor:** Kajasken, a god of the far north (Joseph's myth), and his two lanterns: **Gyllenlykt**, the Golden Lantern (it mends and hides: Lak + Nimble 3), and **Bannenlykt**, the Banishing Lantern (it reveals and weakens: a Dagskald spell that Marks).
 
