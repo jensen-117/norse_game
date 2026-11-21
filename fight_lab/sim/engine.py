@@ -124,7 +124,7 @@ def plain(a):
         if a.get("status"): s += f" Leaves them {a['status']} on every hit." if a.get("rider_sure") else f" May leave them {a['status']}."
         if a.get("pays_on"): s += f" x{a['pays']:g} against the {a['pays_on']}."
         if a.get("pays_below"): s += f" x{a['pays']:g} against a foe under {a['pays_below']:.0%} HP."
-        if a.get("answer"): s += " Stronger for every hit you took since your last turn."
+        if a.get("answer"): s += " Stronger for every attack that hurt you since your last turn."
         if parts.get("manner") in PLAIN_MANNER: s += " " + PLAIN_MANNER[parts["manner"]]
         elif a.get("bide"): s += " " + PLAIN_MANNER["Bid"]
         elif a.get("flurry"): s += " " + PLAIN_MANNER["Drif"]
@@ -395,8 +395,24 @@ def spawn(kind, level, name=None):
                 actions)
 
 # ================================================================ battle
+PROFILES = ("new", "legacy")
+
+def rules_profile(party, profile=None):
+    """The rules a fight runs under (review C15). "new": the new game's settings (enemy damage, HP by tier, one action;
+    the class mechanics' new rules), for a party of sheet heroes only. "legacy": the old rules, for the regression
+    fixtures and old records. Unnamed, it follows the party; a party that mixes sheet heroes and old recruits must name
+    one, so no class edit can switch the opposition's rules without saying so."""
+    sheets = [getattr(u, "kit_leg", None) is not None for u in party]
+    if profile is None:
+        if sheets and all(sheets): return "new"
+        if not any(sheets): return "legacy"
+        raise ValueError("this party mixes sheet heroes and old recruits: name the rules profile (new or legacy)")
+    if profile not in PROFILES: raise ValueError(f"unknown rules profile {profile!r} (new, legacy)")
+    if profile == "new" and not all(sheets): raise ValueError("the new game's rules need a party of sheet heroes (build_hero)")
+    return profile
+
 class Battle:
-    def __init__(self, party, enemies, rng, log=False, events=False):
+    def __init__(self, party, enemies, rng, log=False, events=False, profile=None):
         self.party, self.enemies, self.rng = party, enemies, rng
         for u in party + enemies:                    # every move in a fight meets the contract (review A01)
             for a in u.actions:
@@ -425,7 +441,8 @@ class Battle:
         self.max_rounds, self.winner, self._mark = 30, None, 0
         self.intents, self.no_flee, self.coin = {}, False, {}     # no_flee: the Hunt's top tiers can't be run from
         self.by_uid = {u.uid: u for u in self.units}
-        self.new_game = bool(party) and all(getattr(u, "kit_leg", None) is not None for u in party)
+        self.profile = rules_profile(party, profile)        # "new" or "legacy", never a silent mix (review C15)
+        self.new_game = self.profile == "new"
         if self.new_game:                            # the new game's tuning: enemy damage, and HP by tier
             for e in enemies: self.new_game_enemy(e)
         if USE_BOARD:
@@ -656,7 +673,38 @@ class Battle:
         stat, sign = COUNTER_OF[status]
         return t.stage(stat) * sign >= STACK_CAP
 
-    def apply_status(self, src, tgt, status, chance, stacks=1, tier=None):
+    def status_instance(self, src, tgt, status, stacks=1, tier=None, move=None, rng=None):
+        """The record a status leaves on tgt if it lands now (before re-application). With rng=None (the AI asking),
+        nothing is rolled: a rolled pick is left empty and a rolled duration taken at its mean."""
+        row = STATUSES.get(status, dict(duration=STATUS_DURATION, reapply="refuse"))
+        inst = {}
+        if "pick" in row:
+            pool, n = row["pick"]; inst["stats"] = [rng.choice(pool) for _ in range(n)] if rng else []
+        d = row["duration"]
+        inst["rounds"] = UNTIL_USED if d is None else (rng.randint(*d) if rng else sum(d) / 2) if isinstance(d, tuple) else d
+        if row.get("per_stack"): inst["rounds"] += row["per_stack"] * (stacks - 1)       # a Mer Pin lasts longer
+        if "fade" in row: inst["step"] = 0
+        if row.get("tick", {}).get("power"): inst["dmg"] = self.dot_blow(src, tgt, status, tier, move)
+        return inst
+
+    def reapplied(self, status, old, new):
+        """The one re-application policy, read by the engine and the AI alike (review C17). None: refused."""
+        row = STATUSES.get(status, dict(reapply="refuse"))
+        if old is None or row["reapply"] == "overwrite": return new
+        if row["reapply"] == "refresh": return dict(new, rounds=max(new["rounds"], old["rounds"]))
+        return None                                     # refuse
+
+    def dot_blow(self, src, tgt, status, tier, move=None):
+        """A burn's full tick (Scorched; Nov 20): one hit of the status's element at the tier's power x its tick power,
+        from src's attack against tgt's defence and affinity, as it stands when it lands. An All or row move burns
+        each target as it would hit them."""
+        row = STATUSES[status]
+        hit = dict(element=row["element"], power=TIER_POWER[tier or "Base"] * row["tick"]["power"], all=bool(move and move.get("all")))
+        aff = {"weak": 1.5, "resist": 0.5, "null": 0.0, "absorb": 0.0, "normal": 1.0}[tgt.affinity(row["element"])]
+        shape = SHAPE_MULT.get(move.get("shape"), 1.0) if move and move.get("shape") else 1.0
+        return self.raw_damage(src, tgt, hit) * aff * shape
+
+    def apply_status(self, src, tgt, status, chance, stacks=1, tier=None, move=None):
         if not tgt.alive or self.rng.random() >= chance: return False
         if STATUSES.get(status, {}).get("boss_immune") and getattr(tgt, "rank", None) == "Drott":
             self.emit("immune", f"      {tgt.name} shrugs off {status}.", unit=tgt.name, status=status); return False
@@ -676,17 +724,7 @@ class Battle:
         else:
             row = STATUSES.get(status, dict(duration=STATUS_DURATION, reapply="refuse"))
             if row["reapply"] == "refuse" and status in tgt.status: return False
-            inst = {}
-            if "pick" in row:
-                pool, n = row["pick"]; inst["stats"] = [self.rng.choice(pool) for _ in range(n)]
-            d = row["duration"]
-            inst["rounds"] = UNTIL_USED if d is None else self.rng.randint(*d) if isinstance(d, tuple) else d
-            if row.get("per_stack"): inst["rounds"] += row["per_stack"] * (stacks - 1)       # a Mer Pin lasts longer
-            if "fade" in row: inst["step"] = 0
-            if row.get("heat"): inst["heat"] = TIER_POWER[tier or "Base"] / TIER_POWER["Base"]   # Sveda's tier sets the heat
-            old = tgt.status.get(status)
-            if old is not None and row["reapply"] == "refresh": inst["rounds"] = max(inst["rounds"], old["rounds"])
-            if old is not None and row["reapply"] == "reset": inst["heat"] = max(inst.get("heat", 1.0), old.get("heat", 1.0))
+            inst = self.reapplied(status, tgt.status.get(status), self.status_instance(src, tgt, status, stacks, tier, move, self.rng))
             tgt.status[status] = inst
         src.stats["statuses"] += 1
         self.emit("status", f"      {tgt.name} is {status}!", unit=tgt.name, status=status, src=src.name)
@@ -698,7 +736,7 @@ class Battle:
         if a["status"] and a.get("rider_sure"):      # a counter rider lands on every hit, a stack a tier (Brakrosh)
             self.apply_status(att, tgt, a["status"], 1.0, STACKS_BY_TIER.get(a["tier"], 1), a["tier"])
         elif a["status"]:    # martial skill with a status (Blot)
-            self.apply_status(att, tgt, a["status"], STATUS_LINE_CHANCE[a["tier"]] * self.wil_ratio(att, tgt), tier=a["tier"])
+            self.apply_status(att, tgt, a["status"], STATUS_LINE_CHANCE[a["tier"]] * self.wil_ratio(att, tgt), tier=a["tier"], move=a)
         if a.get("styng_hit"): return       # Styng's added hit carries no element rider: the status move is the effect
         rider = el["rider"]
         if not rider or a["tier"] == "Halv": return
@@ -714,6 +752,11 @@ class Battle:
 
     # ------------------------------------------------------------ resolve one action
     # ------------------------------------------------------------ the fallen hero (combat_spec Part 10)
+    def holds(self, u, a):
+        """Is this queued release still u's to fire? Its token must match the one planning gave it (C05)."""
+        held = getattr(u, "charge", None)
+        return held is not None and held[0] is a.get("_charge")
+
     def interrupt(self, u, why):
         """A unit's charge is lost at a state change that ends its turns (falling, dying; review C05): a wind-up still
         stored on it, or a release already queued this round (its token no longer matches, so it can't fire)."""
@@ -803,6 +846,16 @@ class Battle:
             self.emit("reassemble", f"    The bones of {p.name} stand up again! ({p.hp:.0f}/{p.maxhp:.0f})",
                       unit=p.name, cell=cell, hp=round(p.hp), maxhp=round(p.maxhp))
 
+    def drawn_to(self, u, a, chosen):
+        """Taunted (Egga): a single-target move aimed at the other side goes to the taunter, if she's up and in reach.
+        Shared by every path that picks a target, the finishing blow included (C12). Returns the target to use."""
+        t = getattr(u, "taunted_by", None)
+        if t is None or t is chosen or a["target"] != "enemy" or a["all"] or a.get("shape") or a.get("spot"): return chosen
+        if not t.alive or t.side == u.side or self.reach_mult(u, a, t) is None: return chosen
+        if chosen is not None:
+            self.emit("drawn", f"    {u.name} is drawn to {t.name}!", unit=u.name, target=t.name, was=chosen.name)
+        return t
+
     def targets_for(self, u, a, chosen):
         if a["target"] == "self":                    # a self move's scope: herself, her row (Flok), or everyone (All)
             if a["all"]: return self.allies(u)
@@ -810,12 +863,8 @@ class Battle:
             return [u]
         pool = self.allies(u) if a["target"] == "ally" else self.foes(u)
         pool = [x for x in pool if self.reach_mult(u, a, x) is not None]
-        if a["target"] == "enemy" and not a["all"] and not a.get("shape") and not a.get("spot"):
-            drawn = u.taunted_by if u.taunted_by in pool else None    # Taunted: a single-target attack goes to the taunter
-            if drawn is not None and drawn is not chosen:
-                if chosen is not None:
-                    self.emit("drawn", f"    {u.name} is drawn to {drawn.name}!", unit=u.name, target=drawn.name, was=chosen.name)
-                return [drawn]
+        drawn = self.drawn_to(u, a, chosen)
+        if drawn is not chosen and drawn is not None: return [drawn]
         if not pool:
             u.stats["fizzles"] += 1
             self.emit("fizzle", f"    {u.name} has no one in reach for {self.shown(u, a)}.", unit=u.name, move=a["name"], shown=self.shown(u, a))
@@ -840,11 +889,13 @@ class Battle:
         for s, row in STATUSES.items():
             tk = row.get("tick")
             if not tk or tk["when"] != when or s not in u.status or not u.alive: continue
-            share = tk["share"]
-            if "fade" in row:                              # Scorched: 100%, 50%, 20% of its heat, then out
-                inst = u.status[s]; share *= inst.get("heat", 1.0) * row["fade"][inst["step"]]; inst["step"] += 1
+            inst = u.status[s]
+            if "power" in tk:                              # Scorched: the caster's blow, 100%, 50%, 20%, then out
+                dmg = max(1, int(inst["dmg"] * row["fade"][inst["step"]])); inst["step"] += 1
                 if inst["step"] >= len(row["fade"]): del u.status[s]
-            dmg = max(1, int(u.maxhp * share)); u.hp -= dmg
+            else:
+                dmg = max(1, int(u.maxhp * tk["share"]))
+            u.hp -= dmg
             self.emit("tick", "    " + tk["line"].format(name=u.name, dmg=dmg), unit=u.name, status=s, dmg=dmg, hp=max(0, round(u.hp)))
             if not u.alive:
                 self.downed(u)
@@ -870,11 +921,12 @@ class Battle:
 
     def resolve(self, u, a, chosen, bonus):
         if not u.alive: return
-        if a.get("_release"):                         # a release interrupted since it was queued is already lost (C05)
-            held = getattr(u, "charge", None)
-            if held is None or held[0] is not a.get("_charge"): return
-            u.charge = None
+        release = a.get("_release")
+        if release and not self.holds(u, a): return       # interrupted since it was queued: already lost (C05)
         if not self.tick_statuses(u, "action"): return
+        if release:                                        # an action-time fall (a crawl, a re-form) ends it too
+            if not self.holds(u, a): return
+            u.charge = None                                # committed: the release is under way
         if a.get("_release") and u.has_flag("breaks_bide"):
             for s in [s for s in u.status if STATUSES.get(s, {}).get("bide_pops")]: del u.status[s]
             u.stats["bides_lost"] += 1
@@ -926,6 +978,7 @@ class Battle:
             got = min(a["amount"] * t.maxhp, t.maxhp - t.hp); t.hp += got
             self.emit("heal", f"    {t.name} recovers {got:.0f} HP.", unit=u.name, move=a["name"], element=None,
                       targets=[dict(unit=t.name, amount=round(got), hp=round(t.hp))]); return
+        chosen = self.drawn_to(u, a, chosen)               # Egga first: a finishing blow is an attack too (C12)
         if chosen is not None and getattr(chosen, "state", "up") == "dying":   # a finishing blow on the fallen
             if self.fallen_reach(u, a, chosen) is not None:
                 u.pay(a); u.stats["actions"] += 1
@@ -948,31 +1001,30 @@ class Battle:
         if a["kind"] == "move":
             if "cell" in a:                                     # Move to a spot, or Swap if an ally stands there
                 dest = a["cell"]
-                if dest == u.cell: return
-                other = next((x for x in self.team_of(u) if x.alive and x is not u and x.cell == dest), None)
-                if other is None and dest[0] != u.cell[0] and not self.front_ok_without(u):
-                    return                                      # never leave the Front empty
+                ok, other, _ = self.step_to(u, dest)            # never the Front empty, never onto the fallen (C18)
+                if not ok: return
                 if other: other.cell = u.cell; u.stats["swaps"] += 1
                 u.cell = dest; u.stats["moves"] += 1
                 self.emit("move", f"    {u.name} {'swaps with ' + other.name if other else 'moves'} "
                           f"to the {dest[0].capitalize()}.{tag}", unit=u.name, cell=dest,
                           swapped=other.name if other else None, other_cell=other.cell if other else None); return
-            taken = {x.cell for x in self.team_of(u) if x.alive and x is not u}
+            taken = {x.cell for x in self.team_of(u) if x is not u and (x.alive or getattr(x, "state", "up") == "dying")}   # C18
             lanes = [l for l in range(3) if (a["to"], l) not in taken]
             lanes.sort(key=lambda l: bool(self.painted(u, (a["to"], l))))      # a clean lane first
             if not lanes: return
             u.cell = (a["to"], lanes[0]); u.stats["moves"] += 1
             self.emit("move", f"    {u.name} steps up to the {a['to'].capitalize()}.{tag}", unit=u.name, cell=u.cell, advance=True); return
         if a["kind"] == "taunt":                            # Egga: the targets' single-target attacks this round go to her
+            tgts, spot = self.intercept(u, a, tgts)        # Styngegga is an attack: a protector takes it, dare and all (C19)
             for t in tgts: t.taunted_by = u
             self.emit("taunt", f"    {u.name} uses {self.shown(u, a)}, daring {', '.join(t.name for t in tgts)} to strike her!{tag}",
                       unit=u.name, move=a["name"], targets=[t.name for t in tgts])
             for t in tgts:                                  # Lonnegga blinds them as she casts it; Styngegga strikes
                 if a.get("also_status"): self.apply_status(u, t, a["also_status"], 1.0, STACKS_BY_TIER.get(a["tier"], 1), a["tier"])
-                if a.get("styng") and t.alive: self.styng_hit(u, a, t, tgts, bonus)
+                if a.get("styng") and t.alive: self.styng_hit(u, a, t, tgts, bonus, spot.get(t, t))
             return
         if a["kind"] == "glide":
-            self.glide(u, a, tgts[0], tag); return
+            self.glide(u, a, tag); return
         if a["kind"] == "windfall":                         # Djupanda's release: the deep breath lands
             got = min(a["amount"] * u.maxmp, u.maxmp - u.mp); u.mp += got
             self.emit("mp", f"    {u.name} breathes out: {got:.0f} MP back.{tag}", unit=u.name, amount=round(got), move=a["name"]); return
@@ -1011,22 +1063,18 @@ class Battle:
         if a["kind"] == "status":
             said = f"{u.name} {a['line']}" if a.get("line") else f"{u.name} casts {self.shown(u, a)}."   # a row's own line: "throws a net!"
             self.emit("act", f"    {said}{tag}", unit=u.name, move=a["name"], shown=self.shown(u, a), move_kind="status", element=a["element"], targets=[t.name for t in tgts], bonus=bonus, tier=a.get("tier"), all=a["all"])
-            if a.get("thrown") and len(tgts) == 1 and not a["all"]:        # Cover catches a thrown thing (the net)
-                c = tgts[0].covered_by
-                if c is not None and c.alive and c is not u and c.side == tgts[0].side:
-                    self.emit("covered", f"      {c.name} takes it for {tgts[0].name}!", unit=c.name, instead_of=tgts[0].name); c.stats["covered"] += 1
-                    tgts = [c]
+            tgts, spot = self.intercept(u, a, tgts)        # the net, or an arrow that pins (Styng): Cover takes it whole
             for t in tgts:
                 stacks = STACKS_BY_TIER.get(a["tier"], 1)
                 if a.get("styng"):                          # Styng: a hit at 70% of the tier's power, then the status
-                    self.styng_hit(u, a, t, tgts, bonus)
+                    self.styng_hit(u, a, t, tgts, bonus, spot.get(t, t))
                     if not t.alive: continue
                 if self.status_weak(u, a, t):               # the weakness pays status moves too (classes.md: Reyk)
                     if not bonus: self.eligible.add(u); u.stats["weak"] += 1
                     self.emit("weak", f"      {t.name} is weak to it: it takes hold!", unit=t.name, src=u.name, element=a["element"])
-                    landed = self.apply_status(u, t, a["status"], 1.0, stacks + 1, a["tier"])
+                    landed = self.apply_status(u, t, a["status"], 1.0, stacks + 1, a["tier"], a)
                 elif a.get("sure"):
-                    landed = self.apply_status(u, t, a["status"], 1.0, stacks, a["tier"])
+                    landed = self.apply_status(u, t, a["status"], 1.0, stacks, a["tier"], a)
                 else:
                     res = self.roll(u, t)
                     if res == "crit" and CRIT_EARNS_BONUS and not bonus: self.eligible.add(u)
@@ -1037,7 +1085,7 @@ class Battle:
                         chance = HELVAD_CHANCE * self.wil_ratio(u, t) * aff
                     else:
                         chance = STATUS_LINE_CHANCE[a["tier"]] * self.wil_ratio(u, t)
-                    landed = self.apply_status(u, t, a["status"], chance, stacks, a["tier"])
+                    landed = self.apply_status(u, t, a["status"], chance, stacks, a["tier"], a)
                     if landed and not t.alive:
                         self.downed(t); continue
                 if landed and a.get("also_status") and t.alive:     # Lonnsveda's Feeble, Lonnpeka's Sundered
@@ -1045,12 +1093,7 @@ class Battle:
             return
         # damage
         self.emit("act", f"    {u.name} uses {self.shown(u, a)}.{tag}", unit=u.name, move=a["name"], shown=self.shown(u, a), move_kind="damage", element=a["element"], targets=[t.name for t in tgts], bonus=bonus, tier=a.get("tier"), all=a["all"])
-        reach_as = {}                                   # a coverer runs into the ally's spot: reach is the ally's
-        if len(tgts) == 1 and not a["all"] and not a.get("shape"):
-            c = tgts[0].covered_by
-            if c is not None and c.alive and c is not u and c.side == tgts[0].side:
-                self.emit("covered", f"      {c.name} takes it for {tgts[0].name}!", unit=c.name, instead_of=tgts[0].name); c.stats["covered"] += 1
-                reach_as = {c: tgts[0]}; tgts = [c]
+        tgts, reach_as = self.intercept(u, a, tgts)    # a coverer runs into the ally's spot: reach is the ally's
         if a.get("flurry"):
             n = self.flurry_count(u, tgts[0], a["flurry"])       # one chain for the whole move
             self.emit("flurry", f"      {n} hit{'s' if n > 1 else ''}!", unit=u.name, hits=n)
@@ -1116,53 +1159,85 @@ class Battle:
                 inst["step"] = 0
                 self.emit("flare", f"      The wind fans {t.name}'s {s} back to full!", unit=t.name, status=s)
 
+    def intercept(self, u, a, tgts):
+        """Cover, one rule for every path (review C19; Nov 20, Joseph): a protector takes a single-target move that
+        deals damage (a strike, a spell, a status move or taunt with Styng) or is thrown (the net), the whole move,
+        not just its hit. Rows, columns and All aren't caught. Returns (targets, where each one's reach is measured)."""
+        if len(tgts) != 1 or a["all"] or a.get("shape"): return tgts, {}
+        if not (a["kind"] == "damage" or a.get("thrown") or a.get("styng")): return tgts, {}
+        t = tgts[0]; c = t.covered_by
+        if c is None or not c.alive or c is u or c.side != t.side: return tgts, {}
+        self.emit("covered", f"      {c.name} takes it for {t.name}!", unit=c.name, instead_of=t.name); c.stats["covered"] += 1
+        return [c], {c: t}
+
     def status_weak(self, u, a, t):
         """A status move against a foe weak to its element (new game): it lands for sure, a stack deeper, and earns
         the Bonus Round. Helvad keeps its own rule (its chance already reads the Aska affinity)."""
         return getattr(self, "new_game", False) and a.get("element") and a["status"] != "Death" \
             and t.affinity(a["element"]) == "weak"
 
-    def styng_hit(self, u, a, t, tgts, bonus):
+    def styng_hit(self, u, a, t, tgts, bonus, spot=None):
         """Styng's added hit on a move with no damage of its own (a status move, Egga): the move's damage type (or
         its weapon's) at a["styng"] power, through the shared damage path. No element rider: the move is the effect."""
         hit = {k: v for k, v in a.items() if k not in ("rider_sure", "also_status", "pays_on", "pays_below", "answer", "bide")}
         hit.update(kind="damage", element=a["styng_el"], power=a["styng"], status=None, styng_hit=True)
-        if self.reach_mult(u, hit, t) is None:
+        spot = spot or t                                 # a coverer is reached where the ally stood
+        if self.reach_mult(u, hit, spot) is None:
             self.emit("out_of_reach", f"      {t.name} is out of reach of the strike.", unit=u.name, target=t.name); return
-        self.land(u, hit, t, self.shape_mult(hit, tgts.index(t)) if len(tgts) > 1 and not a["all"] else 1.0, t, bonus)
+        self.land(u, hit, t, self.shape_mult(hit, tgts.index(t)) if len(tgts) > 1 and not a["all"] else 1.0, spot, bonus)
+
+    def holder(self, u, cell):
+        """Who of u's side holds this cell besides u: a living ally, or a Dying hero, who still lies there (C18)."""
+        return next((x for x in self.team_of(u) if x is not u and getattr(x, "cell", None) == cell
+                     and (x.alive or getattr(x, "state", "up") == "dying")), None)
+
+    def step_to(self, u, cell):
+        """May u step to this cell now (or swap with the ally there)? (ok, the ally or None, why not). The one rule
+        for Move, Skrida, the menu and the AI (review C18): a Dying hero's cell is taken; no one leaves a Pinned
+        unit's cell or enters it; never empty the Front."""
+        cell = tuple(cell)
+        if cell == u.cell: return False, None, "here"
+        if u.rooted: return False, None, "pinned"
+        who = self.holder(u, cell)
+        if who is not None and not who.alive: return False, None, "fallen"
+        if who is not None and who.rooted: return False, who, "pinned"
+        if who is None and cell[0] != u.cell[0] and not self.front_ok_without(u): return False, None, "front"
+        return True, who, None
+
+    def move_cells(self, u):
+        """Every cell u may step to now, for the menu: [(cell, ally there or None)]."""
+        out = []
+        for r in ("front", "rear"):
+            for l in range(3):
+                ok, who, _ = self.step_to(u, (r, l))
+                if ok: out.append(((r, l), who))
+        return out
 
     def held(self, u, a, tgts):
-        """Pinned (rooted): it can't leave its spot, and no one can swap with it. True (and said) if this move is held."""
-        other = None
-        if a["kind"] == "move" and "cell" in a:
-            other = next((x for x in self.team_of(u) if x.alive and x is not u and x.cell == a["cell"]), None)
-        elif a["kind"] == "glide" and tgts[0] is not u: other = tgts[0]
-        who = u if u.rooted else other if other is not None and other.rooted else None
-        if who is None: return False
-        tail = "" if who is u else f": {u.name} can't trade places with them"
-        self.emit("rooted", f"    {who.name} is pinned in place{tail}.", unit=u.name, pinned=who.name, move=a["name"])
+        """Pinned: it can't leave its cell, and no one can trade places with it. True (and said) if this move is held."""
+        if "cell" in a: ok, who, why = self.step_to(u, a["cell"])
+        else: why, who = ("pinned" if u.rooted else None), None              # Advance
+        if why != "pinned": return False
+        pinned = who if who is not None else u
+        tail = "" if pinned is u else f": {u.name} can't trade places with them"
+        self.emit("rooted", f"    {pinned.name} is pinned in place{tail}.", unit=u.name, pinned=pinned.name, move=a["name"])
         return True
 
-    def glide_cell(self, u):
-        """Where a glide takes u by itself: the other row, its own lane first; (cell, ally there or None), or None."""
-        row = "rear" if u.cell[0] == "front" else "front"
-        lanes = [u.cell[1]] + [l for l in range(3) if l != u.cell[1]]
-        team = [x for x in self.team_of(u) if x.alive and x is not u]
-        for l in lanes:
-            if not any(x.cell == (row, l) for x in team):
-                if u.cell[0] == "front" and not self.front_ok_without(u): break   # never leave the Front empty
-                return (row, l), None
-        other = next((x for x in team if x.cell == (row, u.cell[1])), None)  # the row is full: trade with the one in line
-        return ((row, u.cell[1]), other) if other is not None and not other.rooted else None
+    def glide_aim(self, u):
+        """Where the AI glides to: out of the Front for a hero who'd rather stand behind it (the Ullar), to an empty
+        Rear cell (its own lane first), else trading with a front-liner standing behind. None: stay."""
+        if u.cell[0] != "front" or self.wants_front(u): return None
+        cells = [("rear", u.cell[1])] + [("rear", l) for l in range(3) if l != u.cell[1]]
+        legal = [(c, w) for c in cells for ok, w, _ in [self.step_to(u, c)] if ok]
+        empty = [c for c, w in legal if w is None]
+        if empty: return empty[0]
+        return next((c for c, w in legal if self.wants_front(w)), None)
 
-    def glide(self, u, a, t, tag):
-        """Skrida: Swift; step a row either way (on himself) or swap with an ally (on them), and gain Nimble."""
-        if t is u:
-            to = self.glide_cell(u)
-            dest, other = to if to else (None, None)
-        else:
-            dest, other = t.cell, t
-        if dest is not None:
+    def glide(self, u, a, tag):
+        """Skrida: Swift; to the chosen cell (an ally there trades places), by Move's rules, and Nimble either way."""
+        ok, other, _ = self.step_to(u, a["cell"]) if a.get("cell") else (False, None, None)
+        if ok:
+            dest = tuple(a["cell"])
             if other is not None: other.cell = u.cell; u.stats["swaps"] += 1
             u.cell = dest; u.stats["moves"] += 1
             self.emit("move", f"    {u.name} glides {'past ' + other.name if other else 'to the ' + dest[0].capitalize()}.{tag}",
@@ -1205,8 +1280,25 @@ class Battle:
         for x in f.actions:
             if x["kind"] == "damage": best = max(best, self.expected_damage(f, u, x))
             elif x["kind"] == "heal": best = max(best, 0.8 * ref)
-        bide = self.expected_damage(f, f.bide[1], f.bide[0]) if f.bide is not None and f.bide[1] is not None else 0.0
-        return NET_VALUE * best + NET_BIDE * bide
+        return NET_VALUE * best + NET_BIDE * self.pending_value(f, ref)
+
+    def pending(self, u):
+        """u's pending action, wound up or queued to release this round: (action, target), or None. One query for
+        the whole lifecycle (review C13, C16): a release keeps its target, and an interruption clears both."""
+        if u.bide is not None: return u.bide
+        c = getattr(u, "charge", None)
+        return (c[1], c[2]) if c is not None else None
+
+    def pending_value(self, f, ref):
+        """What f's pending action is worth to its side, by what it does (C16): an attack, its expected damage on its
+        target; a windfall (Djupanda), the MP it brings, valued as the AI values Meditate (in the asker's ref: an
+        approximation); any other kind, a plain action's worth."""
+        p = self.pending(f)
+        if p is None: return 0.0
+        a, t = p
+        if a["kind"] == "damage": return self.expected_damage(f, t, a) if t is not None else 0.0
+        if a["kind"] == "windfall": return AI_MEDITATE_VALUE * ref * a["amount"] / MEDITATE_SHARE * (1 - f.mp / f.maxmp)
+        return 0.8 * ref
 
     def transform(self, u, job):
         """A unit takes up another job mid-fight (the net Drattr, net spent, takes up the spear). HP, statuses and
@@ -1365,11 +1457,13 @@ class Battle:
                     options.append((1.2 * s - cost_pen, a, x))
             elif a["kind"] == "status":
                 for f in self.foes(u):
-                    if self.capped(f, a["status"]): continue
                     if a["status"] == "Bound":
+                        if self.capped(f, a["status"]): continue
                         if f.has_flag("no_orders") or f in getattr(self, "bind_claims", ()) or f.state != "up": continue
                         options.append((self.bind_value(u, f, ref) - cost_pen, a, f)); continue
-                    options.append((self.status_value(u, a, f, ref) - cost_pen, a, f))
+                    if not getattr(self, "new_game", False) and self.capped(f, a["status"]): continue   # old fights: as before
+                    s = self.status_value(u, a, f, ref)              # the whole move: a refresh, a rider, Styng (C17)
+                    if s > 0: options.append((s - cost_pen, a, f))
             elif a["kind"] == "stat":
                 pool = self.allies(u) if a["direction"] > 0 else self.foes(u)
                 for x in pool:
@@ -1397,11 +1491,10 @@ class Battle:
                         if a.get("also_status"): s += self.also_value(u, f, a, ref)
                         options.append((s - cost_pen, a, f))
             elif a["kind"] == "glide":                          # Skrida: out of the Front, if he'd rather be behind it
-                if u.rooted: continue                            # (from the Rear it would only step into the blades)
-                to = self.glide_cell(u)
-                if u.cell[0] == "front" and not self.wants_front(u) and to is not None and to[0][0] == "rear":
+                cell = self.glide_aim(u)                         # (from the Rear it would only step into the blades)
+                if cell is not None:
                     nimble = 0.15 * ref if u.stage(a["stat"]) < STACK_CAP else 0.0
-                    options.append((AI_GLIDE_VALUE * ref + nimble - cost_pen, a, u))
+                    options.append((AI_GLIDE_VALUE * ref + nimble - cost_pen, dict(a, cell=cell), u))
             elif a["kind"] == "windfall":                       # Djupanda: Meditate's worth, larger, over two turns
                 if u.mp < 0.5 * u.maxmp:
                     s = AI_MEDITATE_VALUE * ref * a["amount"] / MEDITATE_SHARE * (1 - u.mp / u.maxmp) * AI_MANNER_VALUE["Bid"]
@@ -1450,27 +1543,39 @@ class Battle:
         if st in COUNTER_OF and getattr(self, "new_game", False): return self.counter_value(u, f, st, STACKS_BY_TIER.get(a["tier"], 1))
         return AI_ALSO_VALUE * ref
 
+    def status_gain(self, u, a, f, stacks, ref):
+        """What landing a's main status on f would add now: (value, lands, share of a full application). It asks the
+        engine's own re-application policy (status_instance, reapplied), so the AI can't model a different rule (C17):
+        a counter, what its stacks change; a burn, what it adds over what's still burning; a refresh, the rounds it
+        adds; a refused status, nothing."""
+        st, ng = a["status"], getattr(self, "new_game", False)
+        if st in COUNTER_OF:
+            if ng: return self.counter_value(u, f, st, stacks), True, 1.0
+            return (0.0, True, 0.0) if self.capped(f, st) else (0.9 * ref, True, 1.0)
+        row, old = STATUSES.get(st, {}), f.status.get(st)
+        fresh = self.status_instance(u, f, st, stacks, a["tier"], a)
+        new = self.reapplied(st, old, fresh)
+        if new is None: return 0.0, False, 0.0
+        if row.get("tick", {}).get("power"):
+            total = new["dmg"] * sum(row["fade"])
+            left = old["dmg"] * sum(row["fade"][old["step"]:]) if old else 0.0
+            gain = max(0.0, total - left)
+            return AI_DOT_VALUE * min(f.hp, gain), True, gain / total if total else 0.0
+        share = 1.0 if old is None else max(0, new["rounds"] - old["rounds"]) / max(1, fresh["rounds"])
+        return 0.9 * ref * share, True, share
+
     def status_value(self, u, a, f, ref):
-        """What landing a status move on f is worth to the AI: the chance it lands, what it does (a Scorch: the HP it
-        would burn), Styng's hit, a second status riding it, someone on the side who cashes it in, a weakness."""
+        """What a status move on f is worth to the AI, the whole move (C17): the chance the main status lands times what
+        it adds now, a second status riding it (it lands with the main one), someone on the side who cashes it in,
+        Styng's hit (which strikes either way), and the Bonus Round a weakness earns. Zero: truly redundant."""
         weak = self.status_weak(u, a, f)
         chance = 1.0 if weak or a.get("sure") else STATUS_LINE_CHANCE[a["tier"]]
-        row = STATUSES.get(a["status"], {})
-        if a["status"] in COUNTER_OF and getattr(self, "new_game", False):   # a counter: what its stacks change
-            s = self.counter_value(u, f, a["status"], STACKS_BY_TIER.get(a["tier"], 1) + (1 if weak else 0))
-        elif row.get("tick") and "fade" in row:          # Scorched: the burn, less what's still burning
-            heat = TIER_POWER[a["tier"]] / TIER_POWER["Base"]
-            left = f.status.get(a["status"])
-            now = sum(row["fade"][left["step"]:]) * left.get("heat", 1.0) if left else 0.0
-            burn = f.maxhp * row["tick"]["share"] * max(0.0, sum(row["fade"]) * heat - now)
-            s = AI_DOT_VALUE * min(burn, f.hp)
-        else:
-            s = 0.9 * ref
-        s *= chance
-        if a.get("also_status"): s += self.also_value(u, f, a, ref) * chance
-        if any(m.get("pays_on") == a["status"] for x in self.allies(u) for m in x.actions) and not self.carries(f, a["status"]):
-            s += AI_PAYOFF_VALUE * ref * chance
-        if weak: s *= 1.5                                  # tempo: the Bonus Round
+        main, lands, share = self.status_gain(u, a, f, STACKS_BY_TIER.get(a["tier"], 1) + (1 if weak else 0), ref)
+        s = main * chance
+        if a.get("also_status") and lands: s += self.also_value(u, f, a, ref) * chance
+        if share and any(m.get("pays_on") == a["status"] for x in self.allies(u) for m in x.actions):
+            s += AI_PAYOFF_VALUE * ref * chance * share
+        if weak and s > 0: s *= 1.5                        # tempo: the Bonus Round
         return s + self.styng_value(u, a, f)
 
     def reason(self, u, a, t):
@@ -1532,8 +1637,12 @@ class Battle:
 
     def bide_threat(self, x):
         """Expected damage of a hero or enemy wind-up aimed at x, visible on the board since last round."""
-        return sum(self.expected_damage(f, x, f.bide[0]) for f in self.foes(x)
-                   if f.bide is not None and f.bide[1] is x and not f.bide[0].get("spot"))
+        out = 0.0
+        for f in self.foes(x):
+            p = self.pending(f)                              # stored or queued: visible until it fires or is lost (C13)
+            if p is not None and p[1] is x and p[0]["kind"] == "damage" and not p[0].get("spot"):
+                out += self.expected_damage(f, x, p[0])
+        return out
 
     def board_options(self, u, ref):
         """Rotation, Cover, and answers to a visible wind-up: scored like any other option (combat_spec Parts 7-8).
@@ -1572,7 +1681,7 @@ class Battle:
                 own = next((m for m in u.actions if m["kind"] == "cover"), None)   # a new-game hero covers only with Lya
                 if getattr(u, "kit_leg", None) is not None and own is None: s = 0
                 if s > 0: out.append((s, dict(own, rescue=x) if own else act("cover", "Cover", target="ally", rescue=x), x))
-        taken = {x.cell for x in team}
+        taken = {x.cell for x in team} | {x.cell for x in self.team_of(u) if getattr(x, "state", "up") == "dying"}   # C18
         sp = self.painted(u)
         if fixed(u): return out                                  # pinned: the rest are steps
         if sp:                                                   # step off a painted spot, within the row
@@ -1630,7 +1739,7 @@ class Battle:
                 if u.bide is None: continue
                 ba, bt = u.bide; u.bide = None
                 if not u.alive: u.stats["bides_lost"] += 1; continue
-                token = object(); u.charge = (token, ba)            # the release fires only while this token holds
+                token = object(); u.charge = (token, ba, bt)        # the release fires only while this token holds
                 rel = dict(ba, _release=True, cost=0, group=ba.get("release_group", 0), _charge=token)   # Bid + Tung lands Heavy
                 remaining.append((0, u, (rel, bt))); locked.add(u); self.intent(u, rel, bt)
         self.claimed, self.paint_claims, self.bind_claims, self.once_claims = set(), set(), set(), set()
@@ -1676,11 +1785,12 @@ class Battle:
             remaining = self.order(remaining)            # re-ranked every step: SPD or Fear can change
             k, u, (a, tgt) = remaining.pop(0)
             if k >= u.actions_per_round: continue      # re-formed smaller since declaring
-            if a not in u.actions and a["kind"] not in ("defend", "move", "cover", "flee", "meditate") and not a.get("_release") \
+            if a not in u.actions and a["kind"] not in ("defend", "move", "cover", "flee", "meditate", "glide") and not a.get("_release") \
                     and not a.get("item"):
                 a, tgt = self.declare(u)
             self.resolve(u, a, tgt, bonus)
-            u.hits_taken = 0                             # its action came: Hevn counts from here
+            u.hits_taken = 0                             # its action opportunity came (acted, lost to a stun, or a Bonus
+                                                         # Round's): Hevn counts from here (Nov 20, Joseph)
             if a.get("then") and a["name"] in getattr(u, "once_used", ()) and u.alive and getattr(u, "job", None) != a["then"]:
                 self.transform(u, a["then"])
             if a["kind"] == "defend": self.pending_defend.discard(u)   # landed, or lost to Stun/Frozen
@@ -1809,6 +1919,7 @@ class Battle:
         return halv, moves[:4]
 
     def aim(self, a):
+        if a.get("by_cell"): return "cell"                       # Skrida: a cell, like Move
         if a["target"] == "self" or a["kind"] in ("defend", "flee"): return "self"
         if a["all"]: return "all"
         return a.get("shape") or "one"
@@ -1859,22 +1970,18 @@ class Battle:
                                    aim="self", afford=True, why=None, cost=0, cost_type="MP", targets=[],
                                    amount=round(min(MEDITATE_SHARE * u.maxmp, u.maxmp - u.mp)),
                                    card=dict(word="Meditate", plain=plain(m), power=0, tier=None, reach="any"))
-        cells = []
-        if USE_BOARD:
-            for r in ("front", "rear"):
-                for l in range(3):
-                    c = (r, l)
-                    if c == u.cell: continue
-                    who = next((x for x in self.team_of(u) if x is not u and getattr(x, "cell", None) == c and x.state != "dead"
-                                and (x.alive or x.state == "dying")), None)
-                    if who is not None and not who.alive: continue           # a fallen hero lies there
-                    if u.rooted or (who is not None and who.rooted): continue   # Pinned: no one leaves a pinned spot
-                    if who is None and r != u.cell[0] and not self.front_ok_without(u): continue   # never empty the Front
-                    cells.append(dict(cell=[r, l], swap=who.uid if who else None, swap_name=who.name if who else None))
+        cells = self.cell_options(u)
+        for d in out["moves"]:
+            if d["aim"] == "cell": d["cells"] = cells; d["targets"] = []     # Skrida: Move's cells
         out["move"] = dict(key="move", slot="move", name="Move", group=self.group_of(u, act("move", "Move")), aim="cell", cells=cells)
         out["flee"] = dict(key="flee", slot="flee", name="Flee", group=self.group_of(u, act("flee", "Flee")), aim="self",
                            chance=round(self.flee_chance(u), 2), allowed=not self.no_flee)
         return out
+
+    def cell_options(self, u):
+        """The cells the menu offers u (Move, Skrida), by the one occupancy rule (step_to)."""
+        if not USE_BOARD: return []
+        return [dict(cell=list(c), swap=w.uid if w else None, swap_name=w.name if w else None) for c, w in self.move_cells(u)]
 
     def order_for(self, u, key, target):
         """Turn a menu key and a target (an id, a [row, lane] cell, or None) into the engine's (action, target)."""
@@ -1900,6 +2007,10 @@ class Battle:
             halv, moves = self.slots(u)
             if a is not halv and a not in moves: raise ValueError(f"{a['name']} isn't slotted")
         if not u.can_afford(a): raise ValueError(f"can't afford {a['name']}")
+        if self.aim(a) == "cell":                                # Skrida: a cell, checked like Move
+            cell = tuple(target or ())
+            if not any(tuple(c["cell"]) == cell for c in self.cell_options(u)): raise ValueError(f"{a['name']} can't go to {cell}")
+            return dict(a, cell=cell), u
         if self.aim(a) == "self": return a, u
         if self.aim(a) == "all": return a, None
         t = self.unit(target) if target is not None else None

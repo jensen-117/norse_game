@@ -23,7 +23,7 @@ def _j(x): return json.dumps(x, default=lambda o: list(o) if isinstance(o, tuple
 # ------------------------------------------------------------ the panel's lists
 def menus():
     return _j(dict(
-        classes=[dict(key=k, kind=v["kind"], school=v.get("school"), dmg=v.get("dmg")) for k, v in CLASSES.items()],
+        classes=[dict(key=k, kind=v["kind"], school=v.get("school"), dmg=v.get("dmg")) for k, v in CLASSES.items() if k in KITS],   # C15: the new game's
         items=[dict(key=k, name=v["name"], kind=v["kind"], stack=v["stack"]) for k, v in ITEMS.items()],
         habitats=["Barrow", "Wildwood", "Rapids"] + [f"Biome: {b}" for b in BIOMES],
         pouch_slots=POUCH_SLOTS))
@@ -50,16 +50,19 @@ def make_party(spec_json):
     rr = random.Random(f"{S['seed']}:{S['rolls']}")
     taken = {s["cls"] for s in spec if s.get("cls") not in (None, "", "random")}
     for s in spec:
-        if s.get("cls") in (None, "", "random"):
-            for _ in range(200):
-                c = roll_class(roll_normal(rr), rr)
-                if c not in taken: break
-            s["cls"] = c; taken.add(c)
+        if s.get("cls") not in (None, "", "random") and s["cls"] not in KITS:
+            raise ValueError(f"{s['cls']} isn't a class of the new game (the Lab plays the new game only: review C15)")
+    for s in spec:
+        if s.get("cls") in (None, "", "random"):        # rolled from the new game's classes, never repeating one
+            free = [c for c in KITS if c not in taken]
+            c = rr.choice(free or list(KITS)); s["cls"] = c; taken.add(c)
     S["party_spec"] = spec
     party = _party()
     return _j(dict(party=[hero_card(u) for u in party], spec=spec))
 
 def _party():
+    """The heroes of the spec. Old records (before the Lab played the new game only) may name an old class: those are
+    born the old way, so the record still replays under its own profile."""
     spec = S["party_spec"]; party = []
     for i, s in enumerate(spec):
         r = random.Random(S["seed"] * 101 + i)
@@ -89,10 +92,10 @@ def start(control="party"):
     if not S["party_spec"] or not S["pack_spec"]: return _j(dict(error="Make a party and roll a pack first."))
     bseed = S["rng"].getrandbits(32)          # a whole number: a float seed goes through hash(), which differs on 32-bit Pyodide
     p = S["pack_spec"]
-    b = Battle(_party(), spawn(p["placed"], p["level"]), random.Random(bseed), events=True)
+    b = Battle(_party(), spawn(p["placed"], p["level"]), random.Random(bseed), events=True, profile="new")
     S["battle"] = b
     import sys
-    S["record"] = dict(engine=ENGINE, platform=sys.platform, lab_seed=S["seed"], bseed=bseed, control=control, party=S["party_spec"],
+    S["record"] = dict(engine=ENGINE, platform=sys.platform, profile=b.profile, lab_seed=S["seed"], bseed=bseed, control=control, party=S["party_spec"],
                        pack=[[r, l, e] for r, l, e in p["placed"]], level=p["level"], orders=[], pending={},
                        winner=None, rounds=0, log=[])
     ev = b.begin(control=None if control == "auto" else "party")

@@ -9,9 +9,10 @@ class Tuning(unittest.TestCase):
         e = spawn_family("Draugr", "Stordraugr", 50); hp = e.maxhp
         b = Battle([birth("Vasara", 50, random.Random(1))], [e], random.Random(1))
         self.assertFalse(b.new_game); self.assertEqual(e.maxhp, hp); self.assertFalse(hasattr(e, "dmg_mult"))
-        e2 = spawn_family("Draugr", "Stordraugr", 50)
-        b2 = Battle([build_hero("Vasara"), birth("Ullar", 50, random.Random(1))], [e2], random.Random(1))
-        self.assertFalse(b2.new_game)
+        e2 = spawn_family("Draugr", "Stordraugr", 50)              # a mixed party must name its rules (review C15)
+        with self.assertRaises(ValueError): Battle([build_hero("Vasara"), birth("Ullar", 50, random.Random(1))], [e2], random.Random(1))
+        b2 = Battle([build_hero("Vasara"), birth("Ullar", 50, random.Random(1))], [e2], random.Random(1), profile="legacy")
+        self.assertFalse(b2.new_game); self.assertEqual(b2.profile, "legacy")
 
     def test_tiers_and_hp(self):
         cases = {"Halvdraugr": "Trash", "Draugr": "Regular", "Stordraugr": "Elite", "Forndraugr": "Boss"}

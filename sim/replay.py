@@ -11,7 +11,9 @@ def rebuild(rec):
     if isinstance(seed, float):     # early records: a float seed was hashed by 32-bit Pyodide (31-bit float hash)
         from hash32 import hash_double
         seed = hash_double(seed, 31)
-    b = Battle(lab._party(), spawn([tuple(x) for x in rec["pack"]], rec["level"]), random.Random(seed), events=True)
+    party = lab._party()
+    profile = rec.get("profile") or ("new" if all(getattr(u, "kit_leg", None) is not None for u in party) else "legacy")   # older records: the rule they ran under
+    b = Battle(party, spawn([tuple(x) for x in rec["pack"]], rec["level"]), random.Random(seed), events=True, profile=profile)
     return b
 
 def replay(rec, upto=None, on_round=None):

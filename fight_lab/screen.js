@@ -337,7 +337,7 @@ const Screen = (() => {
     const legal = legalTargets();
     // board highlights: legal targets (white), Move cells (white), the hovered unit's cell (dim)
     if (legal) for (const id of legal) { const u = units[id]; if (u && u.cell) poly(cellPoly(sideOf(u), rowOf(u.cell), u.cell[1]), C.white); }
-    if (mode === "cell" && current && opts[current]) for (const c of opts[current].move.cells) poly(cellPoly(0, rowOf(c.cell), c.cell[1]), C.white);
+    if (mode === "cell" && current && opts[current]) for (const c of cellChoices()) poly(cellPoly(0, rowOf(c.cell), c.cell[1]), C.white);
     // units, back to front
     const list = Object.values(units).filter(u => u.cell && (u.alive || u.piled || u.state !== "up" || vt < (u.fadeUntil || 0)));
     list.sort((a, b) => unitBox(a).fy - unitBox(b).fy);
@@ -648,7 +648,7 @@ const Screen = (() => {
     const moves = [o.halv, ...o.moves, o.meditate].filter(Boolean).slice(0, 6);   // Meditate: the magicals' sixth space
     moves.forEach((mv, i) => {
       const col = i < 3 ? 0 : 1, y = BOX.rows[i % 3], x = BOX.wordX[col];
-      const ok = mv.afford && (mv.aim === "self" || mv.aim === "all" || mv.targets.length > 0);
+      const ok = mv.afford && (mv.aim === "self" || mv.aim === "all" || mv.targets.length > 0 || (mv.aim === "cell" && (mv.cells || []).length > 0));
       const cost = mv.cost ? String(mv.cost) : "";
       const nm = clip(mv.shown, BOX.costR[col] - x - (cost ? textW(cost) + 4 : 0));
       boxItem(x, y, textW(nm), nm, () => pick(mv), ok, pending && pending.key === mv.key);
@@ -731,8 +731,10 @@ const Screen = (() => {
     if (inspectCard) { inspectCard = null; return; }
     for (const h of boxHits) if (p.x >= h.x && p.x < h.x + h.w && p.y >= h.y && p.y < h.y + h.h) { if (h.enabled) h.onClick(); return; }
     if (busy || S.phase === "over") { const u = unitAt(p); if (u) inspectCard = Lab.call("inspect", u.id); return; }
-    if (mode === "cell") {
-      const c = cellAt(p), mv = c && opts[current].move.cells.find(x => x.cell[0] === c[0] && x.cell[1] === c[1]);
+    if (mode === "cell") {                            // Move, or a move aimed at a cell (Skrida)
+      const c = cellAt(p), mv = c && cellChoices().find(x => x.cell[0] === c[0] && x.cell[1] === c[1]);
+      if (mv && pending && pending.aim === "cell")
+        return order(pending.key, mv.cell, `${pending.shown} -> ${mv.swap ? mv.swap_name : mv.cell[0] + " " + (mv.cell[1] + 1)}`, pending.shown);
       if (mv) return order("move", mv.cell, mv.swap ? `Swap with ${mv.swap_name}` : `Move to ${mv.cell[0]} ${mv.cell[1] + 1}`, mv.swap ? "Swap" : "Move");
       return;
     }
@@ -745,11 +747,12 @@ const Screen = (() => {
     if (u.side === "party" && S.awaiting.includes(u.id)) { current = u.id; mode = "menu"; pending = null; return; }
     inspectCard = Lab.call("inspect", u.id);
   }
+  function cellChoices() { return pending && pending.aim === "cell" ? pending.cells : opts[current].move.cells; }
   function legalTargets() { return mode === "info" && pending && pending.aim !== "self" && pending.aim !== "all" ? pending.targets : null; }
   function pick(mv) {
     if ((mv.aim === "self" || mv.aim === "all") && mode === "info" && pending === mv)   // nothing to aim: a second click uses it
       return order(mv.key, null, mv.shown + (mv.aim === "all" ? " -> all" : ""), mv.shown);
-    pending = mv; scroll = 0; mode = "info";
+    pending = mv; scroll = 0; mode = mv.aim === "cell" ? "cell" : "info";
   }
   function order(key, target, label, short) {
     const r = Lab.call("submit", current, key, JSON.stringify(target));

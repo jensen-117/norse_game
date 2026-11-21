@@ -15,15 +15,31 @@ Do not make a global balance adjustment from the current AI usage counts. The AI
 
 | ID | Priority | Current status | Finding |
 |---|---|---|---|
-| C16 | **P1** | New, reproduced in a complete turn | Djupanda can crash a Bonus Round when a Net Drattr values interrupting it |
-| C05 | P2 | Reopened, still reproduced | An action-time fall can escape wind-up cancellation |
-| C12 | P2 | Open, still reproduced | Egga is bypassed by finishing blows |
-| C13 | P2 | Open, still reproduced | Planning hides queued wind-up threats |
-| C17 | P2 | New, reproduced | AI filters out refreshes and useful compound status moves before scoring them |
-| C18 | P2 | New, reproduced in a complete turn | Skrida can move into a Dying ally's occupied cell |
-| C19 | P2 | New, reproduced in a complete turn | Styng's added hit bypasses Cover |
-| C15 | P2 | Open, still reproduced | A legacy class silently switches the Lab's enemy balance profile |
-| A03 | P3 | Open, unchanged source | Keyboard test resets focus before exercising Enter |
+| C16 | **P1** | **Closed (CPHASH)** | Djupanda can crash a Bonus Round when a Net Drattr values interrupting it |
+| C05 | P2 | **Closed (CPHASH)** | An action-time fall can escape wind-up cancellation |
+| C12 | P2 | **Closed (CPHASH)** | Egga is bypassed by finishing blows |
+| C13 | P2 | **Closed (CPHASH)** | Planning hides queued wind-up threats |
+| C17 | P2 | **Closed (CPHASH)** | AI filters out refreshes and useful compound status moves before scoring them |
+| C18 | P2 | **Closed (CPHASH)** | Skrida can move into a Dying ally's occupied cell |
+| C19 | P2 | **Closed (CPHASH)** | Styng's added hit bypasses Cover |
+| C15 | P2 | **Closed (CPHASH)** | A legacy class silently switches the Lab's enemy balance profile |
+| A03 | P3 | **Closed (CPHASH)** | Keyboard test resets focus before exercising Enter |
+
+**Checkpoint resolved (Nov 20, after the fixes; coding agent).** Every technical finding in the table is Closed, each with a Resolution block in its own section (cause, change, failing-before evidence, tests, verification). C14's prevention work is done (provenance and a drift check). The rule calls and D09/D10 were settled by Joseph on Nov 20; the decisions are recorded in the rules (classes.md, pillars.md), the data, the move descriptions and the tests together:
+
+| Question | Decision (Joseph, Nov 20) |
+|---|---|
+| Pin's movement lock | **The cell** ("pull to the Front and Pin to lock them there"): no Move, Swap, Advance or Skrida, lanes included, and no one swaps with a Pinned unit. `rooted="cell"` in the status row. Cover moves no one, for heroes or enemies, so a Pinned unit still Covers. Kasta will treat it as a wall |
+| Re-applying Scorched (D10) | **The new Sveda's own blow**, and **Scorched ticks off the caster's power, not a share of max HP**: one Eld hit at the applying tier's power (his MAT against the target's MDF and affinity, taken when it lands) x `SCORCH_POWER` 0.6, at 100/50/20%. A Blast flare restarts the fade and keeps the blow. Percentages of max HP move to Eitr (stacking poison 2/4/6%; next, a feature) |
+| Free Halv forms | **Halv is opt-in per verb: attacks only** (`halv=True` on the nine damage verbs). Halvsveda, Halvlak, Halvvakna, Halvskolja, Halvegga, Halvknyta and the rest no longer compile. Free attacks are fine; free heals, taunts, knots break things |
+| Bidhevn (D09) | **Double an equally primed Hevn**: Hevn's own x2 for Bid (`manner_power`, compiler data); other Bid moves keep x2.6 |
+| Skrida | **Aimed at a cell, like Move**: empty, he steps there; an ally's, they trade places; Move's rules; Nimble either way. No hidden destination or automatic swap |
+| Cover and Styng (C19) | **Cover takes a single-target move that deals damage, whole** (Styngegga strikes and dares the protector; Styngnaglskott hits and Pins it) |
+| Hevn's count | Attacks that hurt her, reset at each action opportunity (acted, lost to a stun, a Bonus Round's) |
+| Weakness on status moves | Every status move; the extra stack goes to the main status (a Pin gains a round, a Scorch nothing); Helvad keeps its rule |
+| The Lab (C15) | The new game only; legacy stays in the regression scripts |
+
+**Measurement after the fixes (D10, D08):** the 60-per-shape sweep, regenerated with provenance, moved by at most two points of win rate anywhere (starting trio leg 1 boss 4: 65% to 63%; everything else within a fall per fight). The usage count says why: in 60 default-budget rooms the AI Brennumar casts Sveda 7 times at leg 2 and Lonnsveda 9 times at leg 3, against about 200 Elds or Merelds; there are 8 Scorch ticks in all. C17 lets it consider a refresh; it still declines, because **at `SCORCH_POWER` 0.6 a Base Sveda is a worse move than Eld**: it lands half the time (the tier's status line chance), and when it lands it burns about 1.02 of the caster's hits over three rounds, versus Eld's 1.0 now. It pays only on an Eld-weak target (sure, plus the Bonus Round) or with the forge's free refresh. This is a knob, not a defect: a value near 1.2 would make a landed Sveda about two hits (about one expected), which reads as the intended "fire you feed". Left for Joseph; the Scorch economy (stronger-then-cheaper refresh, Blast maintenance against single-body bosses) is still worth the scripted comparison D10 proposes before freezing it.
 
 **C14 update:** The stale-result defect is resolved at this snapshot: the refreshed report reproduces exactly with its documented **60 fights per shape**, or **1,800 room fights** total. Source provenance and an automatic drift check remain recommended prevention work. Do not carry forward the previous mismatched 30-fight rows as current results.
 
@@ -83,6 +99,13 @@ No replacement enemy move or hand-built release is needed.
 
 **Close when:** The seed-20 complete-turn fixture finishes without an exception; a Net Drattr can sensibly value stopping Djupanda; ordinary damage-wind-up interruption remains covered; normal and Bonus Round planning handle non-damage charges. Add the test before the fix and show it fails on this commit.
 
+**Resolution (Nov 20, CPHASH): Closed.**
+- **Cause:** `bind_value()` read a stored wind-up as damage; Djupanda is a windfall with no target or damage element.
+- **Change:** one query for a unit's pending action, `Battle.pending(u)`, across the whole lifecycle (stored `u.bide`, or the queued release, whose charge token now carries its target: `(token, action, target)`), and a typed value, `pending_value(f, ref)`: an attack is worth its expected damage on its target; a windfall the MP it brings, valued as the AI values Meditate (in the asker's ref: an explicit approximation, commented); any other kind a plain action's worth. `bind_value` reads it.
+- **Failing before:** the review's seed-20 fixture raised `KeyError: None` at 0590982; the Net's value of stopping Djupanda equalled its value of a calm caster.
+- **Tests:** `C16_NonDamageWindUps`: the seed-20 complete turn finishes; the Net values stopping Djupanda above a calm caster; a damage wind-up still adds exactly `NET_BIDE` x its expected damage. Normal and Bonus Round planning both go through `declare`, so both use the typed value.
+- Verification at the end of the checkpoint: 272 unittest cases, including `sim/test_checkpoint4a.py` (a class per finding; its 24 finding tests run against 0590982 first: 13 failures and 5 errors there, the errors new API); the standalone autofill test; the 4,535 legacy moves and the 288 fixed-party fights byte-identical; regress.py's 480 fights identical but one, explained under C18; fresh browser sessions: `s_smoke`, `s_c02`, `s_wave3`, `s_wave4a` and the new `s_focus` pass; the 48 Auto fights re-recorded at this engine (all new-game: C15) and the menu record replay natively.
+
 ## C17 — The AI skips legal refreshes and useful secondary effects
 
 **Priority:** P2. Fix before balance decisions based on rare Scorch or status-move use.
@@ -106,6 +129,13 @@ Sources: [early filter, engine.py:1366–1372](https://github.com/jensen-117/nor
 
 **Close when:** Controlled tests make the AI refresh a nearly faded burn, extend a shorter Pin when worthwhile, and consider Lonnpeka's uncapped Sundered rider or Styng damage despite a capped main effect. Also verify it avoids truly redundant applications. Re-measure usage and sweeps after the change.
 
+**Resolution (Nov 20, CPHASH): Closed.**
+- **Cause:** `declare()` skipped a status move whenever its main status was "capped" (for a non-counter: merely present), before any value was computed.
+- **Change:** in the new game the AI scores the whole move and skips it only when the whole is worth nothing: `status_value()` = the chance the main status lands x what it adds now (`status_gain()`), + the second status (counted only if the main one lands), + a payoff on the side (scaled by the share it adds), + Styng's hit (which strikes either way), x1.5 for a weakness's Bonus Round. `status_gain()` asks the engine's own policy (`status_instance()`, `reapplied()`, also used by `apply_status()`): a counter, what its stacks change; a burn, what it adds over what's still burning; a refresh, the rounds it adds; a refused status, nothing. Old fights keep the old filter and value, byte for byte.
+- **Failing before:** the fading-burn Sveda (value 48,000 on a 1,000,000-HP dummy) never chosen; Lonnpeka on Marked 3 never reached the candidate list.
+- **Tests:** `C17_WholeMoveValue`: a nearly faded burn is refreshed, and a fresh one of the same blow is redundant; a shorter Pin is extended and a longer one isn't; Lonnpeka on the fully Marked still Sunders (and is picked, at that target), and is redundant at Marked 3 and Sundered 3; Styng counts despite a capped main status.
+- **Measurement:** the sweep was rerun only after this and the rule changes (C14 below).
+
 ## C18 — Skrida treats a Dying ally's cell as empty
 
 **Priority:** P2.
@@ -124,6 +154,13 @@ Sources: [glide destination, engine.py:1146–1167](https://github.com/jensen-11
 
 **Close when:** Self Skrida selects a genuinely legal alternative cell or stays put; it never overlaps a Dying ally. Test ordinary movement, explicit swaps, a full rear row, a fall between ordering and resolution, and revival after the attempted glide.
 
+**Resolution (Nov 20, CPHASH): Closed.**
+- **Cause:** `glide_cell()` counted living allies only; Move, the menu and the AI each had their own idea of an occupied cell.
+- **Change:** one occupancy rule: `holder(u, cell)` (a living ally, or a Dying hero who still lies there), and `step_to(u, cell)` -> (ok, the ally there, why not): the fallen's cell is taken; no one leaves a Pinned unit's cell or enters it; never empty the Front. Move's resolution, the menu's cells (`move_cells`, `cell_options`), the AI's step-up, fall-back and step-off, Advance, and Skrida all read it, and Skrida is checked again when it lands. Skrida now aims at a cell, like Move (Joseph, Nov 20), so there's no automatic destination to get wrong.
+- **Failing before:** the review's fixture put the Ullar on the Dying Dagskald's cell (rear 0) at 0590982.
+- **Tests:** `C18_TheFallenHoldTheirCell`: Skrida isn't offered the fallen's cell and can't be ordered there; a hero falling into the destination after the order holds the glide (three heroes, three cells), and revival keeps them apart; ordinary Move and the AI's step-up respect it.
+- **The one changed regression fight:** regress.py fight 415 of 480 (Wildwood/Barrow mix, level 30): in round 8 a Hafrunar stepping off Mogel slime used to step onto rear 0, where a Dying Dagskald lay; now it takes rear 2. Same winner and length class (an enemy win before and after); every other fight byte-identical.
+
 ## C19 — Styng's added damage bypasses Cover
 
 **Priority:** P2.
@@ -141,6 +178,12 @@ Sources: [normal interception, engine.py:1046–1062](https://github.com/jensen-
 **Suggested fix and rationale:** Route damage effects through a shared targeting/interception step before the hit calculation. Preserve the protected ally's position for reach, as normal Cover does. Explicitly decide the status component's delivery policy: intercepting the added strike need not silently move a taunt or an independently targeted status to the coverer. Do not simply redirect the entire compound move without that decision.
 
 **Close when:** A single-target Styng hit respects Cover; shape/All effects retain their exceptions; rear coverers use the original target's reach position; events identify the actual damage recipient. Test Styngnaglskott and Styngegga, including the documented policy for their non-damage components.
+
+**Resolution (Nov 20, CPHASH): Closed.**
+- **Cause:** the damage branch intercepted through Cover before `land()`; `styng_hit()` called `land()` directly; the status branch only caught `thrown` nets.
+- **Change:** one interception step, `intercept(u, a, tgts)`, before any hit: a protector takes a single-target move that deals damage (a strike, a spell, a status move or taunt with Styng) or is thrown, **the whole move** (Joseph, Nov 20: Styngegga is a small attack plus Egga on one target, not two effects that can split). Rows, columns and All aren't caught; a move without damage isn't either. The protector is reached where the ally stood (the reach spot is passed to Styng's hit).
+- **Failing before:** Styngnaglskott damaged the protected Drattr with no `covered` event.
+- **Tests:** `C19_CoverCatchesStyng`: Styngnaglskott hits and Pins the protector, not the ally; Styngegga strikes and taunts the protector; a plain Naglskott isn't caught; a Rear protector is struck where the ally stood.
 
 ## Banked findings — status after Wave 4a
 
@@ -342,6 +385,12 @@ An in-memory diagnostic change retaining and rechecking the token across the dam
 
 **Close when:** Add failing-before/fixed-after full-turn tests for the crawling Draugr and re-forming Mogel during an action tick; retain the existing post-planning fall/revive tests and uninterrupted-hit assertion. Check one loss event, no old release, and no stale charge after skipping or interruption.
 
+**Resolution (Nov 20, CPHASH): Closed (second follow-up).**
+- **Cause:** `resolve()` checked and cleared the release's charge token before the action-time ticks; a Bleeding fall that crawled or re-formed came back alive with nothing left to interrupt.
+- **Change:** the token is kept through the action-time hooks: checked on entry (`holds()`), checked again after `tick_statuses(u, "action")`, and consumed only when the release is committed. A fall inside the tick calls `interrupt()`, which clears it, so the release is lost with one loss event. A re-formed Mogel's fresh body carries no charge. No family-specific code.
+- **Failing before:** the crawling Draugr's old Patient Shot hit the Dagskald for ~73 with no loss event; the re-forming Mogel's for ~207.
+- **Tests:** `C05_ActionTimeFallsEndTheCharge`: the crawling Draugr and the re-forming Mogel fire nothing, record exactly one loss, and leave no stale charge or wind-up; an uninterrupted release still fires and clears its token. The earlier C05 tests (`test_checkpoint.py`) still pass.
+
 ## C12 — Egga still does not redirect a finishing blow
 
 **Priority/status:** P2, open; banked from Wave 3 and reproduced against the new targeted Egga.
@@ -360,6 +409,12 @@ Sources: [finishing blow before target resolution, engine.py:883–895](https://
 
 **Close when:** A full ordered turn verifies a reachable taunter takes the attack and the fallen ally loses only its ordinary end-of-round breath. Also cover an unreachable or fallen taunter, unaffected area attacks, and targeted Egga not affecting an untaunted second foe.
 
+**Resolution (Nov 20, CPHASH): Closed.**
+- **Cause:** the finishing-blow branch ran before `targets_for()`, where Egga's redirect lived.
+- **Change:** one helper, `drawn_to(u, a, chosen)`, settles a taunted unit's forced target, and `resolve()` calls it before branching into the finishing blow, the bone pile or ordinary targeting; `targets_for()` uses the same helper. Its conditions are the old ones: a single-target move at the other side (not rows, All or spots), a taunter who is up and in reach.
+- **Failing before:** the taunted Drattr finished the Dying Dagskald (dead at the end of the round), no `drawn` event.
+- **Tests:** `C12_TauntCatchesFinishingBlows`: the reachable taunter takes the blow and the fallen loses only the end-of-round breath; an unreachable taunter (a short blade, Vasara behind a standing Ullar) doesn't redirect and the fallen in the Front is still finished; an untaunted second foe still finishes.
+
 ## C13 — Planning makes a still-pending wind-up disappear from AI threat evaluation
 
 **Priority/status:** P2, open; banked from Wave 3 and reverified.
@@ -377,6 +432,13 @@ Sources: [threat query, engine.py:1319–1322](https://github.com/jensen-117/nor
 **Suggested fix and rationale:** Expose active pending actions through one query that survives the stored-to-queued transition and includes actor, target and validity. Publish that state before asking actors to declare. Count a wind-up once, remove it on interruption, and account for its eventual target/reach policy. This can share the lifecycle representation used to fix C05 rather than maintaining a second AI-only copy of charge state.
 
 **Close when:** Threat remains present through planning, disappears immediately on cancellation, is not double counted, and the relevant defensive options receive it. Include a complete-turn fixture demonstrating a sensible defensive response under controlled scores.
+
+**Resolution (Nov 20, CPHASH): Closed, with C16.**
+- **Cause:** planning moved each wind-up into a queued release and cleared `u.bide`; `bide_threat()` read only `u.bide`, and the queued token didn't keep the target.
+- **Change:** `bide_threat()` reads `pending()`, which sees a stored wind-up or a still-valid queued release (target included). An interruption clears both (`interrupt()`), so the threat goes with it; a wind-up is in one place at a time, so it counts once.
+- **Failing before:** threat 50.325 before planning, 0 after, at 0590982.
+- **Tests:** `C13_PendingThreatSurvivesPlanning`: the same threat before and after planning; not doubled; 0 after an interruption; and a complete planning step where the healthy Vasara, declaring with the release queued, covers the Dagskald it's aimed at (a level-50 shot, ~286 expected, three times her Krosh; at level 15 her Krosh rightly outscores covering a 50).
+- **Fingerprints:** legacy fights unchanged (288 and 480); the one regress.py change is C18's.
 
 ## C14 — The committed sweep report is stale after the latest behavior change
 
@@ -404,6 +466,8 @@ Layer 1 and the starting trio's leg-3 rows reproduce; multiple leg-1 rows do not
 
 **Close when:** The saved report reproduces with its documented configuration; intentional changes are explained, not merely overwritten; and a rules change can no longer leave the headline report silently stale.
 
+**Prevention (Nov 20, CPHASH):** the report's header now carries a source hash (SHA-256 over data, words, engine, grammar, composer and sweep, line endings normalised) and its whole configuration (rules profile, n, seed policy, places, shapes, parties and legs), and lists any kit moves left out. `python3 sim/sweep.py --check` says whether the saved report is from the current sources; `--check --rerun` regenerates it at its own n and compares, writing nothing. Regenerated after every behaviour change of this checkpoint; see D10.
+
 ## C15 — The Lab silently switches enemy balance when one legacy class is selected
 
 **Priority/status:** P2, new integration finding. The engine branch is deliberate and tested; the problem is exposing mixed profiles as ordinary party choices without making the ruleset explicit.
@@ -429,6 +493,12 @@ Sources: [profile inference, engine.py:415–427](https://github.com/jensen-117/
 
 **Close when:** The Lab cannot silently change profile through a normal class edit or random roll; records identify the profile; legacy records still replay; and profile-selection tests cover both deliberate modes.
 
+**Resolution (Nov 20, CPHASH): Closed.**
+- **Change:** the rules profile is explicit at the fight's boundary: `Battle(..., profile=)` and `rules_profile()`. "new" (the new game's settings and rules) needs a party of sheet heroes; "legacy" is the old rules. Unnamed, it follows the party, and a mixed party is refused until a profile is named, so no class edit can switch the opposition's rules silently. The Lab plays the new game only (Joseph, Nov 20): its class menu and its random rolls offer the five sheet classes, `make_party` refuses an old class, `start` names `profile="new"`, and each record stores its profile. `replay.py` replays an old record under the profile it ran with (inferred as before when the record predates the field).
+- **Failing before:** the review's mixed party switched Forndraugr to x1 HP, x1 damage, three actions.
+- **Tests:** `C15_TheRulesAreNamed`: the review case (all sheets: new; mixed: refused, refused as "new", allowed as an explicit "legacy"); the regression fixtures (old recruits) need no change; the Lab's menu, rolls, refusal and record profile. `test_tuning` updated to name the profile for its mixed case.
+- **Records:** the 48 Auto records were re-recorded (all new-game now; before, they mixed classes, i.e. ran the hybrid). `checks/page_fuzz.jsonl` predates the class sheets and no longer replays (its kit indices point at old loadouts); it isn't a current fixture.
+
 ## A03 — The browser test masks the Enter-restart regression
 
 **Priority/status:** P3, open; banked from Wave 3.
@@ -444,6 +514,10 @@ Source: [sim/checks/s_wave3.py:20–27](https://github.com/jensen-117/norse_game
 **Suggested fix and rationale:** Add a focused regression that clicks Fight and uses keyboard commands/Enter without any test-induced focus transfer or intervening canvas click. Record the fight seed/session identity and assert it remains the same while the round advances. Keep the targeted-Egga scenario for its own purpose. Exercise the user action, not an implementation detail such as whether blur() was called.
 
 **Close when:** Removing the application fix makes the new regression fail, restoring it makes it pass, and the ordinary keyboard and mouse combat scenarios still pass.
+
+**Resolution (Nov 20, CPHASH): Closed.**
+- **Change:** `sim/checks/s_focus.py`: a real mouse click on Fight (the button takes focus), then Enter to fight the round, with no focus change, canvas click or other help; the fight must keep its id and seed while its round advances. The Egga/Meditate scenario keeps its own purpose.
+- **Mutation check:** with the page's `blur()` removed (a disposable copy), it fails: "the fight restarted" (a new fight id) and "the round didn't advance"; restored, it passes.
 
 ## Design review and D08 update
 

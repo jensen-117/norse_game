@@ -397,7 +397,8 @@ COUNTER_OF["AccDown"] = ("ACC", -1)            # the Reyk spirits' old rider: Bl
 STACKS_BY_TIER = {"Halv": 1, "Base": 1, "Mer": 2, "Jatte": 3, "Ur": 3}   # a status move's stacks (Mer adds two)
 FADE = (1.0, 0.5, 0.2)    # the fade shape: Frozen's chance to hold, action by action; Scorched's tick, round by round
 PIN_ROUNDS = 2            # Pinned: rounds, plus one per extra stack (Mer 3, Jatte 4)
-SCORCH_TICK = 0.08        # Scorched: this share of max HP x the heat (the tier's power over Base's) x FADE[step], at round start
+SCORCH_POWER = 0.6        # Scorched (Nov 20, Joseph): each tick is one Eld hit at the applying tier's power x this x
+                          # FADE[step], worked out from the caster's MAT against the target's MDF when it lands
 
 # ---------------------------------------------------------------- statuses as data (refactor_plan Wave 1)
 # The engine reads these rows; it doesn't know a status by name. Fields:
@@ -416,10 +417,12 @@ SCORCH_TICK = 0.08        # Scorched: this share of max HP x the heat (the tier'
 #   boss_immune  a Drott shrugs it off (turn-enders)
 #   chain      a rider of this status, landing on someone who already has it, becomes this status (Chilled -> Frozen)
 #   per_stack  rounds added per stack beyond the first (a Mer Pin lasts longer)
-#   rooted     the unit can't leave its spot: no Move, Swap, Advance or glide, and no one can swap with it (Pinned)
-#   heat       the tick scales with the tier that applied it (TIER_POWER over Base's; Sveda's tier sets the heat)
-#   flare      a hit of this element (not a graze) sets the fade back to its first step (wind on a Scorch)
-#   reapply "refresh": the longer of the two durations; "reset": the fade starts over, at the hotter heat
+#   rooted     "cell": it can't leave its cell: no Move, Swap, Advance or glide, and no one can swap with it (Pinned;
+#              Nov 20, Joseph). Cover moves no one, so it doesn't care. Forced moves (Kasta) will treat it as a wall
+#   tick power the tick is a hit, not a share of HP: the caster's blow at the tier's power x this, worked out when it
+#              lands (with the element and the target's affinity), x the fade step (Scorched)
+#   flare      a hit of this element (not a graze) sets the fade back to its first step, keeping the blow (wind on a Scorch)
+#   reapply "refresh": the longer of the two durations
 STATUSES = {
     "Poisoned": dict(duration=STATUS_DURATION, reapply="refuse",
                      tick=dict(when="round_start", share=POISON_TICK, line="{name} takes {dmg} poison damage.")),
@@ -437,9 +440,9 @@ STATUSES = {
     "Disarmed": dict(duration=STATUS_DURATION, reapply="refuse", stats={"ATK": -1, "MAT": -1}),
     "Cursed":   dict(duration=STATUS_DURATION, reapply="refuse", pick=(["ATK", "MAT", "DEF", "MDF"], 2)),
     "Silenced": dict(duration=STATUS_DURATION, reapply="refuse", blocks_mp=True),
-    "Pinned":   dict(duration=PIN_ROUNDS, per_stack=1, reapply="refresh", stats={"SPD": -1}, rooted=True),   # Wave 4a
-    "Scorched": dict(duration=None, reapply="reset", fade=FADE, heat=True, flare="Blast",
-                     tick=dict(when="round_start", share=SCORCH_TICK, line="{name} burns for {dmg}.")),
+    "Pinned":   dict(duration=PIN_ROUNDS, per_stack=1, reapply="refresh", stats={"SPD": -1}, rooted="cell"),   # Wave 4a
+    "Scorched": dict(duration=None, reapply="overwrite", fade=FADE, flare="Blast", element="Eld",   # a new Sveda: its own blow
+                     tick=dict(when="round_start", power=SCORCH_POWER, line="{name} burns for {dmg}.")),
 }
 SKIP_ORDER = ["Bound", "Frozen", "Stunned"]
 UNTIL_USED = 99           # the rounds a status with no duration carries (it ends when used)
@@ -573,40 +576,43 @@ KNOW_MP_KILLS = 40          # ...and its MP
 # element); status / stat / up (what it inflicts); target ("self", "ally", "allies", "enemy", "all"); rider; weight
 # (cost steps built into the verb: the untie spells); knots (knot cost); free (costs nothing: Lya, Djupanda);
 # styng (Styng is legal); targets (the target parts it may carve: none unless listed, review C09); pays_on (a status the move pays off on: Banskott on the Pinned); hits; group.
-# pays (the multiplier a pays_on / pays_below move deals); answer (Hevn: stronger per hit taken); amount (Djupanda's MP).
+# pays (the multiplier a pays_on / pays_below move deals); answer (Hevn: stronger per hit taken); amount (Djupanda's MP);
+# halv (it has a Halv fork: damage verbs only, Nov 20, Joseph: a free attack is fine, a free heal, taunt or knot breaks
+# things); manner_power (this verb's own multiplier for a manner: Hevn's Bid doubles, the rest keep MANNERS').
 # Kinds the engine doesn't resolve yet (song, knot, displace) arrive in Waves 4b and 4c.
 DJUPANDA_SHARE = 0.40     # Djupanda: a wind-up (Bid), then this share of max MP
 VERBS = {
     # Brennumar (Eld school; magical)
-    "Eld":      dict(targets=("Flok", "All"), cls="Brennumar", kind="damage", element="Eld", rider=("Scorched", "Sveda")),
+    "Eld":      dict(halv=True, targets=("Flok", "All"), cls="Brennumar", kind="damage", element="Eld", rider=("Scorched", "Sveda")),
     "Reyk":     dict(targets=("Flok", "All"), cls="Brennumar", kind="status", element="Reyk", status="Blinded", rider=("Poisoned", "Eitr"), styng=True),
     "Sveda":    dict(targets=("Flok", "All"), cls="Brennumar", kind="status", element="Eld", status="Scorched", rider=("Feeble", "Lonn"), styng=True),
     "Aukseid":  dict(cls="Brennumar", kind="stat", stat="MAT", up=True, target="self"),
     "Djupanda": dict(cls=None, kind="windfall", manners=("Bid",), free=True, target="self", amount=DJUPANDA_SHARE),   # any magical
     # Ullar (Bow; martial)
-    "Skott":    dict(targets=("Flok", "All"), cls="Ullar", kind="damage", root="Skott", element="Pierce", rider=("Bleeding", "Blot")),
+    "Skott":    dict(halv=True, targets=("Flok", "All"), cls="Ullar", kind="damage", root="Skott", element="Pierce", rider=("Bleeding", "Blot")),
     "Naglskott": dict(targets=("Flok", "All"), cls="Ullar", kind="status", root="Skott", element="Pierce", status="Pinned", styng=True),
     "Peka":     dict(targets=("Flok", "All"), cls="Ullar", kind="status", root="Skott", element="Pierce", status="Marked", rider=("Sundered", "Lonn"), styng=True),
-    "Banskott": dict(targets=("Flok", "All"), cls="Ullar", kind="damage", root="Skott", element="Pierce", pays_on="Pinned", pays=1.5),   # x1.5 on the Pinned
-    "Avliva":   dict(cls="Ullar", kind="damage", root="Skott", element="Pierce", pays_below=0.5, pays=2.0),   # Swedish "to put down": x2 under half HP
-    "Skrida":   dict(cls="Ullar", kind="glide", stat="EVA", up=True, target="ally", group=1),   # himself: a row either way; an ally: swap
+    "Banskott": dict(targets=("Flok", "All"), cls="Ullar", kind="damage", root="Skott", element="Pierce", pays_on="Pinned", pays=1.5, halv=True),   # x1.5 on the Pinned
+    "Avliva":   dict(cls="Ullar", kind="damage", root="Skott", element="Pierce", pays_below=0.5, pays=2.0, halv=True),   # Swedish "to put down": x2 under half HP
+    "Skrida":   dict(cls="Ullar", kind="glide", stat="EVA", up=True, target="cell", group=1),   # aimed at a cell, like Move
     # Vasara (Hammer; martial)
-    "Krosh":    dict(targets=("Flok", "All"), cls="Vasara", kind="damage", root="Krosh", element="Crush", rider=("Sundered", "Brak")),
+    "Krosh":    dict(halv=True, targets=("Flok", "All"), cls="Vasara", kind="damage", root="Krosh", element="Crush", rider=("Sundered", "Brak")),
     "Egga":     dict(targets=("Flok",), cls="Vasara", kind="taunt", root="Krosh", target="enemy", rider=("Blinded", "Lonn"), styng=True),   # taunts one foe, or a row
     "Lya":      dict(cls="Vasara", kind="cover", target="ally", free=True),
     "Aukskold": dict(targets=("Flok", "All"), cls="Vasara", kind="stat", stat="DEF", up=True, target="self"),   # herself; Flok her row; All everyone
-    "Hevn":     dict(cls="Vasara", kind="damage", answer=True, root="Krosh", element="Crush"),   # +HEVN_PER_HIT a hit taken
+    "Hevn":     dict(cls="Vasara", kind="damage", answer=True, root="Krosh", element="Crush", halv=True,
+                     manner_power={"Bid": 2.0}),   # +HEVN_PER_HIT a hit taken; Bidhevn releases double (Nov 20)
     # Dagskald (Sol school, child Lak; magical)
     "Lak":      dict(targets=("All",), cls="Dagskald", kind="heal", element="Lak", target="ally", rider=("cleanse_one", "Lonn")),
-    "Sol":      dict(targets=("Flok", "All"), cls="Dagskald", kind="damage", element="Sol", rider=("Blinded", "Blinda")),   # Blindasol
+    "Sol":      dict(halv=True, targets=("Flok", "All"), cls="Dagskald", kind="damage", element="Sol", rider=("Blinded", "Blinda")),   # Blindasol
     "Kvad":     dict(cls="Dagskald", kind="song", target="allies"),
     "Skolja":   dict(targets=("All",), cls="Dagskald", kind="cleanse", target="ally"),
     "Vakna":    dict(cls="Dagskald", kind="revive", target="fallen"),
     "Aukraft":  dict(targets=("All",), cls="Dagskald", kind="stat", stat="ATK", up=True, target="ally", rider=(("DEF", 1), "Lonn")),
     # Skurmar (Blast school, child Blixt; magical)
-    "Blast":    dict(targets=("Flok", "All"), cls="Skurmar", kind="damage", element="Blast"),
+    "Blast":    dict(halv=True, targets=("Flok", "All"), cls="Skurmar", kind="damage", element="Blast"),
     "Knyta":    dict(cls="Skurmar", kind="knot", target="self"),
-    "Blixt":    dict(targets=("Flok", "All"), cls="Skurmar", kind="damage", element="Blixt", rider=("Stunned", "Lonn")),
+    "Blixt":    dict(halv=True, targets=("Flok", "All"), cls="Skurmar", kind="damage", element="Blixt", rider=("Stunned", "Lonn")),
     "Kuling":   dict(cls="Skurmar", kind="damage", element="Blast", target="all", weight=1, knots=1),
     "Storm":    dict(cls="Skurmar", kind="damage", element="Blast", target="all", weight=2, knots=2, tier="Mer"),
     "Orkan":    dict(cls="Skurmar", kind="damage", element="Blast", target="all", weight=3, knots=3, tier="Mer", follow="Blixt"),

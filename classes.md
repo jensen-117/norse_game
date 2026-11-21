@@ -26,7 +26,7 @@ The first four classes (the vertical slice), designed the same way: **fantasy �
 |---|---|---|---|---|
 | **Strike** | Fire damage | **Eld** | **Scorched** | Starting kit. No Styng: Eld *is* the damage |
 | **Blind** | Lower their Accuracy | **Reyk** (no damage): inflicts **Blinded** | **Eitr** (poisoned smoke) | Starting kit. One Blinded stack; Mereyk two; Jattereyk to the cap |
-| **Burn** | Damage over time | **Sveda** (no damage): leaves **Scorched**; **its tier sets the heat** | **Feeble** (a burned arm) → **Lonnsveda**: "Apply Scorched and Feeble." Alternatives: Ogn, Reyk | Swedish *sveda*, "to singe, scorch" (ON *svíða*). Sveda is also a rider prefix |
+| **Burn** | Damage over time | **Sveda** (no damage): leaves **Scorched**; **its tier sets the blow** | **Feeble** (a burned arm) → **Lonnsveda**: "Apply Scorched and Feeble." Alternatives: Ogn, Reyk | Swedish *sveda*, "to singe, scorch" (ON *svíða*). Sveda is also a rider prefix |
 | **Vanish** | Protect your side with smoke | A defensive Reyk: Nimble for one, a row, or all; plus a strong, expensive single-target "evade everything for one turn" | Settles in the mutation session | The "vanishes" half of his fantasy |
 | **Cash in** | Pay off a setup | One move that **consumes Scorched** for burst; one that hits **Blinded** targets harder | Settles in the mutation session | Closed loops on his own verbs |
 | **Stoke** | His own tempo | **Aukseid** (+1 MAT on himself), **Djupanda** | | Djupanda: "deep breath" |
@@ -37,8 +37,9 @@ The first four classes (the vertical slice), designed the same way: **fantasy �
 
 **Signature mechanic: Scorched** (the fade shape, pillars Part 5c).
 - A fire you feed: **100% of its damage on the first tick, then 50%, then 20%, then out** (an ember).
-- **Sveda resets it to 100%** (reset, not stack). The tick is set by the Sveda's tier.
-- **Hit by wind (Blast), a Scorched target flares back to 100%.** It touches the **Skurmar**: a Brennumar and a Skurmar in the back row become a forge.
+- **Its damage is the caster's, not a share of the target's HP** (Nov 20): when it lands, one Eld hit at the Sveda's tier, from his MAT against the target's MDF and its Eld affinity, × 0.6 (a knob). So it's about one hit spread over three rounds, and a boss's size doesn't feed it. *Percentages of max HP belong to Eitr (stacking poison, 2/4/6%: next, after the bug-fix checkpoint).*
+- **Sveda again starts it over** (reset, not stack), **with its own blow**: a cheaper Sveda over a hotter burn burns at the cheaper tier.
+- **Hit by wind (Blast), a Scorched target flares back to 100%,** keeping its blow. It touches the **Skurmar**: a Brennumar and a Skurmar in the back row become a forge, and a free Halvblast can keep a fire going as long as he spends his turns on it.
 - Not poison: poison is a clock (patience); Scorch is a fire you feed (tempo).
 
 **Djupanda** (any magical can learn it): a **wind-up**, using the Bid manner's machinery. Declare it, spend the next turn building ("Djupanda..."), and a large MP windfall lands. **It can be interrupted** (Stun, Frozen, the Drattr's net), so it rewards keeping the caster safe. Mutations: target an ally at a reduced rate, a bigger windfall, a Swift version that's smaller but harder to interrupt.
@@ -59,14 +60,14 @@ The first four classes (the vertical slice), designed the same way: **fantasy �
 | **Volley** | Hit many | **Flokskott** | (as Skott) | Exists |
 | **Finish** | Pay off a setup | **Banskott** (*coined*: ON *bani*, "death, slayer," + skott): **x1.5 against a Pinned target** | | His cash-in |
 | **Put down** | Finish the wounded | **Avliva** (Swedish, "to put down": what a hunter does for wounded prey): **x2 against a foe under half HP** | | Single-target. Later: conditional riders of this kind |
-| **Glide** | Escape his weakness | **Skrida** (Swedish *skrida*, "to glide"; ON *skríða*, as in the ancient "gliding Finns" on skis): **Swift**; step a row **either way** and gain Nimble. **On an ally, the two swap places** | | Merskrida: Nimble 2. Ullr is the god of skis |
+| **Glide** | Escape his weakness | **Skrida** (Swedish *skrida*, "to glide"; ON *skríða*, as in the ancient "gliding Finns" on skis): **Swift**; **aimed at a cell, like Move** (Nov 20): an empty cell, he steps there; an ally's, the two swap places; Move's rules hold (never empty the Front, no Pinned ally). Gain Nimble either way | | Merskrida: Nimble 2. Ullr is the god of skis |
 
 **Steady is dropped** (Aukhitt gave him nothing to notice).
 
 **Nagl is a prefix any stabbing weapon can carry** (Naglskott, Naglspett): a pin travels with points, not with the Ullar.
 
 **Signature mechanic: Pinned** (new status).
-- **Slowed and rooted:** one Speed stage down for a few rounds, **and it can't change rows.** No Frozen chain (unlike Chilled). *As built (Wave 4a): rooted to its spot: no Move, Swap or Advance (lanes too), and no one can swap with it. Two rounds, three at Mer.*
+- **Slowed and rooted:** one Speed stage down for a few rounds, **and it can't change rows.** No Frozen chain (unlike Chilled). **Decided (Nov 20): it locks the cell,** the simplest version: no Move, Swap, Advance or Skrida (lanes too), and no one can swap with it. Pull them to the Front and Pin them there. Cover moves no one, for heroes or enemies, so a Pinned unit still Covers. Two rounds, three at Mer.
 - **Touches:** the **Vasara's** Taunt (a Pinned enemy can't step out of reach of her hammer), and his own Banskott.
 
 **Second status: Marked** (shared: anyone's hits benefit).
@@ -93,7 +94,7 @@ The first four classes (the vertical slice), designed the same way: **fantasy �
 | **Fortify** | Harden the line | **Aukskold** (confers Fortified): herself, then by mutation a row, then all (a shield wall) | | Exists in the stat grammar |
 | **Answer** | Pay off taking hits | **Hevn** (Norwegian *hevn*, "revenge"; ON *hefnd*): strikes back harder for every hit she took since her last turn | | Her cash-in: closes the loop with Egga and Lya |
 
-**Bidhevn** (Hevn with the Bid manner): she sets her feet and **absorbs a full round, then releases double.** The Patient manner was made for her.
+**Bidhevn** (Hevn with the Bid manner): she sets her feet and **absorbs a full round, then releases double.** The Patient manner was made for her. *Decided (Nov 20): double an equally primed Hevn (Hevn's own x2 for Bid, not Bid's x2.6), so at most x4 an unprimed Hevn. Hevn counts the attacks that hurt her since her last action opportunity (acted, lost to a stun, or a Bonus Round's), +25% each, up to +100%.*
 
 **Signature mechanic: Sundered** (the build shape, pillars Part 5c).
 - **Each cracking blow adds a stage, up to three;** each stage is one DEF stage down.
@@ -183,7 +184,7 @@ Any three of the four make a party with at least one designed synergy.
 
 - **Scorch's partner in the slice.** The Skurmar is the fifth class, not in the first four. Give Scorch a second touch inside the four, or let the forge arrive with the Skurmar?
 - **The Song's numbers:** the base heal per verse. If it feels thin, raise the base before the cap.
-- **Hevn's cap:** how much damage "every hit she took" can add; what Bidhevn's "double" doubles.
+- ~~**Hevn's cap**~~ Decided (Nov 20): +25% an attack, cap +100%; Bidhevn doubles an equally primed Hevn.
 - **The Reyk spirits** need rebalancing once Reyk is a no-damage status spell.
 - **The numbers everywhere:** ticks, stages, durations, costs: the sim tunes them against the pace tables.
 - **The other eight classes:** the same treatment, as they're unlocked; the unlock order and conditions.

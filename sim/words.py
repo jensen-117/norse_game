@@ -138,13 +138,13 @@ LADDER = ["Halv", "Base", "Mer", "Jatte", "Ur"]
 class OverCap(ValueError):
     """More upgrade parts than a move can carry, and no capstone of that shape."""
 
-def merge_manners(manners):
+def merge_manners(manners, own_power=None):
     """Several manners on one move (already validated: no repeats, one speed manner at most). Bid winds up and
     releases in the speed manner's group (Bid + Tung: a meteor that lands Heavy), in any order. Powers and costs
-    multiply."""
+    multiply. own_power: the verb's own multiplier for a manner, in place of MANNERS' (Hevn's Bid: x2)."""
     out, power, cost = {}, 1.0, 1.0
     for mn in manners:
-        m = MANNERS[mn]; power *= m.get("power", 1.0); cost *= m.get("cost", 1.0)
+        m = MANNERS[mn]; power *= (own_power or {}).get(mn, m.get("power", 1.0)); cost *= m.get("cost", 1.0)
         for k in ("crit_bonus", "crit_mult"):
             if k in m: out[k] = m[k]
         if "flurry" in m: out["flurry"] = dict(m["flurry"])
@@ -181,6 +181,7 @@ def normalize(verb, tier=None, target=None, manners=(), styng=False, lonn=False,
     own = v.get("tier", "Base")
     if tier == "Halv":
         if own != "Base": raise ValueError(f"{verb} has no Halv fork (it is {own} already)")
+        if not v.get("halv"): raise ValueError(f"{verb} has no Halv fork (only attacks do: a free {kind} would break things)")
         eff = "Halv"
     elif tier == "Base": eff = own
     else:
@@ -214,17 +215,18 @@ def compile_verb(verb, tier=None, target=None, manners=(), styng=False, lonn=Fal
     elif carved:                     # a byname for a long spoken name within the cap (Geirskott)
         name = next((nm for nm, (vb, ps) in BYNAMES.items() if vb == verb and ps == frozenset(carved)), None)
     eff, own = n["eff"], n["own"]
-    mkw, mpower, _ = merge_manners(tuple(v.get("manners", ())) + n["manners"])
+    mkw, mpower, _ = merge_manners(tuple(v.get("manners", ())) + n["manners"], v.get("manner_power"))
     rider, part = (v["rider"] if n["lonn"] else (None, None))
     spoken = name or join_morphemes([x for x in (n["target"], None if n["tier"] == "Base" else n["tier"],
                                                  "Styng" if n["styng"] else None, *n["manners"], part, verb) if x])
     # who it reaches: eligibility (self, ally, enemy, fallen) and scope (one, row, all) kept apart (review C09)
     vt = v.get("target", "enemy")
     a = act(kind, spoken, tier=eff, all=(n["target"] == "All" or vt in ("all", "allies")),
-            target={"self": "self", "ally": "ally", "allies": "ally", "fallen": "fallen", "all": "enemy"}.get(vt, "enemy"),
+            target={"self": "self", "cell": "self", "ally": "ally", "allies": "ally", "fallen": "fallen", "all": "enemy"}.get(vt, "enemy"),
             element=v.get("element"), status=v.get("status"), stat=v.get("stat"),
             direction=None if v.get("up") is None else (1 if v["up"] else -1))
     if n["target"] == "Flok": a["shape"] = "row"
+    if vt == "cell": a["by_cell"] = True                                 # aimed at a cell, like Move (Skrida)
     if kind in SCALES: a["power"] = TIER_POWER[eff] * mpower          # damage, answers and heals all scale (C11)
     if n["styng"]: a["styng"] = TIER_POWER[eff] * STYNG_POWER * mpower  # a hit added to a move with no damage of its own
     if kind == "revive": a.update(VAKNA[eff])

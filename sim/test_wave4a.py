@@ -94,6 +94,8 @@ class Pinning(unittest.TestCase):
 
 # ================================================================ Scorched
 class Scorching(unittest.TestCase):
+    """Scorched ticks off the caster's power (Nov 20, Joseph): one Eld hit at the applying tier's power x SCORCH_POWER,
+    from his MAT against the target's MDF and affinity, worked out when it lands; then 100/50/20% of it."""
     def burning(self, parts=None, weak=True):
         """A Sveda on a dummy weak to fire: it lands for sure (the weakness rule)."""
         u = hero("Brennumar", ("Sveda", parts or {})); e = dummy(aff={"Eld": "weak"} if weak else {})
@@ -101,33 +103,52 @@ class Scorching(unittest.TestCase):
         return b, u, e
 
     def ticks(self, b, e): return [x["dmg"] for x in evs(b, "tick", unit=e.name, status="Scorched")]
-    def tick(self, e, heat, step): return max(1, int(e.maxhp * (SCORCH_TICK * heat * FADE[step])))   # as the engine rounds
+    def blow(self, b, u, e, tier="Base"):
+        hit = dict(element="Eld", power=TIER_POWER[tier] * SCORCH_POWER, all=False)
+        return b.raw_damage(u, e, hit) * {"weak": 1.5}.get(e.affinity("Eld"), 1.0)
+    def tick(self, blow, step): return max(1, int(blow * FADE[step]))      # as the engine rounds
 
     def test_the_fade_100_50_20_then_out(self):
         b, u, e = self.burning()                         # cast in round 1; each round's start ticks it (round 2 first)
+        blow = self.blow(b, u, e)
         for _ in range(3): orders(b, {})
-        self.assertEqual(self.ticks(b, e), [self.tick(e, 1.0, i) for i in range(3)])
+        self.assertEqual(self.ticks(b, e), [self.tick(blow, i) for i in range(3)])
         self.assertNotIn("Scorched", e.status)
 
-    def test_the_tier_sets_the_heat(self):
-        b, u, e = self.burning(dict(tier="Mer"))
-        self.assertEqual(self.ticks(b, e), [self.tick(e, TIER_POWER["Mer"] / TIER_POWER["Base"], 0)])
+    def test_a_blow_not_a_share_of_hp(self):
+        """A boss's size doesn't feed the burn: ten times the HP, the same tick."""
+        u = hero("Brennumar", "Sveda"); e1, e2 = dummy(hp=1000, aff={"Eld": "weak"}), dummy(hp=10 ** 7, aff={"Eld": "weak"})
+        b = Battle([u], [e1, e2], random.Random(1))
+        self.assertAlmostEqual(b.dot_blow(u, e1, "Scorched", "Base"), b.dot_blow(u, e2, "Scorched", "Base"))
 
-    def test_sveda_resets_it(self):
+    def test_the_tier_sets_the_blow(self):
+        b, u, e = self.burning(dict(tier="Mer"))
+        self.assertEqual(self.ticks(b, e), [self.tick(self.blow(b, u, e, "Mer"), 0)])
+
+    def test_sveda_starts_it_over(self):
         b, u, e = self.burning()                                         # 100% at round 2's start
         orders(b, {})                                                    # 50% at round 3's start
         orders(b, {u.uid: (key(u, "Sveda"), e.uid)})                     # Sveda again: 100% at round 4's start
-        self.assertEqual(self.ticks(b, e), [self.tick(e, 1.0, 0), self.tick(e, 1.0, 1), self.tick(e, 1.0, 0)])
+        blow = self.blow(b, u, e)
+        self.assertEqual(self.ticks(b, e), [self.tick(blow, 0), self.tick(blow, 1), self.tick(blow, 0)])
+
+    def test_a_new_sveda_brings_its_own_blow(self):
+        """The applying tier's blow (Nov 20): a Base Sveda over a Mer burn burns at Base, not the hotter one."""
+        u = hero("Brennumar", ("Sveda", dict(tier="Mer")), "Sveda"); e = dummy(aff={"Eld": "weak"}); b = fight([u], [e])
+        orders(b, {u.uid: (key(u, "Mersveda"), e.uid)})
+        orders(b, {u.uid: (key(u, "Sveda"), e.uid)})
+        self.assertAlmostEqual(e.status["Scorched"]["dmg"], self.blow(b, u, e, "Base"))
 
     def test_wind_flares_it(self):
         s, br = hero("Skurmar", "Blast"), hero("Brennumar", "Sveda"); e = dummy(aff={"Eld": "weak"})
         b = fight([br, s], [e]); orders(b, {br.uid: (key(br, "Sveda"), e.uid)})
         orders(b, {})                                                    # 100%, then 50%: the fade's last step is next
         self.assertEqual(e.status["Scorched"]["step"], 2)
+        blow = e.status["Scorched"]["dmg"]
         s.stages["ACC"], e.stages["EVA"] = 3, -3                         # a Blast that can't graze
         orders(b, {s.uid: (key(s, "Halvblast"), e.uid)})
         self.assertTrue(evs(b, "flare", unit=e.name))
-        self.assertEqual(self.ticks(b, e)[-1], self.tick(e, 1.0, 0))     # fanned back to 100% for the next tick
+        self.assertEqual(self.ticks(b, e)[-1], self.tick(blow, 0))       # fanned back to 100%, the same blow
 
     def test_lonnsveda_leaves_feeble_too(self):
         b, u, e = self.burning(dict(lonn=True))
@@ -202,9 +223,15 @@ class Payoffs(unittest.TestCase):
         orders(b, {v.uid: (key(v, "Hevn"), spears[0].uid)})
         self.assertEqual(v.hits_taken, 0)                                # her action came
 
-    def test_bidhevn_is_the_grammars_bid(self):
-        a = compile_verb("Hevn", manners=("Bid",))
-        self.assertEqual((a["name"], a["power"], a["bide"]), ("Bidhevn", TIER_POWER["Base"] * MANNERS["Bid"]["power"], True))
+    def test_bidhevn_releases_double(self):
+        """Nov 20 (D09): double an equally primed Hevn; other Bid moves keep the grammar's x2.6."""
+        a = compile_verb("Hevn", manners=("Bid",)); h = compile_verb("Hevn")
+        self.assertEqual((a["name"], a["power"], a["bide"]), ("Bidhevn", 2 * h["power"], True))
+        self.assertAlmostEqual(compile_verb("Krosh", manners=("Bid",))["power"], TIER_POWER["Base"] * MANNERS["Bid"]["power"])
+        v = hero("Vasara", "Hevn", ("Hevn", dict(manners=("Bid",)))); e = dummy(); b = Battle([v], [e], random.Random(1))
+        for n in (0, 1, 4, 9):
+            v.hits_taken = n
+            self.assertAlmostEqual(b.raw_damage(v, e, v.actions[2]) / b.raw_damage(v, e, v.actions[1]), 2.0)
 
 # ================================================================ the status-move rules
 class StatusMoves(unittest.TestCase):
@@ -235,36 +262,46 @@ class StatusMoves(unittest.TestCase):
 
 # ================================================================ movement and tempo
 class Gliding(unittest.TestCase):
-    def test_skrida_steps_a_row_and_gains_nimble(self):
+    """Skrida aims at a cell, like Move (Nov 20, Joseph): an empty cell, he steps there; an ally's, they trade places;
+    Move's rules hold; Nimble either way."""
+    def test_skrida_steps_to_a_cell_and_gains_nimble(self):
         u, v = hero("Ullar", "Skrida"), hero("Vasara", "Krosh"); b = fight([u, v], [dummy()])
         u.cell, v.cell = ("front", 0), ("front", 1)
-        self.assertEqual(b.group_of(u, u.actions[1]), 1)                    # Swift
-        orders(b, {u.uid: (key(u, "Skrida"), u.uid)})
-        self.assertEqual((u.cell, u.counter_name("EVA")), (("rear", 0), "Nimble 1"))
-        orders(b, {u.uid: (key(u, "Skrida"), u.uid)})                        # either way
+        self.assertEqual((b.group_of(u, u.actions[1]), b.aim(u.actions[1])), (1, "cell"))   # Swift, aimed at a cell
+        orders(b, {u.uid: (key(u, "Skrida"), ["rear", 2])})
+        self.assertEqual((u.cell, u.counter_name("EVA")), (("rear", 2), "Nimble 1"))
+        orders(b, {u.uid: (key(u, "Skrida"), ["front", 0])})                 # either way
         self.assertEqual((u.cell, u.counter_name("EVA")), (("front", 0), "Nimble 2"))
 
-    def test_merskrida_nimble_two(self):
-        u = hero("Ullar", ("Skrida", dict(tier="Mer"))); b = fight([u, hero("Vasara", "Krosh")], [dummy()])
-        orders(b, {u.uid: (key(u, "Merskrida"), u.uid)}); self.assertEqual(u.counter_name("EVA"), "Nimble 2")
+    def test_the_menu_offers_moves_cells(self):
+        u, v = hero("Ullar", "Skrida"), hero("Vasara", "Krosh"); b = fight([u, v], [dummy()])
+        sk = next(m for m in b.options(u.uid)["moves"] if m["name"] == "Skrida")
+        self.assertEqual(sk["cells"], b.options(u.uid)["move"]["cells"])
 
-    def test_skrida_on_an_ally_swaps(self):
+    def test_merskrida_nimble_two(self):
+        u = hero("Ullar", ("Skrida", dict(tier="Mer"))); v = hero("Vasara", "Krosh"); b = fight([u, v], [dummy()])
+        orders(b, {u.uid: (key(u, "Merskrida"), ["rear", 2])}); self.assertEqual(u.counter_name("EVA"), "Nimble 2")
+
+    def test_skrida_onto_an_ally_swaps(self):
         u, v = hero("Ullar", "Skrida"), hero("Vasara", "Krosh"); b = fight([u, v], [dummy()])
         cu, cv = u.cell, v.cell
-        orders(b, {u.uid: (key(u, "Skrida"), v.uid)}); self.assertEqual((u.cell, v.cell), (cv, cu))
+        orders(b, {u.uid: (key(u, "Skrida"), list(cv))}); self.assertEqual((u.cell, v.cell), (cv, cu))
 
     def test_skrida_never_empties_the_front(self):
-        """Move's rule: alone in the Front he holds the line (an empty Front would expose the Rear anyway), but the
-        Nimble still comes."""
+        """Move's rule: alone in the Front he can't be ordered behind it; ordered while it was legal, he holds the
+        line when it lands (the Nimble still comes)."""
         u, d = hero("Ullar", "Skrida"), hero("Dagskald", "Sol"); b = fight([u, d], [dummy()])
         u.cell, d.cell = ("front", 0), ("rear", 1)
-        orders(b, {u.uid: (key(u, "Skrida"), u.uid)})
+        with self.assertRaises(ValueError): b.submit(u.uid, key(u, "Skrida"), ["rear", 0])
+        d.cell = ("front", 1); b.submit(u.uid, key(u, "Skrida"), ["rear", 0]); b.submit(d.uid, "guard")
+        d.cell = ("rear", 1); b.commit()                                     # she stepped back before it landed
         self.assertEqual((u.cell, u.counter_name("EVA")), (("front", 0), "Nimble 1"))
 
     def test_skrida_is_held_by_a_pin(self):
         u, v = hero("Ullar", "Skrida"), hero("Vasara", "Krosh"); b = fight([u, v], [dummy()])
-        cell = u.cell; b.apply_status(b.enemies[0], u, "Pinned", 1.0)
-        hp = u.hp; orders(b, {u.uid: (key(u, "Skrida"), u.uid)})
+        cell = u.cell; b.submit(u.uid, key(u, "Skrida"), ["rear", 2]); b.submit(v.uid, "guard")
+        b.apply_status(b.enemies[0], u, "Pinned", 1.0)
+        hp = u.hp; b.commit()
         self.assertEqual((u.cell, u.hp), (cell, hp)); self.assertTrue(evs(b, "rooted"))   # held, and not paid
 
 class Breathing(unittest.TestCase):
@@ -324,7 +361,8 @@ class TheAIUsesThem(unittest.TestCase):
     def test_the_ullar_glides_out_of_the_front(self):
         u, d = hero("Ullar", "Skott", "Skrida"), hero("Dagskald", "Sol"); b = Battle([u, d], [dummy()], random.Random(1))
         u.cell, d.cell = ("front", 0), ("front", 1)
-        picks = [b.declare(u)[0]["name"] for _ in range(20)]
-        self.assertIn("Skrida", picks)
+        picks = [b.declare(u)[0] for _ in range(20)]
+        glides = [a for a in picks if a["name"] == "Skrida"]
+        self.assertTrue(glides); self.assertTrue(all(a["cell"][0] == "rear" for a in glides))
 
 if __name__ == "__main__": unittest.main()
