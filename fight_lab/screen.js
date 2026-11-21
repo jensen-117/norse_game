@@ -362,6 +362,12 @@ const Screen = (() => {
       if (u.alive) hpbar(bx, b.fy + 2, u.frac);
       if (u.side === "party" && u.state === "dying") { pc.fillStyle = C.hpLo; for (let i = 0; i < u.breaths; i++) pc.fillRect(bx + i * 4, b.fy + 2, 3, 3); }
       if (u.alive && u.knots) { pc.fillStyle = C.white; for (let i = 0; i < u.knots; i++) pc.fillRect(bx + i * 4, b.fy + 5, 3, 2); }   // the Skurmar's knots
+      if (u.alive && u.counters && u.counters.length) {   // the stat counters (Nov 21): a short tag each, green up, red down
+        const UP = { Mighty: 1, Fortified: 1, Nimble: 1, Keen: 1, Quick: 1 };
+        let ty = b.fy + 5 + (u.knots ? 3 : 0) + (u.song ? 3 : 0), tx = bx;
+        for (const c of u.counters.slice(0, 3)) { const [nm, n] = c.split(" "), tag = nm.slice(0, 3).toUpperCase() + n;
+          tiny(tx, ty, tag, UP[nm] ? C.heal : C.hpLo); tx += tinyW(tag) + 3; }
+      }
       if (u.alive && u.song) { pc.fillStyle = C.gold; const sy = b.fy + (u.knots ? 8 : 5); for (let i = 0; i < u.song; i++) pc.fillRect(bx + i * 4, sy, 3, 2); }   // the Song's verses (gold)
       const top = headTop(u, b);
       if (u.alive && u.bound) footBadge(u, b, { reason: "bound" });   // netted: shown even mid-playback, where it lands
@@ -677,6 +683,9 @@ const Screen = (() => {
     ls.slice(scroll, scroll + rows).forEach((l, i) => text(BOX.wordX[0], BOX.rows[1 + i], l, C.white));
     if (ls.length > scroll + rows) tiny(BOX.costR[1] - 3, BOX.rows[rows] + 4, "V", C.gold, null);
     if (scroll > 0) tiny(BOX.costR[1] - 3, BOX.rows[1] - 1, "^", C.gold, null);
+    if (hint) {   // nothing to aim: the title, the body and the hint all use it (Nov 21: Meditate had nothing to click)
+      boxHits.push({ x: BOX.wordX[0], y: BOX.rows[0] - 1, w: BOX.costR[1] - BOX.wordX[0], h: BOX.rows[2] + 11 - BOX.rows[0], onClick: () => pick(mv), enabled: true });
+    }
     if (!mv.afford) text(BOX.wordX[0], BOX.rows[2], mv.why === "Silenced" ? "Silenced." : `Not enough ${mv.cost_type}.`, C.hpLo);
     else if (mv.drops) tiny(BOX.wordX[0] + (hint ? 92 : 0), BOX.rows[2] + 3, "LAST SWING: YOU WILL FALL", C.hpLo, null);   // the last-HP rule (Nov 21)
     else if (hint) tiny(BOX.wordX[0], BOX.rows[2] + 3, "CLICK AGAIN TO USE", C.gold, null);
@@ -750,6 +759,7 @@ const Screen = (() => {
     if (mode === "inspect") { inspectCard = Lab.call("inspect", u.id); mode = "menu"; return; }
     if (mode === "info" && pending) {
       if (pending.targets.includes(u.id)) return order(pending.key, u.id, `${pending.shown} -> ${u.name}`, pending.shown);
+      if (pending.aim === "self" && u.id === current) return pick(pending);      // a self move: clicking the hero uses it
       return;
     }
     if (u.side === "party" && S.awaiting.includes(u.id)) { current = u.id; mode = "menu"; pending = null; return; }
