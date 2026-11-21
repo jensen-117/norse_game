@@ -50,10 +50,18 @@ class Knots(unittest.TestCase):
         self.assertNotIn("graze", {b.roll(s, e, bx) for _ in range(500)})
         self.assertIn("graze", {b.roll(s, e, s.actions[0]) for _ in range(200)})            # Blast still grazes
 
-    def test_three_knots_half_a_meditate_each_round(self):
-        s = hero("Skurmar", "Blast"); b = fight([s], [dummy()]); s.knots = 3; s.mp = 0
-        orders(b, {}); self.assertAlmostEqual(s.mp, KNOT_MP * MEDITATE_SHARE * s.maxmp)
-        s.knots = 2; mp = s.mp; orders(b, {}); self.assertEqual(s.mp, mp)
+    def test_three_knots_deepen_his_recovery(self):
+        """Nov 21 (Joseph): no MP on their own; Meditate and Djupanda restore half a Meditate more. Moves, not items."""
+        s = hero("Skurmar", "Blast", "Djupanda"); b = fight([s], [dummy()]); s.knots = 3; s.mp = 0
+        orders(b, {}); self.assertEqual(s.mp, 0)                                            # nothing for free
+        orders(b, {s.uid: ("meditate", None)}); self.assertAlmostEqual(s.mp, (MEDITATE_SHARE + KNOT_MP * MEDITATE_SHARE) * s.maxmp)
+        s.mp = 0; orders(b, {s.uid: (key(s, "Djupanda"), None)}); orders(b, {})
+        self.assertAlmostEqual(s.mp, (DJUPANDA_SHARE + KNOT_MP * MEDITATE_SHARE) * s.maxmp)
+        s.knots = 2; s.mp = 0; orders(b, {s.uid: ("meditate", None)}); self.assertAlmostEqual(s.mp, MEDITATE_SHARE * s.maxmp)
+
+    def test_knots_are_this_fights(self):
+        s = hero("Skurmar", "Knyta"); fight([s], [dummy()]); s.knots = 3
+        b2 = Battle([s], [dummy()], random.Random(2)); self.assertEqual(s.knots, 0)
 
 class Untying(unittest.TestCase):
     def test_kuling_costs_a_knot_on_top_of_mp(self):

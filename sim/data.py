@@ -721,8 +721,9 @@ AI_DOT_VALUE = 0.8        # AI: x the HP a Scorch would burn (it lands over thre
 AI_ALSO_VALUE = 0.4       # AI: x ref for a second status riding the first (Lonnsveda's Feeble, Lonnpeka's Sundered)
 AI_PAYOFF_VALUE = 0.5     # AI: x ref for a status someone on the side can cash in (Pinned, with a Banskott)
 KNOT_CAP = 3              # Knots (Wave 4c; classes.md Part 7): a pool on the Skurmar, tied by Knyta (a knot a tier), spent by
-KNOT_BLAST = 1.25         # the untie spells, never decaying. Held: 1+ Blast hits harder (x this); 2+ Blixt can't graze;
-KNOT_MP = 0.5             # 3: this share of a Meditate's MP back at each round's start
+KNOT_BLAST = 1.25         # the untie spells, for this fight only (Nov 21, Joseph). Held: 1+ Blast hits harder (x this);
+KNOT_MP = 0.5             # 2+ Blixt can't graze; 3: each MP-recovering move of his (Meditate, Djupanda) restores this share
+                          # of a Meditate more (Meditate 15% -> 22.5%, Djupanda 40% -> 47.5%). No MP on its own.
 BUMP_SHARE = 0.05         # Kasta and Svepa (Nov 20, Joseph): in a crash, each of the two takes this share of its own max HP
                           # plus this share of the other's: damage relative to both bodies, so small things are bowled over
 AI_KNOT_HORIZON = 3       # AI: knots are worth what holding them pays per round (stronger Blasts, sure Blixts, MP) over

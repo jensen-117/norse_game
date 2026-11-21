@@ -125,6 +125,8 @@ def plain(a):
         if a.get("pays_on"): s += f" x{a['pays']:g} against the {a['pays_on']}."
         if a.get("pays_below"): s += f" x{a['pays']:g} against a foe under {a['pays_below']:.0%} HP."
         if a.get("answer"): s += " Stronger for every attack that hurt you since your last turn."
+        if a.get("knots"): s += f" Unties {a['knots']} knot{'s' if a['knots'] > 1 else ''}."
+        if a.get("follow"): s += f" Then {a['follow']} strikes everyone still standing."
         if parts.get("manner") in PLAIN_MANNER: s += " " + PLAIN_MANNER[parts["manner"]]
         elif a.get("bide"): s += " " + PLAIN_MANNER["Bid"]
         elif a.get("flurry"): s += " " + PLAIN_MANNER["Drif"]
@@ -154,6 +156,13 @@ def plain(a):
         s = f"May leave {who_foe} {a['status']}" + (f" and {a['also_status']}." if a.get("also_status") else ".")
         if a.get("styng"): s += " With a strike."
         return s
+    if k == "knot":
+        return (f"Tie {'two knots' if tier == 'Mer' else 'a knot'} of wind (up to three, this fight). Held: 1, Blast hits harder; "
+                "2, Blixt never grazes; 3, Meditate and Djupanda restore more.")
+    if k == "displace":
+        s = (f"Shove one foe a row {'back' if a.get('push') else 'forward'}. Into an occupied space the two swap places and both "
+             "are slammed, each by a share of both bodies. A Pinned unit is a wall.")
+        return s + (" The gust batters it first." if a.get("styng") else "")
     if k == "glide": return "Swift. Step to your other row, or trade places with an ally; gain Nimble."
     if k == "windfall": return "Patient: breathe deep this turn, and a large share of your MP comes back next turn."
     if k == "cleanse": return f"Washes ailments and lowered stats off {who_ally}."
@@ -451,6 +460,7 @@ class Battle:
         self.intents, self.no_flee, self.coin = {}, False, {}     # no_flee: the Hunt's top tiers can't be run from
         self.by_uid = {u.uid: u for u in self.units}
         self.profile = rules_profile(party, profile)        # "new" or "legacy", never a silent mix (review C15)
+        for u in list(party) + list(enemies): u.knots = 0   # knots are tied for this fight only (Nov 21, Joseph)
         self.new_game = self.profile == "new"
         if self.new_game:                            # the new game's tuning: enemy damage, and HP by tier
             for e in enemies: self.new_game_enemy(e)
@@ -1034,6 +1044,9 @@ class Battle:
         if not tgts: return
         if a["kind"] in ("move", "glide") and self.held(u, a, tgts): return      # Pinned: no one leaves a pinned spot
         u.pay(a)
+        if a.get("knots") and not a.get("_release"):        # the untie spells say what they spent (the page's knot pips)
+            self.emit("knot", f"    {u.name} unties {a['knots']} knot{'s' if a['knots'] > 1 else ''}: {u.knots} left.", unit=u.name,
+                      move=a["name"], knots=u.knots, was=u.knots + a["knots"])
         if a.get("once"): u.once_used.add(a["name"])
         u.stats["actions"] += 1
         tag = " [Bonus]" if bonus else ""
@@ -1065,10 +1078,10 @@ class Battle:
         if a["kind"] == "glide":
             self.glide(u, a, tag); return
         if a["kind"] == "windfall":                         # Djupanda's release: the deep breath lands
-            got = min(a["amount"] * u.maxmp, u.maxmp - u.mp); u.mp += got
+            got = min(self.recovery(u, a["amount"]) * u.maxmp, u.maxmp - u.mp); u.mp += got
             self.emit("mp", f"    {u.name} breathes out: {got:.0f} MP back.{tag}", unit=u.name, amount=round(got), move=a["name"]); return
         if a["kind"] == "meditate":
-            got = min(a["amount"] * u.maxmp, u.maxmp - u.mp); u.mp += got
+            got = min(self.recovery(u, a["amount"]) * u.maxmp, u.maxmp - u.mp); u.mp += got
             self.emit("mp", f"    {u.name} meditates, recovering {got:.0f} MP.{tag}", unit=u.name, amount=round(got), move="Meditate"); return
         if a["kind"] == "cover":
             t = tgts[0]
@@ -1649,10 +1662,10 @@ class Battle:
                     options.append((AI_GLIDE_VALUE * ref + nimble - cost_pen, dict(a, cell=cell), u))
             elif a["kind"] == "windfall":                       # Djupanda: Meditate's worth, larger, over two turns
                 if u.mp < 0.5 * u.maxmp:
-                    s = AI_MEDITATE_VALUE * ref * a["amount"] / MEDITATE_SHARE * (1 - u.mp / u.maxmp) * AI_MANNER_VALUE["Bid"]
+                    s = AI_MEDITATE_VALUE * ref * self.recovery(u, a["amount"]) / MEDITATE_SHARE * (1 - u.mp / u.maxmp) * AI_MANNER_VALUE["Bid"]
                     options.append((s - cost_pen, a, u))
         if self.can_meditate(u) and u.mp < u.maxmp:                # the universal Meditate
-            share = min(MEDITATE_SHARE, (u.maxmp - u.mp) / u.maxmp)
+            share = min(self.recovery(u, MEDITATE_SHARE), (u.maxmp - u.mp) / u.maxmp)   # three knots: a deeper breath
             if u.mp < 0.5 * u.maxmp: options.append((AI_MEDITATE_VALUE * ref * share / MEDITATE_SHARE * (1 - u.mp / u.maxmp), meditate(), u))
         if USE_BOARD and USE_ROTATION:
             options += self.board_options(u, ref)
@@ -1679,6 +1692,11 @@ class Battle:
             u.knots = held
         return max(0.0, spell - plain)
 
+    def recovery(self, u, share):
+        """An MP-recovering move's share of max MP: three knots add KNOT_MP of a Meditate (Nov 21, Joseph: the wind-witch's
+        focus; moves only, not items)."""
+        return share + (KNOT_MP * MEDITATE_SHARE if getattr(u, "knots", 0) >= KNOT_CAP else 0.0)
+
     def knot_hold(self, u, k, ref):
         """What holding k knots pays u per round (Wave 4c): 1+, a quarter more on his best Blast; 2+, his best Blixt never
         grazes; 3, half a Meditate (valued as the AI values Meditate)."""
@@ -1695,7 +1713,7 @@ class Battle:
                     graze = max(0.0, GRAZE_BASE - STEP * self.net_stage(u, f0))
                     v += best("Blixt") * graze * (1 - GRAZE_MULT)
             if k >= KNOT_CAP and getattr(u, "maxmp", 0):
-                v += AI_MEDITATE_VALUE * ref * KNOT_MP * (1 - u.mp / u.maxmp)
+                v += 0.5 * AI_MEDITATE_VALUE * ref * KNOT_MP * (1 - u.mp / u.maxmp)   # a better Meditate, some rounds
             return v
         finally:
             u.knots = held
@@ -2027,10 +2045,6 @@ class Battle:
         for u in self.units:
             if u.alive: self.tick_statuses(u, "round_start")
         self.sing()                                        # Kvad (Wave 4b): after the ticks
-        for u in self.units:                               # three knots held: half a Meditate back each round (Wave 4c)
-            if u.alive and u.knots >= KNOT_CAP and getattr(u, "maxmp", 0) and u.mp < u.maxmp:
-                got = min(KNOT_MP * MEDITATE_SHARE * u.maxmp, u.maxmp - u.mp); u.mp += got
-                self.emit("mp", f"    The wind in {u.name}'s knots lends {got:.0f} MP.", unit=u.name, amount=round(got), move="Knots")
         self.tick_spots(); self.tick_piles()
         self.eligible, self.barred = set(), set()
         for u in self.units: u.defending, u.covered_by, u.taunted_by = False, None, None

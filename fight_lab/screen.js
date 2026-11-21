@@ -228,6 +228,7 @@ const Screen = (() => {
       else if (f.kind === "squash") o.rows += f.rows || MOTION.squash.rows;
       else if (f.kind === "look") o.flip = true;
     }
+    if (u.state === "dying") o.dy += 3;            // the fallen lie on the floor (Nov 21)
     if (u.dieT !== undefined) o.dissolve = Math.min(1, (vt - u.dieT) / MOTION.dissolve.dur);
     else if (u.appearT !== undefined && vt - u.appearT < MOTION.dissolve.dur) o.dissolve = 1 - (vt - u.appearT) / MOTION.dissolve.dur;
     else if (u.alive && u.state !== "dying") {     // idle breath, out of step per unit; a rare look the other way
@@ -359,6 +360,7 @@ const Screen = (() => {
       const bx = barX(u, b, list);
       if (u.alive) hpbar(bx, b.fy + 2, u.frac);
       if (u.side === "party" && u.state === "dying") { pc.fillStyle = C.hpLo; for (let i = 0; i < u.breaths; i++) pc.fillRect(bx + i * 4, b.fy + 2, 3, 3); }
+      if (u.alive && u.knots) { pc.fillStyle = C.white; for (let i = 0; i < u.knots; i++) pc.fillRect(bx + i * 4, b.fy + 5, 3, 2); }   // the Skurmar's knots
       const top = headTop(u, b);
       if (u.alive && u.bound) footBadge(u, b, { reason: "bound" });   // netted: shown even mid-playback, where it lands
       else if (u.alive && (!busy || autoUntil > vt)) {   // what they're about to do: Joseph's 13x13 frame at the feet, facing the foe
@@ -666,13 +668,15 @@ const Screen = (() => {
     const x = text(BOX.wordX[0] + 2, BOX.rows[0], mv.shown, C.gold);
     if (tag) tiny(x + 4, BOX.rows[0] + 3, tag, C.dim);
     text(BOX.costR[1] - textW(cost), BOX.rows[0], cost, C.dim);
+    const hint = mv.afford && (mv.aim === "self" || mv.aim === "all");      // inside the box, on its last row (Nov 21)
+    const rows = hint || !mv.afford ? 1 : 2;
     const ls = wrap(plain, BOX.costR[1] - BOX.wordX[0]);
-    scroll = Math.min(scroll, Math.max(0, ls.length - 2));
-    ls.slice(scroll, scroll + 2).forEach((l, i) => text(BOX.wordX[0], BOX.rows[1 + i], l, C.white));
-    if (ls.length > scroll + 2) tiny(BOX.costR[1] - 3, BOX.rows[2] + 4, "V", C.gold, null);
+    scroll = Math.min(scroll, Math.max(0, ls.length - rows));
+    ls.slice(scroll, scroll + rows).forEach((l, i) => text(BOX.wordX[0], BOX.rows[1 + i], l, C.white));
+    if (ls.length > scroll + rows) tiny(BOX.costR[1] - 3, BOX.rows[rows] + 4, "V", C.gold, null);
     if (scroll > 0) tiny(BOX.costR[1] - 3, BOX.rows[1] - 1, "^", C.gold, null);
     if (!mv.afford) text(BOX.wordX[0], BOX.rows[2], mv.why === "Silenced" ? "Silenced." : `Not enough ${mv.cost_type}.`, C.hpLo);
-    else if (mv.aim === "self" || mv.aim === "all") tiny(BOX.costR[1] - tinyW("CLICK AGAIN TO USE"), BOX.rows[0] - 6, "CLICK AGAIN TO USE", C.gold, null);
+    else if (hint) tiny(BOX.wordX[0], BOX.rows[2] + 3, "CLICK AGAIN TO USE", C.gold, null);
   }
   function drawInspect() {                       // the sheet, as the Company remembers it
     const c = inspectCard, x0 = 50, y0 = 26;
@@ -749,7 +753,7 @@ const Screen = (() => {
     inspectCard = Lab.call("inspect", u.id);
   }
   function cellChoices() { return pending && pending.aim === "cell" ? pending.cells : opts[current].move.cells; }
-  function legalTargets() { return mode === "info" && pending && pending.aim !== "self" && pending.aim !== "all" ? pending.targets : null; }
+  function legalTargets() { return mode === "info" && pending && pending.aim !== "self" ? pending.targets : null; }   // All: every one lit
   function pick(mv) {
     if ((mv.aim === "self" || mv.aim === "all") && mode === "info" && pending === mv)   // nothing to aim: a second click uses it
       return order(mv.key, null, mv.shown + (mv.aim === "all" ? " -> all" : ""), mv.shown);
@@ -917,6 +921,7 @@ const Screen = (() => {
         u.job = e.job; u.key = spriteKey(u); u.dieT = undefined; u.appearT = vt;
         return sleep(MOTION.dissolve.dur);
       }
+      case "knot": if (u) { u.knots = e.knots; if (e.knots > (e.was || 0)) addFx(u, "hop", MOTION.hop.dur); } return sleep(B.small);
       case "mp": if (u) { playFx("spark:Vatn", u); floatAt(e.unit_id, "+" + e.amount + " MP", C.absorb); } return sleep(B.small);
       case "tick": if (u) { u.hp = e.hp; u.frac = u.maxhp ? e.hp / u.maxhp : u.frac; addFx(u, "flash", MOTION.flash.dur); floatAt(e.unit_id, String(e.dmg), C.hpMid); } return sleep(B.small);
       case "defend": if (u) { u.defending = true; addFx(u, "squash", MOTION.squash.dur); } return sleep(B.small);
