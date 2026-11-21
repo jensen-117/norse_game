@@ -151,7 +151,7 @@ def plain(a):
     if k == "flee": return "Escape the fight, for certain." if a.get("item") else "Try to run."
     if k == "defend": return "Halve the damage you take this round. Acts first."
     if k == "cover": return "Take the hits meant for one ally this round. Acts first."
-    if k == "taunt": return "First. Every foe's single-target attack this round goes to you, if it can reach you."
+    if k == "taunt": return f"First. {'A row of foes' if a.get('shape') == 'row' else 'One foe'}: their single-target attacks this round must go to you, if they can reach you."
     if k == "meditate": return "Recover some MP. Takes your turn."
     if k == "move": return "Step to another spot, or swap with the ally there."
     return ""
@@ -174,7 +174,7 @@ class Unit:
         self.pushed = set()       # stats pushed this round: they don't step toward zero at its end
         self.status = {}          # name -> dict(rounds=..., ...)
         self.defending = False
-        self.taunting = False     # Egga this round: foes' single-target attacks that can reach her go to her
+        self.taunted_by = None    # Egga this round: this unit's single-target attacks go to her, if they can reach her
         self.bide = None          # (action, target) wound up last round, fires this round (Bid- moves)
         self.charge = None        # the token of a release already queued this round; an interruption clears it (C05)
         self.covered_by = None    # an ally who Covers this unit this round (combat_spec Part 8)
@@ -769,7 +769,7 @@ class Battle:
         pool = self.allies(u) if a["target"] == "ally" else self.foes(u)
         pool = [x for x in pool if self.reach_mult(u, a, x) is not None]
         if a["target"] == "enemy" and not a["all"] and not a.get("shape") and not a.get("spot"):
-            drawn = next((x for x in pool if x.taunting), None)       # Egga: a single-target attack that can reach her
+            drawn = u.taunted_by if u.taunted_by in pool else None    # Taunted: a single-target attack goes to the taunter
             if drawn is not None and drawn is not chosen:
                 if chosen is not None:
                     self.emit("drawn", f"    {u.name} is drawn to {drawn.name}!", unit=u.name, target=drawn.name, was=chosen.name)
@@ -916,9 +916,10 @@ class Battle:
             if not lanes: return
             u.cell = (a["to"], lanes[0]); u.stats["moves"] += 1
             self.emit("move", f"    {u.name} steps up to the {a['to'].capitalize()}.{tag}", unit=u.name, cell=u.cell, advance=True); return
-        if a["kind"] == "taunt":                            # Egga: draw every foe's single-target attack this round
-            u.taunting = True
-            self.emit("taunt", f"    {u.name} uses {self.shown(u, a)}, daring the foe to strike her!{tag}", unit=u.name, move=a["name"]); return
+        if a["kind"] == "taunt":                            # Egga: the targets' single-target attacks this round go to her
+            for t in tgts: t.taunted_by = u
+            self.emit("taunt", f"    {u.name} uses {self.shown(u, a)}, daring {', '.join(t.name for t in tgts)} to strike her!{tag}",
+                      unit=u.name, move=a["name"], targets=[t.name for t in tgts]); return
         if a["kind"] == "meditate":
             got = min(a["amount"] * u.maxmp, u.maxmp - u.mp); u.mp += got
             self.emit("mp", f"    {u.name} meditates, recovering {got:.0f} MP.{tag}", unit=u.name, amount=round(got), move="Meditate"); return
@@ -1237,10 +1238,14 @@ class Battle:
             elif a["kind"] == "defend":
                 s = (0.8 if u.hp < 0.25 * u.maxhp else 0.1) * ref
                 options.append((s, a, u))
-            elif a["kind"] == "taunt":                          # worth it while she's healthy and others need shielding
-                if u.hp >= 0.5 * u.maxhp:
-                    shield = sum(1 for x in self.allies(u) if x is not u and (x.hp < 0.6 * x.maxhp or self.bide_threat(x) > 0))
-                    if shield: options.append((AI_TAUNT_VALUE * ref * shield - cost_pen, a, u))
+            elif a["kind"] == "taunt":                          # pull the foe that most threatens a hurt ally, while she's healthy
+                hurt = [x for x in self.allies(u) if x is not u and (x.hp < 0.6 * x.maxhp or self.bide_threat(x) > 0)]
+                if u.hp >= 0.5 * u.maxhp and hurt:
+                    for f in self.foes(u):
+                        if f.taunted_by is not None: continue
+                        threat = max((self.expected_damage(f, x, m) for x in hurt for m in f.actions
+                                      if m["kind"] == "damage" and not m["all"] and not m.get("shape")), default=0)
+                        if threat: options.append((AI_TAUNT_VALUE * threat - cost_pen, a, f))
         if self.can_meditate(u) and u.mp < u.maxmp:                # the universal Meditate
             share = min(MEDITATE_SHARE, (u.maxmp - u.mp) / u.maxmp)
             if u.mp < 0.5 * u.maxmp: options.append((AI_MEDITATE_VALUE * ref * share / MEDITATE_SHARE * (1 - u.mp / u.maxmp), meditate(), u))
@@ -1508,7 +1513,7 @@ class Battle:
             if u.alive: self.tick_statuses(u, "round_start")
         self.tick_spots(); self.tick_piles()
         self.eligible, self.barred = set(), set()
-        for u in self.units: u.defending, u.covered_by, u.taunting = False, None, False
+        for u in self.units: u.defending, u.covered_by, u.taunted_by = False, None, None
         self.plan_phase([u for u in self.units if u.alive], bonus=False)
         self.phase = "declare"
 

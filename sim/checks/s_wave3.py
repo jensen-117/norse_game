@@ -19,11 +19,15 @@ def run():
         p.select_option("#hab", "Barrow"); p.click("#rollpack"); p.wait_for_timeout(100)
         p.click("#start"); p.wait_for_function("Screen.state && Screen.state.phase === 'declare' && !Screen.debug.busy", timeout=60000)
         p.focus("body")
-        for k in ("3", "3", "4", "4"): p.keyboard.press(k); p.wait_for_timeout(30)     # Vasara: Egga; Dagskald: Meditate
+        p.keyboard.press("3"); p.wait_for_timeout(30)                                 # Vasara: Egga, then click a foe
+        foe = p.evaluate("Screen.debug.units.find(u => u.side === 'enemy' && u.alive)")
+        cv = p.query_selector("#screen"); cv.scroll_into_view_if_needed(); box = cv.bounding_box(); k = box["width"] / 320
+        p.mouse.click(box["x"] + foe["cx"] * k, box["y"] + foe["cy"] * k); p.wait_for_timeout(50)
+        for key in ("4", "4"): p.keyboard.press(key); p.wait_for_timeout(30)        # Dagskald: Meditate (picked twice)
         p.keyboard.press("Enter"); p.wait_for_timeout(50); p.keyboard.press("Enter")     # Brennumar: filled with a Halv strike
         p.wait_for_function("(Screen.state.round >= 2 || Screen.state.phase !== 'declare') && !Screen.debug.busy", timeout=60000)   # next round, a Bonus Round, or the end
         log = "\n".join(p.evaluate("Lab.call('record').log"))
-        for want in ("uses Egga, daring the foe", "meditates, recovering"):
+        for want in ("uses Egga, daring", "meditates, recovering"):
             if want not in log: bad.append(("missing in the log", want))
         b.close()
     srv.shutdown()

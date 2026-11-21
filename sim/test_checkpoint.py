@@ -98,8 +98,9 @@ class C08_TierAccessAndPrice(unittest.TestCase):
 
 class C09_TargetsDoWhatTheySay(unittest.TestCase):
     def test_unsupported_scopes_are_refused(self):
-        for verb in ("Aukseid", "Vakna", "Byr", "Kvad", "Knyta", "Egga", "Lya"):
+        for verb in ("Aukseid", "Vakna", "Kuling", "Kvad", "Knyta", "Egga", "Lya"):   # Kuling already reaches everyone
             with self.assertRaises(ValueError): compile_verb(verb, target="All")
+        self.assertEqual(compile_verb("Medvind", target="All")["name"], "Allmedvind")
 
     def test_aukskold_reaches_herself_her_row_or_everyone(self):
         for parts, want in (({}, [1, 0, 0]), ({"target": "All"}, [1, 1, 1])):

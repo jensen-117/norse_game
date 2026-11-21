@@ -74,38 +74,44 @@ class Meditating(unittest.TestCase):
         self.assertTrue(any(e["kind"] == "mp" and e.get("move") == "Meditate" for e in b.events))
 
 class Taunting(unittest.TestCase):
-    def setup(self, rear_target=False):
+    """Egga targets one foe (or a row with Flok): their single-target attacks this round must go to her (Joseph, Nov 20)."""
+    def setup(self, n_foes=2):
         v, d = build_hero("Vasara"), build_hero("Dagskald")
-        b = fight([v, d], [dummy(job="Spear")])
-        e = b.enemies[0]; e.actions = [skill("Pierce", "Spear", "Base")]; e.actions[0]["cost"] = 0; e.actions[0]["reach"] = "reach"
-        return b, v, d, e
+        foes = [dummy(job="Spear") for _ in range(n_foes)]
+        b = fight([v, d], foes)
+        for e in b.enemies:
+            e.actions = [skill("Pierce", "Spear", "Base")]; e.actions[0]["cost"] = 0; e.actions[0]["reach"] = "reach"
+        b.remaining = [(k, u, ((u.actions[0], d) if u in b.enemies else x)) for k, u, x in b.remaining]   # both aim at the healer
+        return b, v, d, b.enemies
 
-    def test_egga_draws_a_single_target_attack(self):
-        b, v, d, e = self.setup()
-        b.intents = {}
-        b.remaining = [(k, u, ((e.actions[0], d) if u is e else x)) for k, u, x in b.remaining]   # the foe aims at the healer
-        orders(b, {v.uid: ("m2", None)})                       # Egga
-        hits = [x for x in b.events if x["kind"] == "hit" and x.get("src") == e.name]
-        self.assertTrue(hits); self.assertTrue(all(h["unit"] == v.name for h in hits))
+    def hits_on(self, b, src):
+        return [x["unit"] for x in b.events if x["kind"] == "hit" and x.get("src") == src.name]
+
+    def test_the_taunted_foe_strikes_her_the_other_doesnt(self):
+        b, v, d, (e1, e2) = self.setup()
+        orders(b, {v.uid: ("m2", e1.uid)})                     # Egga on e1
+        self.assertTrue(self.hits_on(b, e1)); self.assertTrue(all(t == v.name for t in self.hits_on(b, e1)))
+        self.assertTrue(all(t == d.name for t in self.hits_on(b, e2)))
         self.assertTrue(any(x["kind"] == "drawn" for x in b.events))
-        self.assertEqual(d.hp, d.maxhp)
 
-    def test_it_acts_first_and_costs_hp(self):
-        b, v, d, e = self.setup()
+    def test_it_acts_first_targets_and_costs_hp(self):
+        b, v, d, foes = self.setup()
         egga = v.actions[2]; self.assertEqual(egga["name"], "Egga")
-        self.assertEqual(b.group_of(v, egga), 3); self.assertEqual(egga["cost_type"], "HP"); self.assertGreater(egga["cost"], 0)
+        self.assertEqual((b.group_of(v, egga), egga["target"], b.aim(egga)), (3, "enemy", "one"))
+        self.assertEqual(egga["cost_type"], "HP"); self.assertGreater(egga["cost"], 0)
+        self.assertEqual(compile_verb("Egga", target="Flok")["shape"], "row")
 
     def test_all_moves_are_not_drawn(self):
-        b, v, d, e = self.setup()
+        b, v, d, (e1, e2) = self.setup()
         sweep = skill("Pierce", "Sweep", "Base", all_=True); sweep["cost"] = 0; sweep["reach"] = "any"
-        e.actions = [sweep]
-        b.remaining = [(k, u, ((sweep, None) if u is e else x)) for k, u, x in b.remaining]
-        orders(b, {v.uid: ("m2", None)})
-        self.assertLess(d.hp, d.maxhp)                         # the All-move still reaches the healer
+        e1.actions = [sweep]
+        b.remaining = [(k, u, ((sweep, None) if u is e1 else x)) for k, u, x in b.remaining]
+        orders(b, {v.uid: ("m2", e1.uid)})
+        self.assertIn(d.name, self.hits_on(b, e1))             # the All-move still reaches the healer
 
     def test_it_lasts_one_round(self):
-        b, v, d, e = self.setup()
-        orders(b, {v.uid: ("m2", None)})
-        self.assertFalse(v.taunting)
+        b, v, d, (e1, e2) = self.setup()
+        orders(b, {v.uid: ("m2", e1.uid)})
+        self.assertIsNone(e1.taunted_by)
 
 if __name__ == "__main__": unittest.main()

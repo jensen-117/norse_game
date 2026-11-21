@@ -575,11 +575,12 @@ VERBS = {
     "Skott":    dict(targets=("Flok", "All"), cls="Ullar", kind="damage", root="Skott", element="Pierce", rider=("Bleeding", "Blot")),
     "Naglskott": dict(targets=("Flok", "All"), cls="Ullar", kind="status", root="Skott", element="Pierce", status="Pinned", styng=True),
     "Peka":     dict(targets=("Flok", "All"), cls="Ullar", kind="status", element="Pierce", status="Marked", rider=("Sundered", "Lonn"), styng=True),
-    "Banskott": dict(targets=("Flok", "All"), cls="Ullar", kind="damage", root="Skott", element="Pierce", pays_on="Pinned"),
+    "Banskott": dict(targets=("Flok", "All"), cls="Ullar", kind="damage", root="Skott", element="Pierce", pays_on="Pinned"),   # x1.5 on the Pinned
+    "Avliva":   dict(cls="Ullar", kind="damage", root="Skott", element="Pierce", pays_below=0.5),   # Swedish "to put down": x2 under half HP
     "Skrida":   dict(cls="Ullar", kind="glide", stat="EVA", up=True, target="self", group=1),
     # Vasara (Hammer; martial)
     "Krosh":    dict(targets=("Flok", "All"), cls="Vasara", kind="damage", root="Krosh", element="Crush", rider=("Sundered", "Brak")),
-    "Egga":     dict(cls="Vasara", kind="taunt", target="self", rider=("Blinded", "Lonn"), styng=True),
+    "Egga":     dict(targets=("Flok",), cls="Vasara", kind="taunt", target="enemy", rider=("Blinded", "Lonn"), styng=True),   # taunts one foe, or a row
     "Lya":      dict(cls="Vasara", kind="cover", target="ally", free=True),
     "Aukskold": dict(targets=("Flok", "All"), cls="Vasara", kind="stat", stat="DEF", up=True, target="self"),   # herself; Flok her row; All everyone
     "Hevn":     dict(cls="Vasara", kind="answer", root="Krosh", element="Crush"),
@@ -599,7 +600,7 @@ VERBS = {
     "Orkan":    dict(cls="Skurmar", kind="damage", element="Blast", target="all", weight=3, knots=3, tier="Mer", follow="Blixt"),
     "Kasta":    dict(cls="Skurmar", kind="displace", push=True, styng=True),
     "Svepa":    dict(cls="Skurmar", kind="displace", push=False, styng=True),
-    "Byr":      dict(cls="Skurmar", kind="stat", stat="SPD", up=True, target="allies"),
+    "Medvind":  dict(targets=("Flok", "All"), cls="Skurmar", kind="stat", stat="SPD", up=True, target="ally"),   # Swedish "tailwind": Quick
 }
 
 # Upgrade parts beyond tier, target and manner (pillars Part 5c). The cap: at most UPGRADE_CAP parts on one move;

@@ -57,7 +57,8 @@ The first four classes (the vertical slice), designed the same way: **fantasy �
 | **Pin** | Slow it and root it | **Naglskott** (no damage): inflicts **Pinned** | Settles in the mutation session | Starting kit. **Styng** adds damage (Styngnaglskott); **Mer** makes a longer Pin. Mer + Styng is ***Geirskott*** (ON *geirr*, "spear": a pike-length shaft that pins the leg), a byname |
 | **Mark** | Strip its defences | **Peka** (*coined*: Swedish *peka*, "to point"): inflicts **Marked** | **Sundered** → **Lonnpeka** (he points out the gap) | Styngpeka adds damage. Merpeka: Marked 2 in one shot |
 | **Volley** | Hit many | **Flokskott** | (as Skott) | Exists |
-| **Finish** | Pay off a setup | **Banskott** (*coined*: ON *bani*, "death, slayer," + skott): **only pays off on Pinned targets** | | His cash-in |
+| **Finish** | Pay off a setup | **Banskott** (*coined*: ON *bani*, "death, slayer," + skott): **x1.5 against a Pinned target** | | His cash-in |
+| **Put down** | Finish the wounded | **Avliva** (Swedish, "to put down": what a hunter does for wounded prey): **x2 against a foe under half HP** | | Single-target. Later: conditional riders of this kind |
 | **Glide** | Escape his weakness | **Skrida** (Swedish *skrida*, "to glide"; ON *skríða*, as in the ancient "gliding Finns" on skis): **Swift**; step a row **either way** and gain Nimble. **On an ally, the two swap places** | | Merskrida: Nimble 2. Ullr is the god of skis |
 
 **Steady is dropped** (Aukhitt gave him nothing to notice).
@@ -86,7 +87,7 @@ The first four classes (the vertical slice), designed the same way: **fantasy �
 | Verb | Job | Basic move | Lonn rider | Notes |
 |---|---|---|---|---|
 | **Strike** | Crush damage | **Krosh** (renamed from Kross) | **Sundered** → **Brakrosh** | Starting kit |
-| **Taunt** | Draw fire | **Egga** (from ON *eggja*, "to incite": the source of English "egg on") | **Blinded** → **Lonnegga** (the taunted swing wild) | Starting kit. Acts in the fastest group. Styngegga adds a strike |
+| **Taunt** | Draw fire | **Egga** (from ON *eggja*, "to incite": the source of English "egg on"): **targets one foe (Flok: a row); its single-target attacks this round must go to her**, if they can reach her | **Blinded** → **Lonnegga**: the taunted foes are Blinded as she casts it | Starting kit. First (acts before nearly everything). Styngegga adds a strike |
 | **Guard** | Take one ally's hits | **Lya** (Cover) | | The tank owns Cover (pillars Part 5) |
 | **Sunder** | Break their armour | **Brakrosh** (*coined*: Swedish/ON *brak*, "a crash, a crack," + krosh; the doubled k collapses at the seam): inflicts **Sundered** | | Brak is a rider prefix, like Blot and Nagl |
 | **Fortify** | Harden the line | **Aukskold** (confers Fortified): herself, then by mutation a row, then all (a shield wall) | | Exists in the stat grammar |
@@ -152,7 +153,7 @@ Any three of the four make a party with at least one designed synergy.
 | **Bolt** | Lightning | **Blixt**: wild, high-swing damage. **Lonnblixt** adds Stunned (bosses immune) | Plain Blixt has no Stun: its rider slot is open |
 | **Untie** | Spend the wind | **Kuling**, **Storm**, **Orkan** (the Swedish wind scale): separate spells, found, each rarer and stronger. Each costs knots (1, 2, 3) **on top of** MP, and can be mutated (Merorkan: still 3 knots, more MP) | Kuling: a light wind on all. Storm: a strong wind on all. Orkan: a strong wind on all, then lightning on all |
 | **Sweep** | Move the enemy | **Kasta** (push; ON *kasta*, the source of "cast") and **Svepa** (pull; "to sweep"): no damage; Styng adds the battering | Displacement |
-| **Fair wind** | Party tempo | **Byr** (ON *byrr*, "a fair wind"): the party gains Quick | |
+| **Fair wind** | Party tempo | **Medvind** (Swedish and Norwegian, "tailwind"; literally "with-wind"): one ally gains Quick; Flok a row, All the party (Flokmedvind, Allmedvind) | Renamed from Byr (it read as "beer") |
 
 **Signature mechanic: Knots.**
 - **Knyta ties knots, up to three. They don't decay; they're spent** (a pool he holds, not a status on a target). **Knots carry between rooms** (to test for power).

@@ -233,7 +233,7 @@ def compile_verb(verb, tier=None, target=None, manners=(), styng=False, lonn=Fal
         elif rider == "cleanse_one": a["cleanse_one"] = True             # Lonnlak
         elif kind == "damage": a["status"] = rider                       # Blotskott: may Bleed
         else: a["also_status"] = rider                                   # Lonnsveda: Scorched and Feeble
-    for k in ("root", "knots", "follow", "pays_on", "push"):
+    for k in ("root", "knots", "follow", "pays_on", "pays_below", "push"):
         if k in v: a[k] = v[k]
     if "group" in v: a["group"] = v["group"]
     a.update(mkw)
@@ -261,7 +261,7 @@ def compile_verb(verb, tier=None, target=None, manners=(), styng=False, lonn=Fal
 EXECUTABLE_KINDS = {"damage", "heal", "cleanse", "status", "stat", "revive", "cover", "defend", "move", "flee", "mp",
                     "taunt", "meditate"}                     # Wave 3: Egga and Meditate
 KIND_NEEDS = {"revive": ("reaches", "hp", "wound"), "stat": ("stat", "direction"), "status": ("status",)}
-WAVE4_FIELDS = ("also_status", "cleanse_one", "pays_on", "styng", "knots", "follow", "push")   # effects not yet resolved
+WAVE4_FIELDS = ("also_status", "cleanse_one", "pays_on", "pays_below", "styng", "knots", "follow", "push")   # effects not yet resolved
 RUNTIME_STATUSES = set(STATUSES) | set(COUNTER_OF) | {"Death"}
 CORE_FIELDS = ("kind", "name", "element", "tier", "all", "cost", "cost_type", "power", "status", "stat", "direction",
                "target", "pct_current")
