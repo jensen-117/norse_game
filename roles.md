@@ -1,4 +1,4 @@
-# Roles and Trios (Nov 21: draft for Joseph's mark-up)
+# Roles and Trios (Nov 21: first pass approved by Joseph)
 
 Three heroes, twelve classes. A trio is a third of the party per pick, so it should spell a strategy. We don't need all 220 trios to work: we name the ones that make sense and enable them on purpose. The gauntlet (`sim/gauntlet.py`) checks each named trio.
 
@@ -32,7 +32,7 @@ Built: the five with kits. Proposed: the seven without (first guesses, to be des
 | **Dagskald** (Sol) | magic | Sustain (heals, 1.2) | Setup (Song, ATK up) | Lak, Kvad, Gyllenlykt | built |
 | **Skurmar** (Blast) | magic | Area (wind) | Control (shoves, Stun) | none (Nimble through Medvind later) | built |
 | **Huskarl** (Axe and shield) | martial | Front (the second anvil) | Setup (Slash, cleaving rows) | Cover, Fortified on himself | proposed |
-| **Nalarbani** (Stikk, the needle) | martial | Sustain (the field surgeon) | Burst (Pierce, Bleed) | Sava: Mending on an ally; Lonnsava also stops Bleeding | proposed |
+| **Nalarbani** (Stikk, the needle) | martial | Sustain (the barber-surgeon) | Burst (Pierce, Bleed) | Sava: Mending on an ally; Lonnsava also stops Bleeding; Besk: Nimble 3, then the crash | agreed (Nov 21) |
 | **Lundar** (Jord) | magic | Sustain (wards) | Front-from-the-rear (stone) | Fortified, stoneskin, wards on a row | proposed |
 | **Seidar** (Natt) | magic | Setup (curses) | Sustain (drain) | life stolen back to the party | proposed |
 | **Hafrunar** (Vatn) | magic | Control (Chill, Freeze) | Sustain (cleansing, tides) | removes statuses; a slow tide heal | proposed |
@@ -47,6 +47,17 @@ Coverage with the proposals (main or second role): Front 4 (Vasara, Huskarl, Lun
 - **Cost:** the minor rung, **8 HP**. A martial pays to heal, which is fair: the real price is the turn he doesn't attack. It nets about +77 over three rounds, under a Lak (~125 at once) but spread out and on his HP.
 - **Lonnsava** (16 HP): Mending and the end of Bleeding. Stitches.
 - Why a class move and not a universal martial action: a self-heal every martial carries erodes both the Dagskald's job and the surgeon's.
+
+## The surgeon's tonic, and other sustain (Nov 21, Joseph)
+
+- **Besk** (Swedish *besk*, bitter; *bäsk*, the herbal bitters; Joseph's "Bask", "Mod"): the Nalarbani's stimulant. An ally gets **Nimble 3**; it can't be given again while Nimble lasts. When Nimble runs out, **the crash: Slowed 3**. Dosing during the crash clears it and gives Nimble 3 again: you stay up only by spending turns on it. (Under the agreed speed rule, Slowed only means acting later; if the crash should hurt more, Blinded instead.)
+- **Lundar** may carry a nature heal paid in MP. Lak and the Song stay the Dagskald's alone; other healers are coverage, not rivals.
+- Sava keeps its name (Joseph floated Hava).
+
+## The Witch's Circle's anchor (Nov 21)
+
+- **Skoldborg** (shield-fort): the short name for Flok Aukskold, DEF up on your row; **Merskoldborg**, two stages. Owners: the Vasara (HP), the Dagskald (MP), likely the Lundar. The ladder: 12 MP or 32 HP; Mer 24 MP or 64 HP. Watch: a stage fades in about a round and a half, so one cast prevents ~55 on a row taking ~150 a round, against a Lak's ~125 for 8 MP. If it measures weak, wards last longer; the stage stays a stage.
+- **The Dagskald's Circle kit** (Meditate is always there, not a slot): Skoldborg (hold the row), Kvad (the steady heal), Gyllenlykt (the panic button: a heal and Nimble 3), Bannenlykt (Mark: with the accuracy rules, every Alleld and Kuling on Marked foes rolls crits; a Flok form for area parties). Halvsol is his basic. The fire and wind kill while he holds.
 
 ## Named trios (the ones we promise to make work)
 
