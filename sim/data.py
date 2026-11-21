@@ -397,7 +397,7 @@ COUNTER_OF["AccDown"] = ("ACC", -1)            # the Reyk spirits' old rider: Bl
 STACKS_BY_TIER = {"Halv": 1, "Base": 1, "Mer": 2, "Jatte": 3, "Ur": 3}   # a status move's stacks (Mer adds two)
 FADE = (1.0, 0.5, 0.2)    # the fade shape: Frozen's chance to hold, action by action; Scorched's tick, round by round
 PIN_ROUNDS = 2            # Pinned: rounds, plus one per extra stack (Mer 3, Jatte 4)
-SCORCH_POWER = 0.6        # Scorched (Nov 20, Joseph): each tick is one Eld hit at the applying tier's power x this x
+SCORCH_POWER = 1.2        # Scorched (Nov 20, Joseph: 1.2, about two hits over three rounds): one Eld hit at the tier's power x this x
                           # FADE[step], worked out from the caster's MAT against the target's MDF when it lands
 
 # ---------------------------------------------------------------- statuses as data (refactor_plan Wave 1)
