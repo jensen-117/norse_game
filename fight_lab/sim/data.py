@@ -688,8 +688,8 @@ AI_TAUNT_VALUE = 0.6      # AI: x ref per ally Egga would shield (hurt, or a win
 # regression are untouched. Hero power is baked into the character (not a buff); enemy damage and HP by tier are
 # applied to the enemies when the fight starts, and again when a Mogel re-forms.
 ENEMY_LEVEL = 50
-HERO_POWER = {c: 1.4 for c in ("Vasara", "Ullar", "Brennumar", "Dagskald", "Skurmar")}   # x damage dealt (not items)
-ENEMY_DAMAGE = 2.5        # x damage enemies deal
+HERO_POWER = {c: 1.2 for c in ("Vasara", "Ullar", "Brennumar", "Dagskald", "Skurmar")}   # x damage dealt (not items); Nov 20: 1.2 with the stat blocks
+ENEMY_DAMAGE = 2.25       # x damage enemies deal (Nov 20: the solver's 2.23, rounded)
 ENEMY_ACTIONS = 1         # each enemy acts once a round (Nov 20); a multi-stage move is authored on the move, not as actions
 # The classes' stat blocks (Nov 20, Joseph): multipliers on derived stats, in the families' value scale (HP, ATK, MAT 1;
 # DEF, MDF, SPD 0.5; WIL 0.25), each within +0.1 of neutral; a stat the class never uses stays at 1.0.
@@ -700,7 +700,7 @@ CLASS_BODIES = {
     "Dagskald":  dict(HP=1.05, MAT=0.9, DEF=1.0, MDF=1.25, SPD=0.9),     # hardy against magic, steady
     "Skurmar":   dict(HP=0.85, MAT=1.15, DEF=0.85, MDF=1.0, SPD=1.3),    # tempo: quick, light
 }
-TIER_HP = {"Trash": 1.0, "Regular": 1.0, "Elite": 1.7, "Boss": 1.85}    # x enemy HP by tier: the rank reshape
+TIER_HP = {"Trash": 1.0, "Regular": 1.0, "Elite": 1.65, "Boss": 1.75}   # x enemy HP by tier: the rank reshape (Nov 20)
 def enemy_tier(u):
     """The pace table's tier of an enemy (pillars Part 5b): the 3-cost Drott is Boss, Halv and Litel Trash, Stor Elite."""
     if getattr(u, "rank", None) == "Drott" or getattr(u, "actions_per_round", 1) >= 3: return "Boss"
