@@ -275,7 +275,7 @@ A Flok-and-talisman build that invested hard (about +2 or +3) sweeps a row of Tr
 
 Past the ladder: a Flok Stelblixt is 64 MP (out of reach on a 100 pool); an All one (128) and Allblottskott are items (the Shrapnel Bomb).
 
-## Part 7d: Accuracy and Speed (Nov 21, agreed; to build after Joseph's calibration fights)
+## Part 7d: Accuracy and Speed (Nov 21, agreed; the roll and speed built in Wave 7 phase A)
 
 **Why:** a stage on the accuracy side moved only the graze roll (10% a stage, a graze halves a hit): Nimble 3 cut damage taken by 16%, where Fortified 1 cuts 25%; Marked topped out at +13%. Every Blinded in the kits (Reyk, Blindasol, Rodegga) was a fifth as strong as a power stage.
 

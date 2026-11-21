@@ -847,7 +847,7 @@ const Screen = (() => {
   const NARRATE = new Set(["act", "transform", "hit", "absorb", "heal", "stat", "status", "resist", "defend", "cover", "covered", "move", "windup", "bide_lost",
     "paint", "skip", "silenced", "tick", "down", "reform", "crawl", "pile", "scatter", "reassemble", "dying", "breath", "dead", "revive",
     "stabilised", "item", "mp", "fled", "flee_failed", "retarget", "fizzle", "shatter", "flurry", "cleanse", "immune", "thaw",
-    "taunt", "drawn", "flare", "rooted", "weak", "out_of_reach", "song", "song_fades", "knot", "follow", "wall", "spent"]);
+    "taunt", "drawn", "flare", "rooted", "weak", "out_of_reach", "song", "song_fades", "knot", "follow", "wall", "spent", "whiff"]);
   const UPS = new Set(["Mighty", "Fortified", "Keen", "Nimble", "Quick"]);   // the counters' up names
   async function play(r) {
     const g = gen, live = () => g === gen;       // this session only: a newer fight retires it
@@ -903,6 +903,7 @@ const Screen = (() => {
         await hitstop(weak ? MOTION.hitstop.weak : crit ? MOTION.hitstop.crit : MOTION.hitstop.base);
         return sleep(next && next.kind === "hit" ? B.hit * .5 : B.hit);      // a sweep's hits come quicker
       }
+      case "whiff": if (u) { addFx(u, "hop", MOTION.hop.dur, { px: 2 }); floatAt(e.unit_id, "MISS", C.dim); } return sleep(B.hit);   // the new roll (Nov 21): it lands nothing
       case "absorb": if (u) { u.hp = e.hp; u.frac = Math.min(1, e.hp / ((u.maxhp || e.hp) || 1)); playFx("spark:" + (e.element || "Martial"), u); floatAt(e.unit_id, "+" + e.amount, C.absorb); floatAt(e.unit_id, "ABSORB", C.absorb, 140); } return sleep(B.hit);
       case "heal":
         if (u) pose(u, e);

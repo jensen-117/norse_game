@@ -111,6 +111,11 @@ SHATTER_MULT = 1.5
 # ---------------------------------------------------------------- hit model
 GRAZE_BASE, CRIT_BASE, STEP = 0.20, 0.05, 0.10
 GRAZE_MULT, CRIT_MULT = 0.5, 1.5
+# The new game's accuracy (Nov 21, classes.md 7d): the attacker's ACC minus the target's EVA. Ahead (Keen, or a Marked
+# target): a hit crits 1 in 3 and never grazes. Behind (Blinded, or a Nimble target): a hit whiffs 1 in 3 (lands nothing).
+# Even: the plain roll (a flat graze, the base crit). Speed is out of the roll; damage hits only (status moves keep theirs).
+WHIFF_CHANCE = 1 / 3
+AHEAD_CRIT = 1 / 3
 
 # ---------------------------------------------------------------- enemies
 # Authored creatures. genes default to average (15.5).

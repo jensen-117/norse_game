@@ -140,7 +140,7 @@ def plain(a):
         if a.get("item"): return f"Restores {PLAIN_SHARE.get(a.get('amount'), 'some of')} one ally's HP."
         who = "a row of allies" if a.get("shape") == "row" else who_ally
         s = f"{PLAIN_TIER.get(tier, 'Average')} healing for {who}."
-        return s + (" The light leaves them Nimble." if a.get("also") else "")
+        return s + (" The light leaves them Nimble: attacks on them miss 1 in 3." if a.get("also") else "")
     if k == "song":
         who = "every ally" if a["all"] else "a row of allies" if a.get("shape") == "row" else "one ally"
         return (f"Adds {'two stacks' if tier == 'Mer' else 'a stack'} of Song to {who}, up to three: at the start of each round, "
@@ -214,7 +214,7 @@ class Unit:
         self.breaths = 0
         self.wounded = False
         self.pouch = []            # [[item key, count], ...], at most POUCH_SLOTS
-        self.stats = dict(dealt=0.0, healed=0.0, weak=0, crit=0, graze=0, hits=0, statuses=0,
+        self.stats = dict(dealt=0.0, healed=0.0, weak=0, crit=0, graze=0, hits=0, whiff=0, statuses=0,
                           bonus=0, actions=0, downs=0, defends=0, blocked=0.0, late=0,
                           rear_melee=0, fizzles=0, moves=0, illegal=0, bides=0, bides_lost=0, flurry_hits=0,
                           swaps=0, covers=0, covered=0.0, paints=0, spot_ticks=0)
@@ -645,14 +645,40 @@ class Battle:
         return clamp(steps, -SPEED_CAP, SPEED_CAP)
 
     def net_stage(self, att, dfn):
+        if getattr(self, "new_game", False):            # Nov 21: speed is out of the roll (turn order only)
+            return clamp(att.stage("ACC") + self.horn_bonus(att) - dfn.stage("EVA"), -5, 5)
         return clamp(att.stage("ACC") + self.horn_bonus(att) + self.speed_shift(att, dfn)
                      - dfn.stage("EVA"), -5, 5)
+
+    def odds(self, att, dfn, a=None):
+        """The new game's roll (Nov 21, classes.md 7d), as chances: (whiff, graze, crit). A damage hit reads the
+        attacker's ACC against the target's EVA: ahead, crits 1 in 3 and no graze; behind, whiffs 1 in 3 (then the
+        plain roll); even, the plain roll. A move that can't miss (Blixt on two knots) neither whiffs nor grazes.
+        A status move's own roll (a = None, or no damage) is always the plain one."""
+        a = a or {}
+        sure = self.sure_strike(att, a)
+        bonus = a.get("crit_bonus", 0.0)
+        graze, crit = (0.0 if sure else GRAZE_BASE), CRIT_BASE + att.attrs["DEX"] / 20 / 100 + bonus
+        if a.get("kind") != "damage": return 0.0, graze, crit
+        net = self.net_stage(att, dfn)
+        if net >= 1: return 0.0, 0.0, AHEAD_CRIT + bonus
+        if net <= -1 and not sure:
+            k = 1 - WHIFF_CHANCE
+            return WHIFF_CHANCE, graze * k, crit * k
+        return 0.0, graze, crit
 
     def sure_strike(self, att, a):
         """Two knots held: Blixt can't graze (the Skurmar's lightning finds its mark)."""
         return bool(a) and a.get("element") == "Blixt" and getattr(att, "knots", 0) >= 2
 
     def roll(self, att, dfn, a=None):
+        if getattr(self, "new_game", False):
+            whiff, graze, crit = self.odds(att, dfn, a)
+            r = self.rng.random()
+            if r < whiff: return "whiff"
+            if r < whiff + graze: return "graze"
+            if r < whiff + graze + crit: return "crit"
+            return "hit"
         net = self.net_stage(att, dfn)
         graze = 0.0 if self.sure_strike(att, a) else max(0.0, GRAZE_BASE - STEP * net)
         crit = CRIT_BASE + max(0, net - 2) * 0.05 + att.attrs["DEX"] / 20 / 100 + (a or {}).get("crit_bonus", 0.0)
@@ -663,6 +689,12 @@ class Battle:
 
     def expected_roll_mult(self, att, dfn, a=None):
         a = a or {}
+        if getattr(self, "new_game", False):
+            whiff, graze, crit = self.odds(att, dfn, a)
+            m = graze * GRAZE_MULT + crit * a.get("crit_mult", CRIT_MULT) + (1 - whiff - graze - crit)
+            if a.get("flurry"):                          # Drif: its chain reads no stages (Nov 21)
+                f = a["flurry"]; m *= f["per"] * sum(f["p"] ** i for i in range(f["max"]))
+            return m
         net = self.net_stage(att, dfn)
         graze = 0.0 if self.sure_strike(att, a) else max(0.0, GRAZE_BASE - STEP * net)
         crit = CRIT_BASE + max(0, net - 2) * 0.05 + att.attrs["DEX"] / 20 / 100 + a.get("crit_bonus", 0.0)
@@ -674,7 +706,7 @@ class Battle:
 
     def flurry_count(self, att, dfn, f):
         """Drif: the first hit always lands; each coin flip won adds one more, up to the max."""
-        p = clamp(f["p"] + f["step"] * self.net_stage(att, dfn), 0.05, 0.95); n = 1
+        p = f["p"] if getattr(self, "new_game", False) else clamp(f["p"] + f["step"] * self.net_stage(att, dfn), 0.05, 0.95); n = 1
         while n < f["max"] and self.rng.random() < p: n += 1
         return n
 
@@ -814,7 +846,7 @@ class Battle:
 
     def riders(self, att, tgt, a, result, was_weak):
         el = ELEMENT[a["element"]]
-        if result == "graze" or not tgt.alive: return
+        if result in ("graze", "whiff") or not tgt.alive: return
         if a["status"] and a.get("rider_sure"):      # a counter rider lands on every hit, a stack a tier (Brakrosh)
             self.apply_status(att, tgt, a["status"], 1.0, STACKS_BY_TIER.get(a["tier"], 1), a["tier"])
         elif a["status"]:    # martial skill with a status (Blot)
@@ -1242,6 +1274,8 @@ class Battle:
         for _ in range(a.get("hits") or ELEMENT[a["element"]]["hits"]):
             res = self.roll(u, t, a)
             results.append(res)
+            if res == "whiff":                           # lands nothing (Nov 21): no damage, rider or status
+                u.stats["whiff"] += 1; parts.append(0.0); continue
             dmg = self.raw_damage(u, t, a)
             var = ELEMENT[a["element"]]["var"]
             dmg *= 1 + self.rng.uniform(-var, var)
@@ -1256,6 +1290,9 @@ class Battle:
             dmg = self.shatter(t, aff, dmg)
             total += dmg; parts.append(dmg)
             u.stats[res if res != "hit" else "hits"] += 1
+        if all(r == "whiff" for r in results):
+            self.emit("whiff", f"      Miss! {t.name} takes nothing.", src=u.name, unit=t.name, element=a["element"])
+            return
         if aff == "absorb":
             t.hp = min(t.maxhp, t.hp + total)
             self.emit("absorb", f"      {t.name} absorbs it, healing {total:.0f}!", unit=t.name, src=u.name, element=a["element"], amount=round(total), hp=round(t.hp))
@@ -1275,7 +1312,7 @@ class Battle:
             if aff == "weak": u.stats["weak"] += 1
         if not t.alive:
             self.downed(t, a["element"]); return
-        best = "crit" if "crit" in results else "hit" if "hit" in results else "graze"
+        best = "crit" if "crit" in results else "hit" if "hit" in results else "graze"   # a whiff among them lands nothing
         self.flare(t, a, best, aff)
         self.riders(u, t, a, best, aff == "weak")
 
@@ -1495,6 +1532,9 @@ class Battle:
             if not t.alive: return
             aff = t.affinity(a["element"])
             res = self.roll(u, t, a)
+            if res == "whiff":                           # one of the many hits misses (Nov 21): Drif smooths the misses
+                u.stats["whiff"] += 1; u.stats["flurry_hits"] += 1
+                self.emit("whiff", f"      Miss! {t.name} takes nothing.", src=u.name, unit=t.name, element=a["element"]); continue
             dmg = self.shatter(t, aff, self.hit_once(u, a, t, res, a["flurry"]["per"], shaped, spot or t))
             u.stats[res if res != "hit" else "hits"] += 1; u.stats["flurry_hits"] += 1
             if aff == "absorb":
@@ -1534,7 +1574,7 @@ class Battle:
         self.spots[(side, cell)] = dict(src=u, a=a, rounds=SPOT_ROUNDS)
         self.emit("paint", f"    {u.name} uses {self.shown(u, a)}, coating {t.name}'s spot.{' [Bonus]' if bonus else ''}", unit=u.name, move=a["name"], shown=self.shown(u, a), element=a["element"], side=side, cell=cell, target=t.name)
         res = self.roll(u, t, a)
-        dmg = self.spot_damage(u, t, a, SPOT_IMPACT) * {"graze": GRAZE_MULT, "hit": 1.0, "crit": CRIT_MULT}[res]
+        dmg = self.spot_damage(u, t, a, SPOT_IMPACT) * {"whiff": 0.0, "graze": GRAZE_MULT, "hit": 1.0, "crit": CRIT_MULT}[res]
         if t.defending: dmg *= 0.5
         t.hp -= dmg; u.stats["dealt"] += dmg
         if dmg > 0: t.hits_taken += 1
@@ -1966,7 +2006,9 @@ class Battle:
         """Resolution order: group (high first), then first actions before second, then SPD, then each unit's coin,
         flipped once when the phase is planned, so the turn-order bar can show the order that will happen."""
         if USE_SPEED_GROUPS:
-            key = lambda e: (-self.group_of(e[1], e[2][0]), e[0], -e[1].speed(), self.coin.get(e[1].uid, 0.5))
+            key = lambda e: (-self.group_of(e[1], e[2][0]), e[0], -e[1].speed(),
+                             (0 if e[1].side == "party" else 1) if getattr(self, "new_game", False) else 0,   # a tie: the party (Nov 21)
+                             self.coin.get(e[1].uid, 0.5))
         else:   # the old rule, kept for A/B: first actions first, Feared last, then SPD
             key = lambda e: (e[0], "Feared" in e[1].status, -e[1].speed(), self.coin.get(e[1].uid, 0.5))
         return sorted(entries, key=key)
