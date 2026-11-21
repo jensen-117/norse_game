@@ -68,7 +68,7 @@ BEIN32 = {"Halvbeinbryn": (5, "white"), "Beinbryn": (4, "aged"), "Storbeinbryn":
           "Halvbeinorv": (6, "white"), "Beinorv": (6, "aged"), "Storbeinorv": (6, "red"),
           "Halvbeinseidr": (8, "white"), "Beinseidr": (8, "aged"), "Storbeinseidr": (8, "red")}
 for k, (fr, rank) in BEIN32.items():
-    anims = dict(idle=[bt(fr, rank)])
+    anims = dict(idle=[bt(fr, rank)], pile=[bt(15, rank)])   # 15: Joseph's bone pile (Nov 21), any Beinar's, tinted by rank
     if fr == 8:      # the bone-mage (Joseph): a cast is arm up, spell out (7); a strong one shakes the stick (9, 10) first
         anims["cast"] = [bt(7, rank)]
         anims["big"] = [bt(i, rank) for i in (7, 9, 10, 9, 10, 9, 10, 7)]
@@ -128,7 +128,8 @@ def face_of(im, mode):
     return (cx - 4, y0)
 frames, meta = [], {}
 for key, s in sets.items():
-    allf = [f for fr in s["anims"].values() for f in fr]
+    OWN = ("pile",)                                        # drawn on its own, centred under the foot: not in the union
+    allf = [f for an, fr in s["anims"].items() if an not in OWN for f in fr]
     ub = None
     for f in allf:
         b = f.getbbox()
@@ -140,7 +141,7 @@ for key, s in sets.items():
     if s.get("poses"): m["poses"] = True                   # the page plays this set's move frames (attack/cast/big/by name)
     for an, fr in s["anims"].items():
         m["anims"][an] = []
-        for f in fr: frames.append((key, an, f.crop(ub))); m["anims"][an].append(len(frames) - 1)
+        for f in fr: frames.append((key, an, f.crop(f.getbbox() if an in OWN else ub))); m["anims"][an].append(len(frames) - 1)
     meta[key] = m
 # shelf packing, tallest first
 order = sorted(range(len(frames)), key=lambda i: -frames[i][2].height)

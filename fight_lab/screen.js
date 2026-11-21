@@ -350,9 +350,10 @@ const Screen = (() => {
         const o = motion(u);
         pc.fillStyle = u.side === "party" ? C.bshade : C.rshade; pc.fillRect(b.x + o.dx, b.y + o.dy, b.w, b.h);
         tiny(b.x + 1 + o.dx, b.y + 2 + o.dy, (u.rank || u.family || "?").slice(0, 3), C.white);
-      } else if (u.piled) {                                 // the second state: a pile of bones (stand-in: the sprite's lowest third)
-        const third = Math.ceil(fr[3] / 3), o = motion(u);
-        pc.drawImage(atlas, fr[0], fr[1] + fr[3] - third, fr[2], third, b.x + o.dx, b.fy - third, fr[2], third);
+      } else if (u.piled) {                                 // the second state: a pile of bones (Joseph's frame 15, Nov 21)
+        const pf = (A.sprites[u.key].anims.pile || [])[0], o = motion(u);
+        if (pf) pc.drawImage(atlas, pf[0], pf[1], pf[2], pf[3], b.cx - (pf[2] >> 1) + o.dx, b.fy - pf[3] + 1, pf[2], pf[3]);
+        else { const third = Math.ceil(fr[3] / 3); pc.drawImage(atlas, fr[0], fr[1] + fr[3] - third, fr[2], third, b.x + o.dx, b.fy - third, fr[2], third); }
       } else drawSprite(u, b, fr);
     }
     for (const u of list) {                                // bars, pips, intents, orders: above every sprite
