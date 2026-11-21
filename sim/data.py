@@ -760,7 +760,8 @@ CLASS_MANNER_POWER = {"Snar": 1.0}   # going first costs a step, not power (Bid,
 # Flok +2, All +3 (carved or the verb's own reach: "weight"), a manner +1, Styng +1, the rider +1; a knot spent pays one.
 COST_LADDER = (2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64, 96, 128)
 HALV_COST = {"HP": 4, "MP": 2}
-ENEMY_DAMAGE = 2.25       # x damage enemies deal (Nov 20: the solver's 2.23, rounded)
+ENEMY_DAMAGE = 1.2        # x damage enemies deal (Nov 21, the enemy rebuild: a Trash or Regular hit is 11-12% of a mid
+                          # hero; one setting keeps the tiers' ladder, Elites ~17%, Bosses ~23%; wind-ups carry the spikes)
 ENEMY_ACTIONS = 1         # each enemy acts once a round (Nov 20); a multi-stage move is authored on the move, not as actions
 # The classes' stat blocks (Nov 20, Joseph): multipliers on derived stats, in the families' value scale (HP, ATK, MAT 1;
 # DEF, MDF, SPD 0.5; WIL 0.25), each within +0.1 of neutral; a stat the class never uses stays at 1.0.
@@ -771,7 +772,8 @@ CLASS_BODIES = {
     "Dagskald":  dict(HP=1.05, MAT=0.9, DEF=1.0, MDF=1.25, SPD=0.9),     # hardy against magic, steady
     "Skurmar":   dict(HP=0.85, MAT=1.15, DEF=0.85, MDF=1.0, SPD=1.3),    # tempo: quick, light
 }
-TIER_HP = {"Trash": 1.0, "Regular": 1.0, "Elite": 1.65, "Boss": 1.75}   # x enemy HP by tier: the rank reshape (Nov 20)
+TIER_HP = {"Trash": 130, "Regular": 450, "Elite": 950, "Boss": 1700}   # Nov 21 (the yardstick, classes.md 7b): every foe's
+# max HP by its tier, in Krosh blows (2, 4-5, 9-10, ~5 party rounds). Families deviate from it in the enemy pass.
 def enemy_tier(u):
     """The pace table's tier of an enemy (pillars Part 5b): the 3-cost Drott is Boss, Halv and Litel Trash, Stor Elite."""
     if getattr(u, "rank", None) == "Drott" or getattr(u, "actions_per_round", 1) >= 3: return "Boss"

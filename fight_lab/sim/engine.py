@@ -503,10 +503,11 @@ class Battle:
 
     # ------------------------------------------------------------ the board
     def new_game_enemy(self, e, hp_share=1.0):
-        """Apply the new game's enemy settings (ENEMY_DAMAGE, TIER_HP) to e, at full HP or at a share of it."""
+        """Apply the new game's enemy settings to e, at full HP or at a share of it: ENEMY_DAMAGE, and its tier's HP
+        (Nov 21: written, not scaled; a family's deviation from its tier comes in the enemy pass)."""
         tier = enemy_tier(e)                         # read before acting once changes what a 3-cost looks like
         e.dmg_mult = ENEMY_DAMAGE
-        e.maxhp *= TIER_HP[tier]; e.hp = e.maxhp * hp_share
+        e.maxhp = TIER_HP[tier]; e.hp = e.maxhp * hp_share
         e.actions_per_round = ENEMY_ACTIONS
 
     def wants_front(self, u):

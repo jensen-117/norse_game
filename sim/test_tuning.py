@@ -20,7 +20,7 @@ class Tuning(unittest.TestCase):
             e = spawn_family("Draugr", rank, 50); base = e.maxhp
             self.assertEqual(enemy_tier(e), tier, rank)
             Battle(party(), [e], random.Random(1))
-            self.assertAlmostEqual(e.maxhp, base * TIER_HP[tier]); self.assertEqual(e.hp, e.maxhp)
+            self.assertAlmostEqual(e.maxhp, TIER_HP[tier]); self.assertEqual(e.hp, e.maxhp)   # the tier's HP (Nov 21)
         for rank, tier in (("Halv", "Trash"), ("Litel", "Trash"), ("Ande", "Regular"), ("Stor", "Elite"), ("Drott", "Boss")):
             self.assertEqual(enemy_tier(spawn_spirit(rank, "Eld", 50)), tier, rank)
 
@@ -44,7 +44,7 @@ class Tuning(unittest.TestCase):
         m.hp = 0; b.downed(m, "Slash")
         fresh = spawn_mogel("Litel", "Jord", 50)
         self.assertEqual(m.mogel_rank, "Litel"); self.assertEqual(m.dmg_mult, ENEMY_DAMAGE)
-        self.assertAlmostEqual(m.maxhp, fresh.maxhp * TIER_HP["Trash"])
+        self.assertAlmostEqual(m.maxhp, TIER_HP["Trash"])
         self.assertAlmostEqual(m.hp, m.maxhp * MOGEL_REFORM_HP)
 
 class Bodies(unittest.TestCase):

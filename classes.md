@@ -207,6 +207,8 @@ A Flok-and-talisman build that invested hard (about +2 or +3) sweeps a row of Tr
 
 **The plain foe** (the measuring dummy): no affinities, no body quirks, DEF = MDF (CON = WIS = 60), other attributes average.
 
+**The foes' side, applied (Nov 21, option A):** every foe at its tier's HP (`TIER_HP`: 130, 450, 950, 1700, written, not scaled) and enemy damage x1.2 (was 2.25): a Trash or Regular hit is 11-12% of a mid hero, an Elite's ~17%, a Boss's ~23% (Joseph: keep the tiers' ladder; wind-ups carry the spikes). Families are all plain for now; their deviations (the Beinar's DEF, the Ande's MDF, the Djur's bite, a boss's wind-ups) are the enemy pass. Measured by `sim/gauntlet.py` (`gauntlet_report.md`): Fodder, Regulars, Elite, Boss in a row, nothing restored between.
+
 **Locked (Nov 21):**
 - **Pools** as above, except martial MP is **0**. The way in is a talisman (an "Odinseye Effigy": +50 MP, about 16 casts of a 3 and 8 of a 6). Martials don't Meditate, so a spellblade refills only through items and omens. A hero with no MP pool simply doesn't get anything that reads one (one helper for "how much of the pool is missing", which is nothing when there's no pool).
 - **Power, as a share of a clean Krosh (104):** martial melee 1.0; ranged 0.75; magic base 0.9 (a weakness hit, 135, one-shots Trash; a neutral one doesn't); Halv 0.5 of its base; a rider x0.6; Mer x1.67 (Mer and a rider land back at 1.0); a row 0.75 a target, an All 0.6 a target.
