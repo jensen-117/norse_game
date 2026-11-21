@@ -46,6 +46,7 @@ What the game is, and what every other spec answers to. When combat_spec, dive_s
 - **Learning a fifth move means forgetting one.** One screen for it, shared by tomes and weapons.
 - **Mutations** change a move by grammar: a tier (Halv, base, Mer, Jatte), a target (one, row, all), a manner (Snar: Swift; Tung: Heavy; Bid: Patient; Jarf: Reckless; Drif: the flurry), a rider (a status). Three starting Elds can grow apart: one into Alleld, one into a Swift Eld, one into an Eld that burns.
 - **The upgrade parts, the cap, capstones and the status shapes** are in Part 5c.
+- **Reach is a real choice** (Nov 20): Flok, a row at 75% each, costs one step; All, everyone at 60% each, costs two; Mer, one target at 140%, one. A row of three wants Flok, a wide room All, one tough target Mer.
 - **Mutations are forks, by default.** Balance first: a step up costs something (MP, a wind-up, acting last), and a free version is weaker (Halveld). **Halv is for attacks** (Nov 20): a verb has a Halv fork only where it's marked (the damage verbs); a free attack is fine, but a free heal, revive, cleanse, taunt, knot, song, buff or status would break things. Add one where a design needs it, excise it where it hurts. But the rule bends on purpose: feels-good where it can, feels-bad where it must, and a few deliberately spiky ("pear-shaped") combos for players to find.
 - **Tomes are locked by weapon and school,** not by class name: a Spett tome says "stabbing weapons"; a Gro tome says "the Jord school". New classes slot in without rewriting tomes.
 

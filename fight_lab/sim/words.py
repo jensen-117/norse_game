@@ -226,6 +226,7 @@ def compile_verb(verb, tier=None, target=None, manners=(), styng=False, lonn=Fal
             element=v.get("element"), status=v.get("status"), stat=v.get("stat"),
             direction=None if v.get("up") is None else (1 if v["up"] else -1))
     if n["target"] == "Flok": a["shape"] = "row"
+    if n["target"] == "All": a["all_power"] = ALL_SHARE                 # wide, and thinner (Nov 20)
     if vt == "cell": a["by_cell"] = True                                 # aimed at a cell, like Move (Skrida)
     if kind in SCALES: a["power"] = TIER_POWER[eff] * mpower          # damage, answers and heals all scale (C11)
     if n["styng"]: a["styng"] = TIER_POWER[eff] * STYNG_POWER * mpower  # a hit added to a move with no damage of its own
@@ -247,7 +248,7 @@ def compile_verb(verb, tier=None, target=None, manners=(), styng=False, lonn=Fal
     # the price: a share of the hero's own bar; every carved part is one step, a rung above the verb's own is one step
     a["cost_type"] = "HP" if v.get("cls") in MARTIAL_CLASSES else "MP"
     steps = (TIER_WEIGHT[eff] - TIER_WEIGHT[own] if n["tier"] != "Halv" else 0) \
-        + (1 if n["target"] else 0) + len(n["manners"]) + int(n["styng"]) + int(n["lonn"]) + v.get("weight", 0)
+        + TARGET_STEPS.get(n["target"], 0) + len(n["manners"]) + int(n["styng"]) + int(n["lonn"]) + v.get("weight", 0)
     if v.get("free") or (eff == "Halv" and steps == 0): share = 0.0
     else: share = BASE_SHARE[a["cost_type"]] * PART_STEP[a["cost_type"]] ** (steps - (1 if eff == "Halv" else 0))
     a["share"], a["cost"] = share, 0

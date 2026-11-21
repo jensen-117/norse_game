@@ -396,6 +396,7 @@ COUNTER_OF = {n: (stat, sign) for stat, pair in STAT_NAMES.items() for n, sign i
 COUNTER_OF["AccDown"] = ("ACC", -1)            # the Reyk spirits' old rider: Blinded 1
 STACKS_BY_TIER = {"Halv": 1, "Base": 1, "Mer": 2, "Jatte": 3, "Ur": 3}   # a status move's stacks (Mer adds two)
 FADE = (1.0, 0.5, 0.2)    # the fade shape: Frozen's chance to hold, action by action; Scorched's tick, round by round
+KVAD_CAP = 3              # Song (Kvad; Nov 20, Joseph): a counter on each ally, up to three; a stack a tier per singing
 PIN_ROUNDS = 2            # Pinned: rounds, plus one per extra stack (Mer 3, Jatte 4)
 SCORCH_POWER = 1.2        # Scorched (Nov 20, Joseph: 1.2, about two hits over three rounds): one Eld hit at the tier's power x this x
                           # FADE[step], worked out from the caster's MAT against the target's MDF when it lands
@@ -422,7 +423,9 @@ SCORCH_POWER = 1.2        # Scorched (Nov 20, Joseph: 1.2, about two hits over t
 #   tick power the tick is a hit, not a share of HP: the caster's blow at the tier's power x this, worked out when it
 #              lands (with the element and the target's affinity), x the fade step (Scorched)
 #   flare      a hit of this element (not a graze) sets the fade back to its first step, keeping the blow (wind on a Scorch)
-#   reapply "refresh": the longer of the two durations
+#   reapply "refresh": the longer of the two durations; "stack": a counter (Song): stacks add to `cap`, the heal is the
+#              latest singer's, and a round nobody touched it, it loses a stack
+#   tick heal  the tick heals instead (Song): stacks x the heal its last singer gave, at round start
 STATUSES = {
     "Poisoned": dict(duration=STATUS_DURATION, reapply="refuse",
                      tick=dict(when="round_start", share=POISON_TICK, line="{name} takes {dmg} poison damage.")),
@@ -441,6 +444,8 @@ STATUSES = {
     "Cursed":   dict(duration=STATUS_DURATION, reapply="refuse", pick=(["ATK", "MAT", "DEF", "MDF"], 2)),
     "Silenced": dict(duration=STATUS_DURATION, reapply="refuse", blocks_mp=True),
     "Pinned":   dict(duration=PIN_ROUNDS, per_stack=1, reapply="refresh", stats={"SPD": -1}, rooted="cell"),   # Wave 4a
+    "Song":     dict(duration=None, reapply="stack", cap=KVAD_CAP,     # Kvad: heals at round start, fades a stack when untouched
+                     tick=dict(when="round_start", heal=True, line="{name}'s Song heals {dmg}.")),
     "Scorched": dict(duration=None, reapply="overwrite", fade=FADE, flare="Blast", element="Eld",   # a new Sveda: its own blow
                      tick=dict(when="round_start", power=SCORCH_POWER, line="{name} burns for {dmg}.")),
 }
@@ -581,8 +586,8 @@ KNOW_MP_KILLS = 40          # ...and its MP
 # things); manner_power (this verb's own multiplier for a manner: Hevn's Bid doubles, the rest keep MANNERS').
 # Kinds the engine doesn't resolve yet (song, knot, displace) arrive in Waves 4b and 4c.
 DJUPANDA_SHARE = 0.40     # Djupanda: a wind-up (Bid), then this share of max MP
-KVAD_CAP = 3              # Kvad (Wave 4b; Nov 20, Joseph): verses on the singer, up to three; a verse a tier per singing
-KVAD_SHARE = 1 / 3        # each verse heals each living ally this share of the singer's Base Lak, at each round's start
+KVAD_SHARE = 4 / 9        # each stack heals its ally this share of the singer's Base Lak at round start (single target;
+                          # Flokvad and Allkvad take their reach's share: a third, and ALL_SHARE of 4/9)
 VERBS = {
     # Brennumar (Eld school; magical)
     "Eld":      dict(halv=True, targets=("Flok", "All"), cls="Brennumar", kind="damage", element="Eld", rider=("Scorched", "Sveda")),
@@ -607,7 +612,7 @@ VERBS = {
     # Dagskald (Sol school, child Lak; magical)
     "Lak":      dict(targets=("Flok", "All"), cls="Dagskald", kind="heal", element="Lak", target="ally", rider=(("EVA", 1), "Sol")),   # Solak: and Nimble (Nov 20)
     "Sol":      dict(halv=True, targets=("Flok", "All"), cls="Dagskald", kind="damage", element="Sol", rider=("Blinded", "Blinda")),   # Blindasol
-    "Kvad":     dict(cls="Dagskald", kind="song", target="allies"),   # a verse a tier (Merkvad two), up to KVAD_CAP
+    "Kvad":     dict(targets=("Flok", "All"), cls="Dagskald", kind="song", target="ally"),   # a Song stack a tier on one ally (Nov 20)
     "Skolja":   dict(targets=("All",), cls="Dagskald", kind="cleanse", target="ally"),
     "Vakna":    dict(cls="Dagskald", kind="revive", target="fallen"),
     "Aukraft":  dict(targets=("All",), cls="Dagskald", kind="stat", stat="ATK", up=True, target="ally", rider=(("DEF", 1), "Lonn")),
@@ -657,6 +662,10 @@ HITS = {"damage"}                                     # effects that roll hits (
 MANNER_NEEDS = {"Snar": None, "Tung": SCALES, "Bid": SCALES, "Jarf": HITS, "Drif": HITS}
 SPEED_MANNERS = {"Snar", "Tung"}
 TARGET_PARTS = {"Flok", "All"}                        # the target parts a class verb can carve (Mark is enemies' paint)
+# Reach is a real choice (Nov 20, Joseph): Flok a row at 75% each for one step; All everyone at 60% each for two steps;
+# Mer one target at 140% for one. Prices only: the parts count once each against UPGRADE_CAP. Old fights keep 0.75.
+TARGET_STEPS = {"Flok": 1, "All": 2}
+ALL_SHARE = 0.60          # a carved All's per-target share (damage, heals, a Scorch's blow, a Song's heal)
 
 # Speed-group keywords (pillars Part 5c), printed on move cards; the glossary gives the hover line.
 GROUP_KEYWORD = {3: "First", 1: "Swift", -1: "Late", -2: "Heavy", -3: "Last"}
@@ -683,7 +692,7 @@ KITS = {
                   3: [W("Eld", tier="Mer"), W("Eld", target="All"), W("Sveda", lonn=True), W("Djupanda")]},
     "Dagskald":  {1: [W("Lak"), W("Sol")],
                   2: [W("Lak"), W("Sol"), W("Kvad")],
-                  3: [W("Lak", lonn=True), W("Sol"), W("Kvad", tier="Mer"), W("Aukraft", target="All")]},
+                  3: [W("Lak", lonn=True), W("Sol"), W("Kvad", target="All"), W("Aukraft", target="All")]},   # Allkvad (Nov 20)
     "Skurmar":   {1: [W("Blast"), W("Knyta")],
                   2: [W("Blast"), W("Knyta"), W("Kuling"), W("Blixt")],
                   3: [W("Blast"), W("Knyta", tier="Mer"), W("Storm"), W("Blixt", lonn=True)]},

@@ -6,7 +6,7 @@ SPELLED = {   # the kits as classes.md and the Nov 20 kit list spell them
     "Vasara":    {1: "Krosh Egga", 2: "Krosh Egga Brakrosh Lya", 3: "Snarbrakrosh Lonnegga Lya Hevn"},
     "Ullar":     {1: "Skott Naglskott", 2: "Blotskott Naglskott Peka", 3: "Merblotskott Styngnaglskott Lonnpeka Banskott"},
     "Brennumar": {1: "Eld Reyk", 2: "Eld Reyk Sveda Alleld", 3: "Mereld Alleld Lonnsveda Djupanda"},
-    "Dagskald":  {1: "Lak Sol", 2: "Lak Sol Kvad", 3: "Solak Sol Merkvad Allaukraft"},
+    "Dagskald":  {1: "Lak Sol", 2: "Lak Sol Kvad", 3: "Solak Sol Allkvad Allaukraft"},
     "Skurmar":   {1: "Blast Knyta", 2: "Blast Knyta Kuling Blixt", 3: "Blast Merknyta Storm Lonnblixt"},
 }
 
@@ -75,7 +75,7 @@ class TestPrice(unittest.TestCase):
     def test_priced_by_the_bar(self):
         u = birth("Brennumar", 10, random.Random(1)); u.maxmp = 80
         u.actions = compile_kit("Brennumar", 3); price_bars(u)
-        self.assertEqual([a["cost"] for a in u.actions], [8, 8, 8, 0])           # 80/10 three times; Djupanda free
+        self.assertEqual([a["cost"] for a in u.actions], [8, 13, 8, 0])          # 80/10; Alleld two steps (80 x 0.16); Djupanda free
 
 class TestKeywords(unittest.TestCase):
     def test_groups(self):

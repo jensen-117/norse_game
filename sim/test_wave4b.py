@@ -28,59 +28,67 @@ def evs(b, kind, **m): return [e for e in b.events if e["kind"] == kind and all(
 def song_heals(b, singer): return [e for e in evs(b, "heal", unit=singer.name, move="Kvad")]
 
 class Singing(unittest.TestCase):
-    def party(self, kvad="Kvad"):
-        d, v = hero("Dagskald", kvad if isinstance(kvad, tuple) else kvad), hero("Vasara", "Krosh")
-        b = fight([d, v], [dummy()])
-        for x in (d, v): x.hp = 0.3 * x.maxhp
-        return b, d, v
+    """Song is a counter on the ally (Nov 20, Joseph): Kvad adds a stack (Merkvad two, Flokvad a row, Allkvad everyone),
+    up to three; at each round's start it heals for each stack; a round nobody touched it, it loses one."""
+    def party(self, *kvad):
+        d, v, u = hero("Dagskald", *(kvad or ("Kvad",))), hero("Vasara", "Krosh"), hero("Ullar", "Skott")
+        b = fight([d, v, u], [dummy()])
+        for x in (d, v, u): x.hp = 0.3 * x.maxhp
+        return b, d, v, u
+    def song(self, x): return x.status.get("Song", {}).get("stacks", 0)
 
-    def test_a_verse_heals_the_party_from_next_round(self):
-        b, d, v = self.party()
-        hp = (d.hp, v.hp); orders(b, {d.uid: (key(d, "Kvad"), None)})
-        self.assertEqual(d.verses, 1)
-        per = b.verse_heal(d)
-        self.assertAlmostEqual(v.hp - hp[1], per, places=6)          # round 2's start: one verse each, the singer too
-        self.assertAlmostEqual(d.hp - hp[0], per, places=6)
+    def test_a_stack_heals_its_ally_from_next_round(self):
+        b, d, v, u = self.party()
+        hp = (v.hp, u.hp); orders(b, {d.uid: (key(d, "Kvad"), v.uid)})
+        self.assertEqual((self.song(v), self.song(u)), (1, 0))
+        per = b.song_heal(d, d.actions[1])
+        self.assertAlmostEqual(v.hp - hp[0], per, places=6); self.assertEqual(u.hp, hp[1])   # only the one sung to
         self.assertAlmostEqual(per, KVAD_SHARE * b.heal_amount(d, dict(power=TIER_POWER["Base"], all=False)))
 
-    def test_verses_build_to_three_and_hold(self):
-        b, d, v = self.party()
-        for n in (1, 2, 3, 3):
-            orders(b, {d.uid: (key(d, "Kvad"), None)}); self.assertEqual(d.verses, n)
-        self.assertEqual(song_heals(b, d)[-1]["verses"], 3)
+    def test_josephs_walkthrough(self):
+        """Kvad, Kvad, Kvad, then two rounds of something else: 1, 2, 3, then 2, 1; each round's start heals at the count."""
+        b, d, v, u = self.party(); v.maxhp = v.hp = 10 ** 6; v.hp -= 10 ** 5   # room to heal every round
+        counts = []
+        for sing in (True, True, True, False, False):
+            orders(b, {d.uid: (key(d, "Kvad"), v.uid)} if sing else {}); counts.append(self.song(v))
+        self.assertEqual(counts, [1, 2, 3, 2, 1])
+        self.assertEqual([e["stacks"] for e in evs(b, "heal", move="Kvad")], [1, 2, 3, 2, 1])   # rounds 2-6's starts: round 4
+                                                         # heals at 3 and fades to 2 at its end, so round 5 heals at 2
 
-    def test_merkvad_adds_two(self):
-        b, d, v = self.party(("Kvad", dict(tier="Mer")))
-        orders(b, {d.uid: (key(d, "Merkvad"), None)}); self.assertEqual(d.verses, 2)
+    def test_merkvad_adds_two_and_caps_at_three(self):
+        b, d, v, u = self.party(("Kvad", dict(tier="Mer")))
+        orders(b, {d.uid: (key(d, "Merkvad"), v.uid)}); self.assertEqual(self.song(v), 2)
+        orders(b, {d.uid: (key(d, "Merkvad"), v.uid)}); self.assertEqual(self.song(v), 3)
 
-    def test_a_verse_fades_each_round_he_doesnt_sing(self):
-        b, d, v = self.party(("Kvad", dict(tier="Mer")))
-        orders(b, {d.uid: (key(d, "Merkvad"), None)})                     # 2
-        orders(b, {}); self.assertEqual(d.verses, 1)                      # guarded: one fades
-        orders(b, {}); self.assertEqual(d.verses, 0)
-        self.assertEqual(len(evs(b, "verse_fades", unit=d.name)), 2)
+    def test_flokvad_a_row_allkvad_everyone_at_their_share(self):
+        b, d, v, u = self.party(("Kvad", dict(target="Flok")), ("Kvad", dict(target="All")))
+        d.cell, v.cell, u.cell = ("rear", 0), ("front", 0), ("front", 1)
+        orders(b, {d.uid: (key(d, "Flokvad"), v.uid)})
+        self.assertEqual((self.song(d), self.song(v), self.song(u)), (0, 1, 1))
+        orders(b, {d.uid: (key(d, "Allkvad"), None)})
+        self.assertEqual((self.song(d), self.song(v), self.song(u)), (1, 2, 2))
+        single = KVAD_SHARE * b.heal_amount(d, dict(power=TIER_POWER["Base"], all=False))
+        self.assertAlmostEqual(b.song_heal(d, d.actions[1]), single * SHAPE_MULT["row"])
+        self.assertAlmostEqual(b.song_heal(d, d.actions[2]), single * ALL_SHARE)
 
     def test_a_stun_costs_the_singing(self):
-        b, d, v = self.party()
-        orders(b, {d.uid: (key(d, "Kvad"), None)}); orders(b, {d.uid: (key(d, "Kvad"), None)})   # 2
+        b, d, v, u = self.party()
+        orders(b, {d.uid: (key(d, "Kvad"), v.uid)}); orders(b, {d.uid: (key(d, "Kvad"), v.uid)})   # 2
         d.status["Frozen"] = dict(rounds=UNTIL_USED, step=0)
-        orders(b, {})                                                     # frozen: no orders, no singing
-        self.assertEqual(d.verses, 1)
+        orders(b, {}); self.assertEqual(self.song(v), 1)
 
-    def test_the_song_ends_when_he_falls(self):
-        b, d, v = self.party()
-        orders(b, {d.uid: (key(d, "Kvad"), None)})
+    def test_the_song_outlives_the_singer_and_fades(self):
+        b, d, v, u = self.party()
+        orders(b, {d.uid: (key(d, "Kvad"), v.uid)}); orders(b, {d.uid: (key(d, "Kvad"), v.uid)})
         d.hp = 0; b.downed(d)
-        self.assertEqual(d.verses, 0); self.assertTrue(evs(b, "song_ends", unit=d.name))
+        self.assertEqual(self.song(v), 2)
+        orders(b, {}); self.assertEqual(self.song(v), 1); orders(b, {}); self.assertEqual(self.song(v), 0)
 
     def test_the_dying_arent_healed(self):
-        d, v, u = hero("Dagskald", "Kvad"), hero("Vasara", "Krosh"), hero("Ullar", "Skott")
-        b = fight([d, v, u], [dummy()]); v.hp = 0.3 * v.maxhp
-        orders(b, {d.uid: (key(d, "Kvad"), None)})
-        u.hp = 0; b.downed(u); d.verses = 2; d.sang = True                  # (he sang again this round)
-        orders(b, {})
-        healed = {t["unit"] for e in song_heals(b, d) for t in e["targets"]}
-        self.assertIn(v.name, healed); self.assertNotIn(u.name, healed); self.assertEqual(u.hp, 0)
+        b, d, v, u = self.party()
+        orders(b, {d.uid: (key(d, "Kvad"), u.uid)})
+        u.hp = 0; b.downed(u)                                             # falling clears it
+        orders(b, {}); self.assertEqual(u.hp, 0); self.assertEqual(self.song(u), 0)
 
 class Solak(unittest.TestCase):
     def test_names_and_shapes(self):
@@ -132,26 +140,34 @@ class Blindasol(unittest.TestCase):
         self.assertEqual(e.counter_name("ACC"), "Blinded 3")
 
 class TheAISings(unittest.TestCase):
-    def test_it_sings_when_the_party_is_hurt(self):
-        d, v, u = hero("Dagskald", "Lak", "Kvad"), hero("Vasara", "Krosh"), hero("Ullar", "Skott")
+    def test_allkvad_when_the_party_is_hurt(self):
+        d, v, u = hero("Dagskald", "Lak", ("Kvad", dict(target="All"))), hero("Vasara", "Krosh"), hero("Ullar", "Skott")
         for x in (d, v, u): x.hp = 0.55 * x.maxhp
         b = Battle([d, v, u], [dummy()], random.Random(1))
         picks = [b.declare(d)[0]["name"] for _ in range(20)]
-        self.assertEqual(max(set(picks), key=picks.count), "Kvad")
+        self.assertEqual(max(set(picks), key=picks.count), "Allkvad")
 
     def test_lak_for_one_ally_near_death(self):
-        d, v, u = hero("Dagskald", "Lak", "Kvad"), hero("Vasara", "Krosh"), hero("Ullar", "Skott")
+        d, v, u = hero("Dagskald", "Lak", ("Kvad", dict(target="All"))), hero("Vasara", "Krosh"), hero("Ullar", "Skott")
         u.hp = 0.1 * u.maxhp
         b = Battle([d, v, u], [dummy()], random.Random(1))
         picks = [b.declare(d) for _ in range(20)]
         self.assertTrue(any(a["name"] == "Lak" and t is u for a, t in picks))
-        self.assertGreater(sum(a["name"] == "Lak" for a, t in picks), sum(a["name"] == "Kvad" for a, t in picks))
+        self.assertGreater(sum(a["name"] == "Lak" for a, t in picks), sum(a["name"] == "Allkvad" for a, t in picks))
 
-    def test_it_holds_the_song_at_three(self):
-        d, v = hero("Dagskald", "Kvad"), hero("Vasara", "Krosh"); d.verses = 3
-        for x in (d, v): x.hp = 0.5 * x.maxhp
-        b = Battle([d, v], [dummy()], random.Random(1))
-        self.assertEqual(b.declare(d)[0]["name"], "Kvad")
+    def test_kvad_on_the_one_who_needs_it(self):
+        d, v, u = hero("Dagskald", "Kvad"), hero("Vasara", "Krosh"), hero("Ullar", "Skott")
+        v.hp = 0.4 * v.maxhp
+        b = Battle([d, v, u], [dummy()], random.Random(1))
+        picks = [b.declare(d) for _ in range(20)]
+        kv = [t for a, t in picks if a["name"] == "Kvad"]
+        self.assertTrue(kv); self.assertEqual(max(set(kv), key=kv.count), v)
+
+    def test_it_holds_a_song_at_three(self):
+        d, v = hero("Dagskald", "Kvad"), hero("Vasara", "Krosh"); v.hp = 0.5 * v.maxhp     # the singer whole: it's hers
+        b = Battle([d, v], [dummy()], random.Random(1)); per = b.song_heal(d, d.actions[1])
+        v.status["Song"] = dict(rounds=UNTIL_USED, stacks=3, heal=per, src=d, touched=False)
+        self.assertEqual(b.declare(d), (d.actions[1], v))
 
     def test_the_dagskald_kits_play_whole(self):
         from composer import catalog, habitat, compose, place, spawn
@@ -164,6 +180,6 @@ class TheAISings(unittest.TestCase):
             foes = spawn(place(compose(rng, habitat(cat, ("Barrow", "Wildwood", "Rapids")[i % 3]))), ENEMY_LEVEL)
             b = Battle(party, foes, rng, events=True); b.fight()
             seen |= {e.get("move") for e in b.events if e["kind"] == "intent" and e.get("unit") == "Dagskald"}
-        self.assertTrue({"Merkvad", "Solak"} <= seen, seen)
+        self.assertTrue({"Allkvad", "Solak"} <= seen, seen)
 
 if __name__ == "__main__": unittest.main()

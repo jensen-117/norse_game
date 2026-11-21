@@ -1,12 +1,12 @@
-"""Wave 4b in the browser: the Dagskald at kit leg 2, Kvad ordered through the real menu (key 4 twice: an All move is
-used by picking it again), two rounds sung, and the page's record kept for native replay (check_page.py)."""
+"""Wave 4b in the browser: the Dagskald at kit leg 2, Kvad ordered through the real menu (key 4, then a click on the
+Vasara), two rounds sung to her, and the page's record kept for native replay (check_page.py)."""
 import json, sys, os
 from playwright.sync_api import sync_playwright
 sys.path.insert(0, os.path.dirname(__file__)); from s_smoke import serve
 HERE = os.path.dirname(os.path.abspath(__file__))
 
-def click_foe(p):
-    foe = p.evaluate("Screen.debug.units.find(u => u.side === 'enemy' && u.alive)")
+def click_foe(p, who="u.side === 'enemy' && u.alive"):
+    foe = p.evaluate(f"Screen.debug.units.find(u => {who})")
     cv = p.query_selector("#screen"); cv.scroll_into_view_if_needed(); box = cv.bounding_box(); k = box["width"] / 320
     p.mouse.click(box["x"] + foe["cx"] * k, box["y"] + foe["cy"] * k); p.wait_for_timeout(50)
 
@@ -28,12 +28,13 @@ def run():
         p.click("#start"); p.wait_for_function("Screen.state && Screen.state.phase === 'declare' && !Screen.debug.busy", timeout=60000)
         p.focus("body")
         for rnd in (2, 3):                                                           # sing twice: two verses
-            for k in ("4", "4"): p.keyboard.press(k); p.wait_for_timeout(30)          # Dagskald: Kvad (picked twice)
+            p.keyboard.press("4"); p.wait_for_timeout(30)                             # Dagskald: Kvad, on the Vasara
+            click_foe(p, "u.side === 'party' && u.name === 'Vasara'")
             p.keyboard.press("Enter"); p.wait_for_timeout(50); p.keyboard.press("Enter")   # the others: Halv strikes
             p.wait_for_function(f"(Screen.state.round >= {rnd} || Screen.state.phase !== 'declare') && !Screen.debug.busy", timeout=60000)
             if p.evaluate("Screen.state.phase") != "declare": break
         log = "\n".join(p.evaluate("Lab.call('record').log"))
-        for want in ("sings Kvad", "song (1 verse) heals"):
+        for want in ("sings Kvad: Song Vasara 1", "Vasara's Song (1) heals", "sings Kvad: Song Vasara 2"):
             if want not in log: bad.append(("missing in the log", want))
         rec = p.evaluate("Lab.call('record')")
         open(os.path.join(HERE, "page_wave4b.jsonl"), "w").write(json.dumps(rec) + "\n")

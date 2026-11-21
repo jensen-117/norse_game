@@ -136,8 +136,9 @@ def plain(a):
         s = f"{PLAIN_TIER.get(tier, 'Average')} healing for {who}."
         return s + (" The light leaves them Nimble." if a.get("also") else "")
     if k == "song":
-        return (f"Sing {'two verses' if tier == 'Mer' else 'a verse'}, up to three: at the start of each round the party heals "
-                "for each verse. A verse fades each round you don't sing; the song ends if you fall.")
+        who = "every ally" if a["all"] else "a row of allies" if a.get("shape") == "row" else "one ally"
+        return (f"Adds {'two stacks' if tier == 'Mer' else 'a stack'} of Song to {who}, up to three: at the start of each round, "
+                "Song heals for each stack. A stack fades each round nobody sings to them.")
     if k == "mp": return f"Restores {PLAIN_SHARE.get(a.get('amount'), 'some of')} one ally's MP."
     if k == "stat":
         steps = PLAIN_STEPS.get(max(1, TIERS.index(tier)) if tier in TIERS else 1, "one step")
@@ -195,7 +196,6 @@ class Unit:
         self.covered_by = None    # an ally who Covers this unit this round (combat_spec Part 8)
         self.once_used = set()    # once-per-fight moves already spent (Net Throw)
         self.hits_taken = 0       # attacks that hurt it since its last action (Hevn answers them)
-        self.verses, self.sang = 0, False   # Kvad: the song's verses on the singer, and whether he sang this round
         self.state = "up"          # heroes: up, dying, dead (combat_spec Part 10)
         self.breaths = 0
         self.wounded = False
@@ -543,9 +543,6 @@ class Battle:
         `by` is the element of the killing blow (None for ticks and the like)."""
         fam = getattr(t, "family", None)
         self.interrupt(t, "fell")                      # falling ends a wind-up: Dying, crawling, a pile, a re-form
-        if getattr(t, "verses", 0):                    # ...and a song (Kvad)
-            t.verses, t.sang = 0, False
-            self.emit("song_ends", f"      {t.name}'s song ends.", unit=t.name)
         if t.side == "party" and USE_DYING:
             if t.wounded:
                 self.die(t, "falls while Wounded"); return
@@ -640,7 +637,7 @@ class Battle:
         if a["element"] == "Force": phys = True                       # affinity-free blast, met by DEF
         D = (dfn.DEF if phys else dfn.MDF) * stage_mult(dfn.stage("DEF" if phys else "MDF"))
         dmg = a["power"] * el["power"] * (A / D) * level_factor(att.level)
-        if a["all"]: dmg *= ALL_POWER_MULT
+        if a["all"]: dmg *= a.get("all_power", ALL_POWER_MULT)   # a carved All: ALL_SHARE; old moves 0.75
         if not a.get("fixed"): dmg *= getattr(att, "dmg_mult", 1.0)   # hero power / enemy damage (new game); items fixed
         return dmg * self.payoff(att, dfn, a)
 
@@ -673,25 +670,25 @@ class Battle:
         power = healer.attrs["WIS"] if getattr(self, "new_game", False) else healer.MAT
         h = 1.5 * a["power"] * level_factor(healer.level) * power / avg_attr(healer.level)
         if a.get("shape"): h *= SHAPE_MULT.get(a["shape"], 1.0)
-        return h * (ALL_POWER_MULT if a["all"] else 1)
+        return h * (a.get("all_power", ALL_POWER_MULT) if a["all"] else 1)
 
-    def verse_heal(self, singer):
-        """One verse of Kvad on one ally: KVAD_SHARE of the singer's Base Lak (his WIS, in the new game)."""
-        return KVAD_SHARE * self.heal_amount(singer, dict(power=TIER_POWER["Base"], all=False))
+    def song_heal(self, singer, a):
+        """One Song stack's heal from this Kvad: KVAD_SHARE of the singer's Base Lak (his WIS), at the move's reach share."""
+        return KVAD_SHARE * self.heal_amount(singer, dict(power=TIER_POWER["Base"], all=a["all"], shape=a.get("shape"),
+                                                          **({"all_power": a["all_power"]} if a.get("all_power") else {})))
 
     def sing(self):
-        """At each round's start, every song heals: each living ally of a singer, verses x a verse (the Dying need
-        Vakna). Read after the round's ticks, so a hero a tick put down isn't healed."""
-        for u in self.units:
-            if not u.alive or not u.verses: continue
-            per = u.verses * self.verse_heal(u); healed = []
-            for t in self.allies(u):
-                h = min(per, t.maxhp - t.hp)
-                if h <= 0: continue
-                t.hp += h; u.stats["healed"] += h; healed.append(dict(unit=t.name, amount=round(h), hp=round(t.hp)))
-            if healed:
-                self.emit("heal", f"    {u.name}'s song ({u.verses} verse{'s' if u.verses > 1 else ''}) heals the party.",
-                          unit=u.name, move="Kvad", element="Lak", targets=healed, verses=u.verses)
+        """At each round's start, after the ticks, every Song heals its ally: stacks x the heal its last singer gave.
+        The Dying carry none (falling clears statuses), so they need Vakna."""
+        for t in self.units:
+            inst = t.status.get("Song")
+            if not t.alive or not inst: continue
+            h = min(inst["stacks"] * inst["heal"], t.maxhp - t.hp)
+            if h <= 0: continue
+            t.hp += h; src = inst.get("src")
+            if src is not None: src.stats["healed"] += h
+            self.emit("heal", f"    {t.name}'s Song ({inst['stacks']}) heals {h:.0f}.", unit=src.name if src else t.name, move="Kvad",
+                      element="Lak", targets=[dict(unit=t.name, amount=round(h), hp=round(t.hp))], stacks=inst["stacks"])
 
     # ------------------------------------------------------------ statuses
     def push(self, t, stat, n):
@@ -731,6 +728,7 @@ class Battle:
         each target as it would hit them."""
         row = STATUSES[status]
         hit = dict(element=row["element"], power=TIER_POWER[tier or "Base"] * row["tick"]["power"], all=bool(move and move.get("all")))
+        if move and move.get("all_power"): hit["all_power"] = move["all_power"]
         aff = {"weak": 1.5, "resist": 0.5, "null": 0.0, "absorb": 0.0, "normal": 1.0}[tgt.affinity(row["element"])]
         shape = SHAPE_MULT.get(move.get("shape"), 1.0) if move and move.get("shape") else 1.0
         return self.raw_damage(src, tgt, hit) * aff * shape
@@ -920,6 +918,7 @@ class Battle:
         for s, row in STATUSES.items():
             tk = row.get("tick")
             if not tk or tk["when"] != when or s not in u.status or not u.alive: continue
+            if tk.get("heal"): continue                    # a healing tick (Song) is sing()'s, after the hurting ones
             inst = u.status[s]
             if "power" in tk:                              # Scorched: the caster's blow, 100%, 50%, 20%, then out
                 dmg = max(1, int(inst["dmg"] * row["fade"][inst["step"]])); inst["step"] += 1
@@ -1084,10 +1083,15 @@ class Battle:
                     self.emit("status", f"      {t.name} is {t.counter_name(st) or st}!", unit=t.name,
                               status=STAT_NAMES[st][0 if d < 0 else 1], stat=st, stacks=t.stage(st), src=u.name)
             return
-        if a["kind"] == "song":                             # Kvad: a verse a tier, up to the cap; it heals from next round
-            was = u.verses; u.verses = min(KVAD_CAP, u.verses + STACKS_BY_TIER.get(a["tier"], 1)); u.sang = True
-            self.emit("song", f"    {u.name} sings {a['name']}: {u.verses} verse{'s' if u.verses > 1 else ''}.{tag}",
-                      unit=u.name, move=a["name"], verses=u.verses, was=was)
+        if a["kind"] == "song":                             # Kvad: a Song stack a tier on each ally reached; it heals from next round
+            n, per = STACKS_BY_TIER.get(a["tier"], 1), self.song_heal(u, a); now = []
+            for t in tgts:
+                old = t.status.get("Song")
+                t.status["Song"] = dict(rounds=UNTIL_USED, stacks=min(KVAD_CAP, (old["stacks"] if old else 0) + n), heal=per,
+                                        src=u, touched=True)
+                now.append(f"{t.name} {t.status['Song']['stacks']}")
+            self.emit("song", f"    {u.name} sings {a['name']}: Song {', '.join(now)}.{tag}", unit=u.name, move=a["name"],
+                      targets=[t.name for t in tgts], stacks=[t.status["Song"]["stacks"] for t in tgts])
             return
         if a["kind"] == "stat":
             n = STACKS_BY_TIER.get(a["tier"], 1)
@@ -1503,12 +1507,18 @@ class Battle:
                     s = sum(min(self.heal_amount(u, a), y.maxhp - y.hp) for y in row)
                     if a.get("also"): s += bright(row) / 1.2
                     options.append((1.2 * s - cost_pen, a, x))
-            elif a["kind"] == "song":                           # Kvad: the healing a verse more (or a verse kept) brings
-                keep = u.verses + STACKS_BY_TIER.get(a["tier"], 1)
-                gain = min(KVAD_CAP, keep) - max(0, u.verses - 1)   # sung: up to the cap; not: a verse fades
-                per = self.verse_heal(u); xs = self.allies(u)
-                s = AI_SONG_VALUE * gain * (sum(min(per, x.maxhp - x.hp) for x in xs) + AI_SONG_HOPE * per * len(xs))
-                options.append((s - cost_pen, a, None))
+            elif a["kind"] == "song":                           # Kvad: the healing the stacks it adds (or keeps) bring
+                n, per, xs = STACKS_BY_TIER.get(a["tier"], 1), self.song_heal(u, a), self.allies(u)
+                def song_value(reach):
+                    v = 0.0
+                    for t in reach:
+                        st = t.status.get("Song", {}).get("stacks", 0)
+                        gain = (min(KVAD_CAP, st + n) - max(0, st - 1)) * per          # sung: up to the cap; not: one fades
+                        v += AI_SONG_VALUE * (min(gain, t.maxhp - t.hp) + AI_SONG_HOPE * gain)
+                    return v
+                if a["all"]: options.append((song_value(xs) - cost_pen, a, None))
+                else:
+                    for x in xs: options.append((song_value(self.shape_targets(u, a, x) if a.get("shape") else [x]) - cost_pen, a, x))
             elif a["kind"] == "status":
                 for f in self.foes(u):
                     if a["status"] == "Bound":
@@ -1924,11 +1934,14 @@ class Battle:
 
     def end_round(self):
         if USE_DYING: self.tick_breaths()
-        for u in self.units:      # a song not sung this round loses a verse (Kvad)
-            if u.verses and not u.sang:
-                u.verses -= 1
-                self.emit("verse_fades", f"  {u.name}'s song fades to {u.verses} verse{'s' if u.verses != 1 else ''}.", unit=u.name, verses=u.verses)
-            u.sang = False
+        for u in self.units:      # a stacking status nobody touched this round loses a stack (Song)
+            for s_, inst in list(u.status.items()):
+                if STATUSES.get(s_, {}).get("reapply") != "stack": continue
+                if not inst.get("touched"):
+                    inst["stacks"] -= 1
+                    self.emit("song_fades", f"  {u.name}'s {s_} fades to {inst['stacks']}.", unit=u.name, status=s_, stacks=inst["stacks"])
+                    if inst["stacks"] <= 0: del u.status[s_]; continue
+                inst["touched"] = False
         for u in self.units:      # counters nobody pushed this round step toward zero
             for st, v in u.stages.items():
                 if v and st not in u.pushed: u.stages[st] = v - 1 if v > 0 else v + 1
@@ -2112,10 +2125,10 @@ class Battle:
                     hp=round(max(0, u.hp)), maxhp=round(u.maxhp), mp=round(getattr(u, "mp", 0)), maxmp=round(getattr(u, "maxmp", 0)),
                     state=u.state, breaths=u.breaths, wounded=u.wounded, cell=list(u.cell) if getattr(u, "cell", None) else None,
                     piled=u in self.piles, crawling=getattr(u, "crawling", False),
-                    status={k: v["rounds"] for k, v in u.status.items()}, stages={k: v for k, v in u.stages.items() if v},
+                    status={k: v.get("stacks", v["rounds"]) for k, v in u.status.items()}, stages={k: v for k, v in u.stages.items() if v},
                     affinities={e: u.affinity(e) for e in dtypes}, moves=[self.shown(u, a) for a in u.actions],
                     move_lines=[dict(name=self.shown(u, a), plain=plain(a)) for a in u.actions],
-                    intent=self.intents.get(uid), winding=self.shown(u, u.bide[0]) if u.bide else None, verses=u.verses,
+                    intent=self.intents.get(uid), winding=self.shown(u, u.bide[0]) if u.bide else None,
                     defending=u.defending, covered_by=u.covered_by.uid if u.covered_by else None,
                     pouch=[dict(item=k, name=ITEMS[k]["name"], count=n) for k, n in u.pouch])
 

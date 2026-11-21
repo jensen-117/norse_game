@@ -839,7 +839,7 @@ const Screen = (() => {
   const NARRATE = new Set(["act", "transform", "hit", "absorb", "heal", "stat", "status", "resist", "defend", "cover", "covered", "move", "windup", "bide_lost",
     "paint", "skip", "silenced", "tick", "down", "reform", "crawl", "pile", "scatter", "reassemble", "dying", "breath", "dead", "revive",
     "stabilised", "item", "mp", "fled", "flee_failed", "retarget", "fizzle", "shatter", "flurry", "cleanse", "immune", "thaw",
-    "taunt", "drawn", "flare", "rooted", "weak", "out_of_reach", "song", "verse_fades", "song_ends"]);
+    "taunt", "drawn", "flare", "rooted", "weak", "out_of_reach", "song", "song_fades"]);
   const UPS = new Set(["Mighty", "Fortified", "Keen", "Nimble", "Quick"]);   // the counters' up names
   async function play(r) {
     const g = gen, live = () => g === gen;       // this session only: a newer fight retires it
