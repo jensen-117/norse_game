@@ -11,7 +11,7 @@ def orders(b, plan):
     b.commit()
 
 def dummy(job="Spear", hp=10 ** 6, **kw):
-    e = spawn_family("Drattr", "Drattr", 15, job=job); e.maxhp = e.hp = hp
+    e = spawn_family("Drattr", "Drattr", SHEET_LEVEL, job=job); e.maxhp = e.hp = hp
     for k, v in kw.items(): setattr(e, k, v)
     return e
 

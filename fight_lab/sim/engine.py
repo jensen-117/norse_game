@@ -354,6 +354,7 @@ def build_hero(cls, leg=1, level=None, playable=True, name=None):
         if a["kind"] == "damage" and a.get("root") and c.get("weapon"):
             a["reach"] = RANGES[root_range(a["root"], c["weapon"])]; a["weapon"] = c["weapon"]
     u.kit_leg, u.excluded = leg, excluded
+    u.dmg_mult = HERO_POWER.get(cls, 1.0)            # baked into the character, not a buff
     price_bars(u)
     return u
 
@@ -409,10 +410,18 @@ class Battle:
         self.max_rounds, self.winner, self._mark = 30, None, 0
         self.intents, self.no_flee, self.coin = {}, False, {}     # no_flee: the Hunt's top tiers can't be run from
         self.by_uid = {u.uid: u for u in self.units}
+        self.new_game = bool(party) and all(getattr(u, "kit_leg", None) is not None for u in party)
+        if self.new_game:                            # the new game's tuning: enemy damage, and HP by tier
+            for e in enemies: self.new_game_enemy(e)
         if USE_BOARD:
             self.form_up(self.party); self.form_up(self.enemies)
 
     # ------------------------------------------------------------ the board
+    def new_game_enemy(self, e, hp_share=1.0):
+        """Apply the new game's enemy settings (ENEMY_DAMAGE, TIER_HP) to e, at full HP or at a share of it."""
+        e.dmg_mult = ENEMY_DAMAGE
+        e.maxhp *= TIER_HP[enemy_tier(e)]; e.hp = e.maxhp * hp_share
+
     def wants_front(self, u):
         """Front-liners: martial heroes, and enemies whose damage is mostly martial (Mogel, Draugr...)."""
         if u.side == "party": return CLASSES.get(u.cls, {}).get("kind") == "martial"
@@ -527,6 +536,7 @@ class Battle:
                 if f"{fresh.name} {ch}" not in others: t.suffix = f" {ch}"; t.name = fresh.name + t.suffix; break
         if uid: self.uid_of[t.name] = uid
         t.hp = t.maxhp * MOGEL_REFORM_HP
+        if getattr(self, "new_game", False): self.new_game_enemy(t, MOGEL_REFORM_HP)   # the fresh body gets the settings too
         self.emit("reform", f"      {old} bursts and re-forms as {t.name}! ({t.hp:.0f}/{t.maxhp:.0f})", unit=t.name, was=old, rank=t.mogel_rank, hp=round(t.hp), maxhp=round(t.maxhp))
 
     def allies(self, u): return [x for x in (self.party if u.side == "party" else self.enemies) if x.alive]
@@ -584,6 +594,7 @@ class Battle:
         D = (dfn.DEF if phys else dfn.MDF) * stage_mult(dfn.stage("DEF" if phys else "MDF"))
         dmg = a["power"] * el["power"] * (A / D) * level_factor(att.level)
         if a["all"]: dmg *= ALL_POWER_MULT
+        if not a.get("fixed"): dmg *= getattr(att, "dmg_mult", 1.0)   # hero power / enemy damage (new game); items fixed
         return dmg
 
     def expected_damage(self, att, dfn, a):
@@ -1136,7 +1147,7 @@ class Battle:
 
     # ------------------------------------------------------------ AI
     def declare(self, u):
-        ref = 20 * level_factor(u.level)
+        ref = 20 * level_factor(u.level) * getattr(u, "dmg_mult", 1.0)   # one average blow, in the unit's own currency
         options = []
         for a in u.actions + self.item_actions(u):
             if not u.can_afford(a): continue

@@ -82,7 +82,7 @@ details summary { cursor: pointer; color: var(--dim); font-size: 12px; }
       <div class="row">
         <label class="field">Where<select id="hab"></select></label>
         <label class="field">Budget<input id="budget" type="number" min="1" max="12" value="6" style="width:56px"></label>
-        <label class="field">Level<input id="elevel" type="number" min="1" max="99" value="30" style="width:56px"></label>
+        <label class="field">Level<input id="elevel" type="number" min="1" max="99" value="50" style="width:56px"></label>
       </div>
       <div class="row">
         <label class="field">Ranged<select id="ranged"><option value="any">whatever rolls</option><option value="include">include one</option><option value="exclude">none</option></select></label>
@@ -203,9 +203,9 @@ async function boot() {
 /* ------------------------------------------------------------ the lab panel */
 const ITEM = () => Object.fromEntries(M.items.map(i => [i.key, i]));
 let partySpec = store.get("party", [
-  { cls: "Hersir", level: 30, pouch: [["life", 2], ["firecracker", 1]] },
-  { cls: "Dagskald", level: 30, pouch: [["life", 1], ["surgeons_kit", 1]] },
-  { cls: "Brennumar", level: 30, pouch: [["spirit", 1], ["smoke_pot", 1]] },
+  { cls: "Vasara", level: 50, pouch: [["life", 2], ["firecracker", 1]] },
+  { cls: "Ullar", level: 50, pouch: [["life", 1], ["surgeons_kit", 1]] },
+  { cls: "Brennumar", level: 50, pouch: [["spirit", 1], ["smoke_pot", 1]] },
 ]);
 let packReady = false, partyReady = false;
 
@@ -248,7 +248,7 @@ function initPanel() {
 
 function readSpec() {
   return partySpec.map((s, i) => ({
-    cls: $(`#cls${i}`).value, level: +$(`#lvl${i}`).value || 30,
+    cls: $(`#cls${i}`).value, level: +$(`#lvl${i}`).value || 50,
     pouch: Array.from({ length: M.pouch_slots }, (_, j) => [$(`#it${i}_${j}`).value, +$(`#n${i}_${j}`).value]).filter(p => p[0] && p[1] > 0),
     kit: +$("#kit").value,
   }));

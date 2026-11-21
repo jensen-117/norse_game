@@ -673,7 +673,7 @@ KITS = {
 # Stats: an average body (genes 15.5) grown the class's way to SHEET_LEVEL; no Personality, no star sign.
 # Affinities (agreed Nov 20): magicals take their school's; martials their weapon weakness plus one authored
 # elemental weakness and resistance. SHEET_LEVEL is a knob until the level sweep freezes it.
-SHEET_LEVEL = 15
+SHEET_LEVEL = 50          # Nov 20: heroes and enemies at 50 (the sweep: level isn't the lever; 50 keeps numbers 3 digits)
 CLASS_AFFINITY = {
     "Ullar":  dict(weak=["Slash", "Eld"], resist=["Hrim"]),     # Ullr of the skis and the winter: frost-hardy
     "Vasara": dict(weak=["Pierce", "Blixt"], resist=["Eld"]),   # the anvil shrugs off fire; lightning finds the iron
@@ -682,3 +682,19 @@ BASIC_VERB = {"Vasara": "Krosh", "Ullar": "Skott", "Brennumar": "Eld", "Dagskald
 MEDITATE_SHARE = 0.15     # Meditate: this share of max MP back; magicals only, a universal action (a knob: the sweep tunes)
 AI_MEDITATE_VALUE = 1.2   # AI: x ref x the MP share it would restore
 AI_TAUNT_VALUE = 0.6      # AI: x ref per ally Egga would shield (hurt, or a wind-up's target)
+
+# ---------------------------------------------------------------- the new game's tuning settings (Nov 20; the sweep tunes)
+# They apply only in fights whose whole party is sheet heroes (build_hero), so old recruits and every legacy
+# regression are untouched. Hero power is baked into the character (not a buff); enemy damage and HP by tier are
+# applied to the enemies when the fight starts, and again when a Mogel re-forms.
+ENEMY_LEVEL = 50
+HERO_POWER = {c: 1.4 for c in ("Vasara", "Ullar", "Brennumar", "Dagskald", "Skurmar")}   # x damage dealt (not items)
+ENEMY_DAMAGE = 2.5        # x damage enemies deal
+TIER_HP = {"Trash": 1.0, "Regular": 1.0, "Elite": 1.7, "Boss": 1.85}    # x enemy HP by tier: the rank reshape
+def enemy_tier(u):
+    """The pace table's tier of an enemy (pillars Part 5b): the 3-cost Drott is Boss, Halv and Litel Trash, Stor Elite."""
+    if getattr(u, "rank", None) == "Drott" or getattr(u, "actions_per_round", 1) >= 3: return "Boss"
+    n = getattr(u, "rank_name", None) or getattr(u, "mogel_rank", None) or getattr(u, "rank", None) or u.name
+    if n.startswith(("Halv", "Litel")): return "Trash"
+    if n.startswith("Stor"): return "Elite"
+    return "Regular"
