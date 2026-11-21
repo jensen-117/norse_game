@@ -46,7 +46,8 @@ const Screen = (() => {
     shake:    { px: 2, dur: 260 },                        // damped, after the flash
     squash:   { rows: 1, dur: 140 },                      // whole rows only: bracing, landing
     bob:      { px: 1, period: 1700 },                    // idle breathing, out of step per unit
-    look:     { every: 11000, dur: 420 },                 // a rare glance the other way
+    look:     { idle: false, every: 11000, dur: 420 },    // a glance the other way: off while idle (Joseph, Nov 21:
+                                                          // distracting); kept as a motion for reactions later
     dissolve: { dur: 650 },                               // death: a dithered fade
     step:     { dur: 190, px: 3 },                        // Move/Swap: one hop per cell
     hitstop:  { base: 70, weak: 150, crit: 150 },         // the freeze on contact
@@ -234,7 +235,7 @@ const Screen = (() => {
       if (((vt / MOTION.bob.period) + ph) % 1 > .55) o.dy -= MOTION.bob.px;
       if (!busy) {
         if (u.nextLook === undefined) u.nextLook = vt + MOTION.look.every * (0.4 + ph);
-        if (vt > u.nextLook) { addFx(u, "look", MOTION.look.dur); u.nextLook = vt + MOTION.look.every * (0.6 + Math.random() * 0.8); }
+        if (MOTION.look.idle && vt > u.nextLook) { addFx(u, "look", MOTION.look.dur); u.nextLook = vt + MOTION.look.every * (0.6 + Math.random() * 0.8); }
       }
     }
     return o;
