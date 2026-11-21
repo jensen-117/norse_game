@@ -133,6 +133,15 @@ One mechanic at a time, each with its test and its AI valuation:
 - Badges with counts (Sundered 2, Knots 3, the Song's verses) and a hover that lists sources and the glossary line; keywords in the keyword colour on move cards; Pinned, Marked, Scorched, Feeble and the rest as icons (Joseph's art; stand-ins first); new event kinds (stack, decay, flare, knot, untie, bump, taunt, meditate).
 - Publish the Lab when Wave 4's first class plays end to end.
 
+### Wave 7: the roll, the pick, the Circle (Nov 21, agreed with Joseph; in phases, each checked before the next)
+
+The hero pass and the enemy rebuild (classes.md 7b, 7c) are in. This wave builds what Joseph and Claude settled after them (classes.md 7d; roles.md).
+
+- **A. The roll.** The accuracy rules: the attacker's ACC minus the target's EVA; ahead, a crit 1 in 3 and no graze; behind, a whiff 1 in 3; even, the plain roll. Grazes a flat base chance; speed out of the roll (turn order only; an exact tie to the party). A new result, the whiff: its own text and float; the AI values a Nimble target at two-thirds. Defaults (Joseph agreed): a whiff lands nothing (no damage, rider or status from that hit); whiff and crit touch damage hits only (status-only moves keep their own chance); Drif's chain stops reading stages. Checks: tests, legacy fights byte-identical, the gauntlet and sweep before and after. Then Joseph plays.
+- **B. The Halv as a pick.** The basic attack becomes an ordinary kit move competing for the four slots; leg-3 kits go without one (Joseph). The page's menu and autofill work without it (a hero with no Halv and no order Guards).
+- **C. The Dagskald.** Heals at 1.2 (Lak ~125). Skoldborg (Flok Aukskold) as a verb several classes can own, priced in HP or MP by the class (Dagskald, Vasara's Aukskold tree, later the Lundar). Bannenlykt (Mark, 3 MP), Stynglykt (6), Korplykt (12, the row), Allsyn (24, everyone: the row form's upgrade). The **Circle** kit as a named alternative for the Dagskald (Skoldborg, Kvad, Gyllenlykt, Stynglykt); a gauntlet row for the Witch's Circle, Fortified at 25% and at 33%.
+- **D. Reeling, Besk, Vingla** in the engine: Reeling acts in the Late group; Besk's contract (Nimble 3, then Reeling 3, locked while it runs); Vingla inflicts Reeling. Playable when the Nalarbani and the Berserker have kits.
+
 ## 5. Functions to Build (brainstorm)
 
 **data.py:** `STATUSES`, `STAT_NAMES`, `KEYWORDS`, `CLASS_SHEETS`, `KITS`, `DESIGNATED_RIDERS`, `RIDER_PREFIX`, `CAPSTONES`, `PARTS` (Styng, Lonn) beside `TARGETS` and `MANNERS`, `MP_BASE_SHARE`, `HP_BASE_SHARE`, `MEDITATE_SHARE`, `FADE = (1.0, 0.5, 0.2)`, `STACK_CAP = 3`, `LEG_SCALE`, `BOSS_IMMUNE`.
