@@ -65,7 +65,12 @@ Coverage with the proposals (main or second role): Front 4 (Vasara, Huskarl, Lun
 - **The Waterfall Rune** (a talisman, equipped at the company): Meditate becomes Djupanda. The template for talismans: change a universal action, not raw numbers.
 - **Besk** (the tonic) and a new status, **Reeling**: a Reeling unit acts in the Late group (after normal moves), whatever its speed; stacks are duration. Besk's contract on an ally: Nimble 3, 2, 1, then Reeling 3, 2, 1, then it may be dosed again. While the contract runs nothing else changes that unit's Nimble or Reeling (so a foe's Mark can't strip it either: a perk of paying the crash); other effects (Skoldborg's DEF) land as normal.
 - **Tumla** (to tumble): the verb that inflicts Reeling. Home: the Berserker's club, a crush that leaves foes Reeling (the Vasara's Krosh keeps Sundered).
-- **Open:** the Halv basic attack as a kit pick (Joseph: if you didn't pick it, you don't have it; it costs 2 MP or 4 HP). Four slots with the Halv competing for one, or its own slot that can stay empty?
+- **The Halv basic attack is a kit pick** (Joseph): four slots, and the Halv competes for one. If you didn't pick it, you don't have it. Guard, items and (for magic classes) Meditate stay universal.
+- **The Banishing Lantern's forms:** **Stynglykt** (the stinging lantern: Bannenlykt with Styng, a hit of 0.7 of his base and the Mark), **Korplykt** (the Raven Lantern: the row form), **Allsyn** (the All form; caution: reads "all sin" in English; Allbannenlykt is past the 15-letter limit, so the All form needs a short name either way).
+- **The Dagskald's Circle kit:** Skoldborg, Kvad, Gyllenlykt, Stynglykt. Stynglykt is his only damage: an honest support, whose Marks make the fire and wind crit.
+- **Reeling's verb:** Vingla (to totter) or Tumla (to tumble); not Tumbl (it reads as Tumblr), not Svindl (swindle). Pending Joseph.
+
+**Agreed and ready to build together:** the accuracy rules (Part 7d of classes.md), speed as turn order only, the Halv as a kit pick, Reeling and Besk, Skoldborg, Bannenlykt and its forms, the Dagskald's heals at 1.2. With them the Witch's Circle is playable, and the gauntlet can measure it.
 
 ## Named trios (the ones we promise to make work)
 
