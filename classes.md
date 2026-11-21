@@ -176,6 +176,39 @@ Any three of the four make a party with at least one designed synergy.
 
 ---
 
+## Part 7b: The Yardstick (Nov 21: the level-50 soft launch)
+
+Heroes first, against a fixed measure; enemies are built back from it. Level 50 is the soft launch: every number here is authored, not derived. Targets only until the hero pass applies them; `sim/yardstick.py` measures today against them (`yardstick_report.md`).
+
+**The measure is the Vasara's hammer.** Damage doesn't roll: a hit is a fixed amount, varied only by a graze (20%, half), a crit (~5%, x1.5) and affinity. A clean Krosh on a plain foe is about **104**. That's the melee standard; magic should land near it.
+
+**Hero pools** (a 50 grid; martial MP is a low floor that talismans can raise: an "Odinseye Effigy" adding 50 MP is the kind of trade a talisman should offer):
+
+| Class | HP | MP | Identity |
+|---|---|---|---|
+| Vasara | 1000 | 50 | Front tank; pays HP for his moves; no Meditate |
+| Ullar | 600 | 50 | Rear sniper; pays HP; MP only for moves he picks up |
+| Brennumar | 500 | 150 | Fragile, the deepest pool |
+| Dagskald | 700 | 200 | Sturdy enough to stay up; the pool to top up the party |
+| Skurmar | 600 | 100 | Sturdier than Brennumar, shallower; knots deepen his Meditate and Djupanda |
+
+**Foe HP by tier**, set by hammer blows, not by doubling (hits-to-kill counts whole hits, so HP sits against multiples of 104):
+
+| Tier | Krosh hits | HP |
+|---|---|---|
+| Trash | 2; 1 with one ATK stage (139 > 130); 3 on a graze | 130 |
+| Regular | 4-5 | 450 |
+| Elite | 9-10: "right there next to my tank" | 950 |
+| Boss | about 5 rounds of the whole party; longer in practice (adds, heals, buffs) | 1700 |
+
+A Flok-and-talisman build that invested hard (about +2 or +3) sweeps a row of Trash.
+
+**The other side:** a foe's normal hit takes 10-12% of a mid hero's HP (60-72 on 600); a wind-up 30-40% (180-240). A mid hero falls in about 6-8 normal hits; the Vasara is the deliberate tank, about 14. Families are deliberate deviations from the plain foe (the Beinar's DEF, the Ande's MDF, the Djur's bite).
+
+**The plain foe** (the measuring dummy): no affinities, no body quirks, DEF = MDF (CON = WIS = 60), other attributes average.
+
+---
+
 ## Part 8: What Comes Next
 
 1. **A mutation session:** for each move, which of Mer, Styng, Lonn and Jatte it accepts, its designated riders, and each class's capstones and their parts.
