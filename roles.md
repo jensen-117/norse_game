@@ -59,6 +59,14 @@ Coverage with the proposals (main or second role): Front 4 (Vasara, Huskarl, Lun
 - **Skoldborg** (shield-fort): the short name for Flok Aukskold, DEF up on your row; **Merskoldborg**, two stages. Owners: the Vasara (HP), the Dagskald (MP), likely the Lundar. The ladder: 12 MP or 32 HP; Mer 24 MP or 64 HP. Watch: a stage fades in about a round and a half, so one cast prevents ~55 on a row taking ~150 a round, against a Lak's ~125 for 8 MP. If it measures weak, wards last longer; the stage stays a stage.
 - **The Dagskald's Circle kit** (Meditate is always there, not a slot): Skoldborg (hold the row), Kvad (the steady heal), Gyllenlykt (the panic button: a heal and Nimble 3), Bannenlykt (Mark: with the accuracy rules, every Alleld and Kuling on Marked foes rolls crits; a Flok form for area parties). Halvsol is his basic. The fire and wind kill while he holds.
 
+## Decided Nov 21 (later the same day)
+
+- **Skoldborg** is the name for Flok Aukskold everywhere: Aukskold, Meraukskold, Skoldborg, Merskoldborg ("auk" is up, "skold" is DEF). The Vasara keeps plain Aukskold; carving the row form is hers if she does. Owners of the tree: the Dagskald, then the Lundar. Fortified's 25% a stage against 33%: A/B in the gauntlet when it's built (33% would come through the shared stage curve, so it touches every stage).
+- **The Waterfall Rune** (a talisman, equipped at the company): Meditate becomes Djupanda. The template for talismans: change a universal action, not raw numbers.
+- **Besk** (the tonic) and a new status, **Reeling**: a Reeling unit acts in the Late group (after normal moves), whatever its speed; stacks are duration. Besk's contract on an ally: Nimble 3, 2, 1, then Reeling 3, 2, 1, then it may be dosed again. While the contract runs nothing else changes that unit's Nimble or Reeling (so a foe's Mark can't strip it either: a perk of paying the crash); other effects (Skoldborg's DEF) land as normal.
+- **Tumla** (to tumble): the verb that inflicts Reeling. Home: the Berserker's club, a crush that leaves foes Reeling (the Vasara's Krosh keeps Sundered).
+- **Open:** the Halv basic attack as a kit pick (Joseph: if you didn't pick it, you don't have it; it costs 2 MP or 4 HP). Four slots with the Halv competing for one, or its own slot that can stay empty?
+
 ## Named trios (the ones we promise to make work)
 
 | Trio | Who | Plan | Weak to |
