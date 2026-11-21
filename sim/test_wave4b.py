@@ -180,6 +180,6 @@ class TheAISings(unittest.TestCase):
             foes = spawn(place(compose(rng, habitat(cat, ("Barrow", "Wildwood", "Rapids")[i % 3]))), ENEMY_LEVEL)
             b = Battle(party, foes, rng, events=True); b.fight()
             seen |= {e.get("move") for e in b.events if e["kind"] == "intent" and e.get("unit") == "Dagskald"}
-        self.assertTrue({"Allkvad", "Solak"} <= seen, seen)
+        self.assertTrue({"Merkvad", "Solak"} <= seen, seen)
 
 if __name__ == "__main__": unittest.main()

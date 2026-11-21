@@ -623,8 +623,8 @@ VERBS = {
     "Kuling":   dict(cls="Skurmar", kind="damage", element="Blast", target="all", weight=1, knots=1),
     "Storm":    dict(cls="Skurmar", kind="damage", element="Blast", target="all", weight=2, knots=2, tier="Mer"),
     "Orkan":    dict(cls="Skurmar", kind="damage", element="Blast", target="all", weight=3, knots=3, tier="Mer", follow="Blixt"),
-    "Kasta":    dict(cls="Skurmar", kind="displace", push=True, styng=True),
-    "Svepa":    dict(cls="Skurmar", kind="displace", push=False, styng=True),
+    "Kasta":    dict(cls="Skurmar", kind="displace", element="Blast", push=True, styng=True),    # push a row back; Styng: the gust batters
+    "Svepa":    dict(cls="Skurmar", kind="displace", element="Blast", push=False, styng=True),   # pull a row forward
     "Medvind":  dict(targets=("Flok", "All"), cls="Skurmar", kind="stat", stat="SPD", up=True, target="ally"),   # Swedish "tailwind": Quick
 }
 
@@ -692,7 +692,7 @@ KITS = {
                   3: [W("Eld", tier="Mer"), W("Eld", target="All"), W("Sveda", lonn=True), W("Djupanda")]},
     "Dagskald":  {1: [W("Lak"), W("Sol")],
                   2: [W("Lak"), W("Sol"), W("Kvad")],
-                  3: [W("Lak", lonn=True), W("Sol"), W("Kvad", target="All"), W("Aukraft", target="All")]},   # Allkvad (Nov 20)
+                  3: [W("Lak", lonn=True), W("Sol"), W("Kvad", tier="Mer"), W("Aukraft", target="All")]},   # Merkvad: bank it on the tank (Nov 20, measured)
     "Skurmar":   {1: [W("Blast"), W("Knyta")],
                   2: [W("Blast"), W("Knyta"), W("Kuling"), W("Blixt")],
                   3: [W("Blast"), W("Knyta", tier="Mer"), W("Storm"), W("Blixt", lonn=True)]},
@@ -720,6 +720,16 @@ HEVN_CAP = 1.0            # ...up to +100%
 AI_DOT_VALUE = 0.8        # AI: x the HP a Scorch would burn (it lands over three rounds)
 AI_ALSO_VALUE = 0.4       # AI: x ref for a second status riding the first (Lonnsveda's Feeble, Lonnpeka's Sundered)
 AI_PAYOFF_VALUE = 0.5     # AI: x ref for a status someone on the side can cash in (Pinned, with a Banskott)
+KNOT_CAP = 3              # Knots (Wave 4c; classes.md Part 7): a pool on the Skurmar, tied by Knyta (a knot a tier), spent by
+KNOT_BLAST = 1.25         # the untie spells, never decaying. Held: 1+ Blast hits harder (x this); 2+ Blixt can't graze;
+KNOT_MP = 0.5             # 3: this share of a Meditate's MP back at each round's start
+BUMP_SHARE = 0.10         # Kasta and Svepa: a unit shoved into an occupied cell, and the occupant, each take this share of max HP
+                          # (approved default; pending Joseph's call on bumping off the caster's power instead)
+AI_KNOT_HORIZON = 3       # AI: knots are worth what holding them pays per round (stronger Blasts, sure Blixts, MP) over
+                          # this many rounds: tying adds it, an untie spell's spending loses it...
+AI_KNOT_PLAN = 0.8        # ...and a knot that brings an untie spell within reach is worth this x what that spell would deal
+                          # beyond his best plain blow (a two-turn plan, discounted)
+AI_SHOVE_VALUE = 0.5      # AI: x ref for a shove that helps (a Rear caster into our blades; a Front blade to the Rear)
 AI_SONG_VALUE = 1.2       # AI: x the healing a verse adds at the next round's start (what's missing now)...
 AI_SONG_HOPE = 0.25       # ...plus this share of a verse's full healing, for the hits still to come
 AI_GLIDE_VALUE = 0.6      # AI: x ref for a glide out of the Front (the Ullar wants the Rear), +0.15 for the Nimble

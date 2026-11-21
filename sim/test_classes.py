@@ -37,7 +37,9 @@ class Sheets(unittest.TestCase):
                 self.assertEqual({n for n, _ in u.excluded}, {a["name"] for a in full.actions if a["unresolved"]})
 
     def test_an_unplayable_kit_is_refused_by_battle(self):
-        u = build_hero("Skurmar", 1, playable=False)            # Knyta: knots arrive in Wave 4c
+        from words import unresolved                            # every kit plays since Wave 4c: a kind still to come
+        u = build_hero("Skurmar", 1); ritual = dict(u.actions[1], kind="ritual"); ritual["unresolved"] = unresolved(ritual)
+        self.assertTrue(ritual["unresolved"]); u.actions.append(ritual)
         with self.assertRaises(ValueError): Battle([u], [dummy()], random.Random(1))
 
     def test_bows_reach_anywhere_hammers_dont(self):

@@ -170,7 +170,9 @@ Any three of the four make a party with at least one designed synergy.
 
 **Unlock by deed:** wipe out a whole pack with one All-move.
 
-**Open:** the numbers (knot bonuses, the untie spells' power and MP); the capstone.
+**As built (Wave 4c, Nov 20):** knots are a pool on the Skurmar (`u.knots`), tied a knot a tier by Knyta (Merknyta two), spent by Kuling, Storm and Orkan (1, 2, 3) on top of MP, never decaying; held, 1+ makes Blast hit x1.25, 2+ means Blixt never grazes, 3 gives half a Meditate's MP at each round's start. Orkan: the wind on all, then an All Blixt at its tier on everyone still standing. A class verb's riders are its own, so plain Blixt never Stuns; Lonnblixt rolls Stunned (bosses immune). Kasta and Svepa shove a foe a row back or forward in its lane; into an occupied cell the two swap and both are slammed (`BUMP_SHARE` 10% of max HP, pending Joseph's call on bumping off the caster's power); a Pinned unit is a wall (not moved; a foe shoved into it is slammed with it and stays); past the edge it isn't offered. Styngkasta and Styngsvepa batter first with a gust (Blast), and Cover takes them whole. Knots don't carry between rooms until dive.py.
+
+**Open:** the numbers (knot bonuses, the untie spells' power and MP); the capstone; the bump's basis.
 
 ---
 

@@ -196,6 +196,7 @@ class Unit:
         self.covered_by = None    # an ally who Covers this unit this round (combat_spec Part 8)
         self.once_used = set()    # once-per-fight moves already spent (Net Throw)
         self.hits_taken = 0       # attacks that hurt it since its last action (Hevn answers them)
+        self.knots = 0            # the Skurmar's tied wind (Knyta): a pool, spent by the untie spells, never decaying
         self.state = "up"          # heroes: up, dying, dead (combat_spec Part 10)
         self.breaths = 0
         self.wounded = False
@@ -251,11 +252,13 @@ class Unit:
         return self.aff.get(element, "normal")
 
     def can_afford(self, a):
+        if a.get("knots") and not a.get("_release") and self.knots < a["knots"]: return False   # untie spells: knots on top of MP
         if a["cost_type"] == "MP": return self.mp >= a["cost"]
         if a["pct_current"]: return self.hp > 1
         return self.hp > a["cost"]
 
     def pay(self, a):
+        if a.get("knots") and not a.get("_release"): self.knots -= a["knots"]
         if a["cost_type"] == "MP": self.mp -= a["cost"]
         elif a["pct_current"]: self.hp -= max(1, int(self.hp * a["pct_current"]))
         else: self.hp -= a["cost"]
@@ -600,9 +603,13 @@ class Battle:
         return clamp(att.stage("ACC") + self.horn_bonus(att) + self.speed_shift(att, dfn)
                      - dfn.stage("EVA"), -5, 5)
 
+    def sure_strike(self, att, a):
+        """Two knots held: Blixt can't graze (the Skurmar's lightning finds its mark)."""
+        return bool(a) and a.get("element") == "Blixt" and getattr(att, "knots", 0) >= 2
+
     def roll(self, att, dfn, a=None):
         net = self.net_stage(att, dfn)
-        graze = max(0.0, GRAZE_BASE - STEP * net)
+        graze = 0.0 if self.sure_strike(att, a) else max(0.0, GRAZE_BASE - STEP * net)
         crit = CRIT_BASE + max(0, net - 2) * 0.05 + att.attrs["DEX"] / 20 / 100 + (a or {}).get("crit_bonus", 0.0)
         r = self.rng.random()
         if r < graze: return "graze"
@@ -612,7 +619,7 @@ class Battle:
     def expected_roll_mult(self, att, dfn, a=None):
         a = a or {}
         net = self.net_stage(att, dfn)
-        graze = max(0.0, GRAZE_BASE - STEP * net)
+        graze = 0.0 if self.sure_strike(att, a) else max(0.0, GRAZE_BASE - STEP * net)
         crit = CRIT_BASE + max(0, net - 2) * 0.05 + att.attrs["DEX"] / 20 / 100 + a.get("crit_bonus", 0.0)
         m = graze * GRAZE_MULT + crit * a.get("crit_mult", CRIT_MULT) + (1 - graze - crit)
         if a.get("flurry"):
@@ -654,6 +661,7 @@ class Battle:
         if a.get("pays_on") and self.carries(dfn, a["pays_on"]): m *= a["pays"]
         if a.get("pays_below") and dfn.hp < a["pays_below"] * dfn.maxhp: m *= a["pays"]
         if a.get("answer"): m *= 1 + min(HEVN_CAP, HEVN_PER_HIT * att.hits_taken)
+        if a["element"] == "Blast" and getattr(att, "knots", 0) >= 1: m *= KNOT_BLAST   # a knot held: the wind hits harder
         if a["element"] == "Pierce" and getattr(self, "new_game", False):
             m *= 1 + PIERCE_GAP * max(0, -dfn.stage("DEF"))      # Pierce finds the gaps
         return m
@@ -766,7 +774,8 @@ class Battle:
             self.apply_status(att, tgt, a["status"], 1.0, STACKS_BY_TIER.get(a["tier"], 1), a["tier"])
         elif a["status"]:    # martial skill with a status (Blot)
             self.apply_status(att, tgt, a["status"], STATUS_LINE_CHANCE[a["tier"]] * self.wil_ratio(att, tgt), tier=a["tier"], move=a)
-        if a.get("styng_hit"): return       # Styng's added hit carries no element rider: the status move is the effect
+        if a.get("styng_hit") or a.get("designated"): return   # Styng's hit, and a class verb, whose riders are its own
+                                                                # (Blixt's Stun is Lonnblixt's, not the element's; Wave 4c)
         rider = el["rider"]
         if not rider or a["tier"] == "Halv": return
         chance = RIDER_CHANCE[a["tier"]] * self.wil_ratio(att, tgt)
@@ -1083,6 +1092,13 @@ class Battle:
                     self.emit("status", f"      {t.name} is {t.counter_name(st) or st}!", unit=t.name,
                               status=STAT_NAMES[st][0 if d < 0 else 1], stat=st, stacks=t.stage(st), src=u.name)
             return
+        if a["kind"] == "knot":                             # Knyta: a knot a tier, up to the cap
+            was = u.knots; u.knots = min(KNOT_CAP, u.knots + STACKS_BY_TIER.get(a["tier"], 1))
+            self.emit("knot", f"    {u.name} ties the wind: {u.knots} knot{'s' if u.knots != 1 else ''}.{tag}", unit=u.name,
+                      move=a["name"], knots=u.knots, was=was)
+            return
+        if a["kind"] == "displace":
+            self.displace(u, a, tgts, bonus, tag); return
         if a["kind"] == "song":                             # Kvad: a Song stack a tier on each ally reached; it heals from next round
             n, per = STACKS_BY_TIER.get(a["tier"], 1), self.song_heal(u, a); now = []
             for t in tgts:
@@ -1149,6 +1165,13 @@ class Battle:
         for ti, t in enumerate(tgts):
             if not t.alive: continue
             self.land(u, a, t, self.shape_mult(a, ti) if len(tgts) > 1 and not a["all"] else 1.0, reach_as.get(t, t), bonus)
+        if a.get("follow"):                                 # Orkan: the wind, then lightning on everyone still standing
+            f = dict(a, element=VERBS[a["follow"]]["element"], follow=None, knots=None)
+            rest = [t for t in self.foes(u) if self.reach_mult(u, f, t) is not None]
+            if rest:
+                self.emit("follow", "      Lightning follows!", unit=u.name, move=a["name"], element=f["element"])
+                for t in rest:
+                    if t.alive: self.land(u, f, t, 1.0, t, bonus)
 
     def land(self, u, a, t, share, spot, bonus):
         """One damage move's hits on one target, every multiplier, the log, and what follows (riders, a fall, a
@@ -1215,6 +1238,51 @@ class Battle:
         if c is None or not c.alive or c is u or c.side != t.side: return tgts, {}
         self.emit("covered", f"      {c.name} takes it for {t.name}!", unit=c.name, instead_of=t.name); c.stats["covered"] += 1
         return [c], {c: t}
+
+    def shove_cell(self, t, push):
+        """Where Kasta (push: a row back) or Svepa (pull: a row forward) sends t, in its lane; None past the edge."""
+        row = "rear" if push else "front"
+        return None if t.cell[0] == row else (row, t.cell[1])
+
+    def bump(self, src, x):
+        """A shove into an occupied cell hurts both: BUMP_SHARE of max HP (the approved default; one place to change)."""
+        return max(1, int(x.maxhp * BUMP_SHARE))
+
+    def bumped(self, src, x):
+        dmg = self.bump(src, x); x.hp -= dmg; src.stats["dealt"] += dmg
+        if dmg > 0: x.hits_taken += 1
+        self.emit("tick", f"      {x.name} is slammed: {dmg}. ({max(0, x.hp):.0f}/{x.maxhp:.0f})", unit=x.name, status="bump",
+                  src=src.name, dmg=dmg, hp=max(0, round(x.hp)))
+        if not x.alive: self.downed(x)
+
+    def displace(self, u, a, tgts, bonus, tag):
+        """Kasta and Svepa (classes.md Part 7): shove one foe a row back or forward, in its lane. Into an occupied cell,
+        the two swap and both are slammed; a Pinned unit is a wall: it can't be moved, and a foe shoved into it is
+        slammed with it and stays put. Styng batters first (a damaging move: Cover takes it, whole)."""
+        tgts, spot = self.intercept(u, a, tgts)
+        t = tgts[0]
+        self.emit("act", f"    {u.name} uses {self.shown(u, a)} on {t.name}.{tag}", unit=u.name, move=a["name"], shown=self.shown(u, a),
+                  move_kind="displace", element=a["element"], targets=[t.name], bonus=bool(tag), tier=a.get("tier"), all=False)
+        if a.get("styng"):
+            self.styng_hit(u, a, t, tgts, bonus, spot.get(t, t))
+            if not t.alive: return
+        if t.rooted:
+            self.emit("rooted", f"      {t.name} is pinned: it doesn't budge.", unit=u.name, pinned=t.name, move=a["name"]); return
+        dest = self.shove_cell(t, a.get("push"))
+        if dest is None:
+            self.emit("fizzle", f"      {t.name} can't go any further.", unit=u.name, move=a["name"], shown=self.shown(u, a)); return
+        other = self.holder(t, dest)
+        if other is not None and (other.rooted or not other.alive):    # a wall: the bump without the swap
+            self.emit("wall", f"      {t.name} is slammed into {other.name}!", unit=t.name, wall=other.name)
+            self.bumped(u, t); self.bumped(u, other); return
+        if other is not None: other.cell = t.cell
+        old = t.cell; t.cell = dest
+        self.emit("move", f"      {t.name} is {'thrown back' if a.get('push') else 'swept forward'}"
+                          f"{', trading places with ' + other.name if other else ''}.", unit=t.name, cell=dest,
+                  swapped=other.name if other else None, other_cell=old if other else None, move=a["name"])
+        if other is not None:
+            self.bumped(u, t)
+            if other.alive: self.bumped(u, other)
 
     def status_weak(self, u, a, t):
         """A status move against a foe weak to its element (new game): it lands for sure, a stack deeper, and earns
@@ -1443,6 +1511,8 @@ class Battle:
             if a.get("once") and (a["name"] in u.once_used or (u.uid, a["name"]) in getattr(self, "once_claims", ())): continue
             if u.silenced and a["cost_type"] == "MP" and a["cost"] > 0: continue
             cost_pen = 0.25 * a["cost"] if a["cost_type"] == "MP" else 0.15 * a["cost"]
+            if a.get("knots"):                              # an untie spell also spends what the knots were paying
+                cost_pen += AI_KNOT_HORIZON * (self.knot_hold(u, u.knots, ref) - self.knot_hold(u, u.knots - a["knots"], ref))
             thrift = AI_ITEM_THRIFT if a.get("item") else 1.0
             if a["kind"] == "revive":
                 for t in self.party if u.side == "party" else []:
@@ -1507,6 +1577,24 @@ class Battle:
                     s = sum(min(self.heal_amount(u, a), y.maxhp - y.hp) for y in row)
                     if a.get("also"): s += bright(row) / 1.2
                     options.append((1.2 * s - cost_pen, a, x))
+            elif a["kind"] == "knot":                           # Knyta: what the knots pay while held, and spells they unlock
+                if u.knots < KNOT_CAP:
+                    k = min(KNOT_CAP, u.knots + STACKS_BY_TIER.get(a["tier"], 1))
+                    s = AI_KNOT_HORIZON * (self.knot_hold(u, k, ref) - self.knot_hold(u, u.knots, ref))
+                    s += AI_KNOT_PLAN * max([self.untie_gain(u, m, k) for m in u.actions
+                                             if m.get("knots") and u.knots < m["knots"] <= k] or [0.0])
+                    options.append((s - cost_pen, a, u))
+            elif a["kind"] == "displace":
+                melee = [x for x in self.allies(u) if self.wants_front(x) and x is not u]
+                for f in self.foes(u):
+                    s = self.styng_value(u, a, f)
+                    dest = None if f.rooted else self.shove_cell(f, a.get("push"))
+                    if dest is not None:
+                        other = self.holder(f, dest)
+                        if other is not None: s += self.bump(u, f) + self.bump(u, other)
+                        if not a.get("push") and f.cell[0] == "rear" and melee: s += AI_SHOVE_VALUE * ref * len(melee)   # into the blades
+                        if a.get("push") and f.cell[0] == "front" and self.wants_front(f): s += AI_SHOVE_VALUE * ref       # its blade halved
+                    if s > 0: options.append((s - cost_pen, a, f))
             elif a["kind"] == "song":                           # Kvad: the healing the stacks it adds (or keeps) bring
                 n, per, xs = STACKS_BY_TIER.get(a["tier"], 1), self.song_heal(u, a), self.allies(u)
                 def song_value(reach):
@@ -1575,6 +1663,42 @@ class Battle:
         options.sort(key=lambda o: -o[0])
         pick = options[0] if self.rng.random() < 0.8 else self.rng.choice(options[:3])
         return pick[1], pick[2]
+
+    def untie_gain(self, u, m, k):
+        """What an untie spell, cast holding k knots, would deal beyond u's best plain blow now (0 if nothing more)."""
+        foes = self.foes(u)
+        if not foes: return 0.0
+        held, u.knots = u.knots, k - m["knots"]             # the blows as they'd land after paying
+        try:
+            spell = sum(self.expected_damage(u, f, m) * (self.reach_mult(u, m, f) or 0) for f in foes)
+            if m.get("follow"):
+                f2 = dict(m, element=VERBS[m["follow"]]["element"]); spell += sum(self.expected_damage(u, f, f2) for f in foes)
+            plain = max((self.expected_damage(u, f, x) for x in u.actions if x["kind"] == "damage" and not x.get("knots")
+                         and not x["all"] for f in foes), default=0.0)
+        finally:
+            u.knots = held
+        return max(0.0, spell - plain)
+
+    def knot_hold(self, u, k, ref):
+        """What holding k knots pays u per round (Wave 4c): 1+, a quarter more on his best Blast; 2+, his best Blixt never
+        grazes; 3, half a Meditate (valued as the AI values Meditate)."""
+        if k <= 0: return 0.0
+        held, u.knots = u.knots, 0                          # the blows as they'd land without knots
+        try:
+            def best(el):
+                return max((self.expected_damage(u, f, m) * (len(self.foes(u)) if m["all"] else 1) for m in u.actions
+                            if m["kind"] == "damage" and m["element"] == el and not m.get("knots") for f in self.foes(u)), default=0.0)
+            v = (KNOT_BLAST - 1) * best("Blast")
+            if k >= 2:
+                f0 = max(self.foes(u), key=lambda f: f.hp, default=None)
+                if f0 is not None:
+                    graze = max(0.0, GRAZE_BASE - STEP * self.net_stage(u, f0))
+                    v += best("Blixt") * graze * (1 - GRAZE_MULT)
+            if k >= KNOT_CAP and getattr(u, "maxmp", 0):
+                v += AI_MEDITATE_VALUE * ref * KNOT_MP * (1 - u.mp / u.maxmp)
+            return v
+        finally:
+            u.knots = held
 
     def styng_value(self, u, a, f):
         """The expected damage of Styng's added hit (0 for a move without one, or out of reach)."""
@@ -1903,6 +2027,10 @@ class Battle:
         for u in self.units:
             if u.alive: self.tick_statuses(u, "round_start")
         self.sing()                                        # Kvad (Wave 4b): after the ticks
+        for u in self.units:                               # three knots held: half a Meditate back each round (Wave 4c)
+            if u.alive and u.knots >= KNOT_CAP and getattr(u, "maxmp", 0) and u.mp < u.maxmp:
+                got = min(KNOT_MP * MEDITATE_SHARE * u.maxmp, u.maxmp - u.mp); u.mp += got
+                self.emit("mp", f"    The wind in {u.name}'s knots lends {got:.0f} MP.", unit=u.name, amount=round(got), move="Knots")
         self.tick_spots(); self.tick_piles()
         self.eligible, self.barred = set(), set()
         for u in self.units: u.defending, u.covered_by, u.taunted_by = False, None, None
@@ -2006,6 +2134,8 @@ class Battle:
             pool = [x for x in self.allies(u) if not (a["kind"] == "cover" and x is u)]
             return pool
         pool = [x for x in self.foes(u) if self.reach_mult(u, a, x) is not None]
+        if a["kind"] == "displace" and not a.get("styng"):          # a shove past the edge does nothing: not offered
+            pool = [x for x in pool if self.shove_cell(x, a.get("push")) is not None]
         if a["kind"] == "damage" and not a["all"]:
             pool += [p for p in self.piles if self.pile_reach(u, a, p) is not None]
         return pool

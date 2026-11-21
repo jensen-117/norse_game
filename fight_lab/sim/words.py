@@ -239,6 +239,7 @@ def compile_verb(verb, tier=None, target=None, manners=(), styng=False, lonn=Fal
         else: a["also_status"] = rider                                   # Lonnsveda: Scorched and Feeble
     if n["styng"]:                                                       # the added hit's damage type: the verb's, else its weapon's
         a["styng_el"] = v.get("element") or WEAPON[v["root"]][0]
+    a["designated"] = True                                               # riders are the verb's own: no element rider (Blixt's Stun is Lonn's)
     for k in ("root", "knots", "follow", "pays_on", "pays_below", "pays", "answer", "amount", "push"):
         if k in v: a[k] = v[k]
     if "group" in v: a["group"] = v["group"]
@@ -267,10 +268,11 @@ def compile_verb(verb, tier=None, target=None, manners=(), styng=False, lonn=Fal
 EXECUTABLE_KINDS = {"damage", "heal", "cleanse", "status", "stat", "revive", "cover", "defend", "move", "flee", "mp",
                     "taunt", "meditate",                     # Wave 3: Egga and Meditate
                     "glide", "windfall",                     # Wave 4a: Skrida and Djupanda
-                    "song"}                                  # Wave 4b: Kvad
+                    "song",                                  # Wave 4b: Kvad
+                    "knot", "displace"}                      # Wave 4c: Knyta, Kasta and Svepa
 KIND_NEEDS = {"revive": ("reaches", "hp", "wound"), "stat": ("stat", "direction"), "status": ("status",),
               "glide": ("stat", "direction"), "windfall": ("amount",)}
-WAVE4_FIELDS = ("knots", "follow", "push")   # effects not yet resolved (4a: also_status, pays_on, pays_below, styng; 4b: cleanse_one gone)
+WAVE4_FIELDS = ()   # every Wave 4 effect resolves (4a: also_status, pays_on, pays_below, styng; 4b: cleanse_one gone; 4c: knots, follow, push)
 RUNTIME_STATUSES = set(STATUSES) | set(COUNTER_OF) | {"Death"}
 CORE_FIELDS = ("kind", "name", "element", "tier", "all", "cost", "cost_type", "power", "status", "stat", "direction",
                "target", "pct_current")
