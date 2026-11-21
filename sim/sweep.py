@@ -22,7 +22,7 @@ configuration, so a rules change can't leave it silently stale.
 import hashlib, math, random, re, statistics, sys, os
 import data
 from engine import *
-from composer import catalog, habitat, compose, place, spawn as spawn_pack, CompositionError
+from composer import catalog, habitat, compose, place, spawn as spawn_pack, CompositionError, shaped_room
 
 TARGET_KILL = {"Trash": 3, "Regular": 6, "Elite": 12, "Boss": 18}        # party hits to kill one (at least, above Trash)
 TARGET_DIE = {"Trash": 6.5, "Regular": 5, "Elite": 4, "Boss": 3}         # its hits to kill a hero
@@ -74,18 +74,8 @@ def predict(base, die, d0, p, d, tier):
 
 # ---------------------------------------------------------------- Layer 2: rooms, played
 CAT = catalog()
-def room(rng, where, kind, L, budget=6):
-    pool = habitat(CAT, where)
-    tierof = lambda e: "Boss" if e["cost"] >= 3 else "Trash" if e["rank"].startswith(("Halv", "Litel")) else "Elite" if e["rank"].startswith("Stor") else "Regular"
-    want = {"fodder": {"Trash", "Regular"}, "elite": {"Trash", "Regular", "Elite"}, "boss": {"Trash", "Regular", "Boss"}}[kind]   # odd sizes fill with Trash
-    pool = [e for e in pool if tierof(e) in want]
-    for _ in range(200):
-        picks = compose(rng, pool, dict(budget=budget, cost_caps={3: 1}))
-        ts = [tierof(e) for e in picks]
-        if kind == "elite" and "Elite" not in ts: continue
-        if kind == "boss" and "Boss" not in ts: continue
-        return spawn_pack(place(picks), L)
-    raise CompositionError(f"no {kind} room in {where}")
+def room(rng, where, kind, L, budget=6, add=None):
+    return spawn_pack(shaped_room(rng, CAT, where, kind, budget, add), L)     # composer.shaped_room: shared with the Lab
 
 SHAPES = [("fodder", 3), ("fodder", 4), ("fodder", 5), ("fodder", 6), ("elite", 4), ("elite", 5), ("elite", 6),
           ("boss", 4), ("boss", 5), ("boss", 6)]

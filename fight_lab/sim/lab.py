@@ -3,7 +3,7 @@ The page never runs rules; everything here is a thin wrapper over Battle's step 
 import json, random
 import engine
 from engine import *
-from composer import catalog, habitat, compose, place, spawn, describe, gate, BIOMES, CompositionError
+from composer import catalog, habitat, compose, place, spawn, describe, gate, BIOMES, CompositionError, shaped_room, CALIB_SEED, CALIB_PLACES
 from knowledge import Memory
 
 CAT = catalog()
@@ -87,6 +87,20 @@ def roll_pack(hab, budget, ranged, level, art_only=True):
     return _j(dict(pack=[dict(cell=[r, l], name=describe(e), family=e["family"], rank=e["rank"], job=e.get("job"), element=e["element"],
                               cost=e["cost"], art=e["art"]) for r, l, e in picks]))
 
+def calib_room(kind, budget, add, n):
+    """A calibration room (Nov 20): the sweep's room shape and seed, so Claude can play the AI on exactly this room
+    (sim/calib_gap.py) and measure the gap. Room n is rolled from Random(CALIB_SEED + n - 1), in the sweep's places in
+    turn, at the enemies' level; add: "" (as rolled), "Trash" or "Regular" (two more)."""
+    n = max(1, int(n)); rng = random.Random(CALIB_SEED + n - 1); where = CALIB_PLACES[(n - 1) % len(CALIB_PLACES)]
+    try:
+        picks = shaped_room(rng, CAT, where, kind, int(budget), add or None)
+    except CompositionError as e:
+        return _j(dict(error=str(e)))
+    S["pack_spec"] = dict(placed=[(r, l, e) for r, l, e in picks], level=ENEMY_LEVEL,
+                          calib=dict(kind=kind, budget=int(budget), add=add or None, room=n, where=where))
+    return _j(dict(where=where, pack=[dict(cell=[r, l], name=describe(e), family=e["family"], rank=e["rank"], job=e.get("job"),
+                                           element=e["element"], cost=e["cost"], art=e["art"]) for r, l, e in picks]))
+
 # ------------------------------------------------------------ a fight
 def start(control="party"):
     if not S["party_spec"] or not S["pack_spec"]: return _j(dict(error="Make a party and roll a pack first."))
@@ -95,7 +109,7 @@ def start(control="party"):
     b = Battle(_party(), spawn(p["placed"], p["level"]), random.Random(bseed), events=True, profile="new")
     S["battle"] = b
     import sys
-    S["record"] = dict(engine=ENGINE, platform=sys.platform, profile=b.profile, lab_seed=S["seed"], bseed=bseed, control=control, party=S["party_spec"],
+    S["record"] = dict(engine=ENGINE, platform=sys.platform, profile=b.profile, calib=p.get("calib"), lab_seed=S["seed"], bseed=bseed, control=control, party=S["party_spec"],
                        pack=[[r, l, e] for r, l, e in p["placed"]], level=p["level"], orders=[], pending={},
                        winner=None, rounds=0, log=[])
     ev = b.begin(control=None if control == "auto" else "party")

@@ -1244,12 +1244,12 @@ class Battle:
         row = "rear" if push else "front"
         return None if t.cell[0] == row else (row, t.cell[1])
 
-    def bump(self, src, x):
-        """A shove into an occupied cell hurts both: BUMP_SHARE of max HP (the approved default; one place to change)."""
-        return max(1, int(x.maxhp * BUMP_SHARE))
+    def bump(self, x, y):
+        """A crash (Kasta, Svepa) hurts x by BUMP_SHARE of its own max HP plus BUMP_SHARE of y's: relative to both bodies."""
+        return max(1, int(BUMP_SHARE * (x.maxhp + y.maxhp)))
 
-    def bumped(self, src, x):
-        dmg = self.bump(src, x); x.hp -= dmg; src.stats["dealt"] += dmg
+    def bumped(self, src, x, y):
+        dmg = self.bump(x, y); x.hp -= dmg; src.stats["dealt"] += dmg
         if dmg > 0: x.hits_taken += 1
         self.emit("tick", f"      {x.name} is slammed: {dmg}. ({max(0, x.hp):.0f}/{x.maxhp:.0f})", unit=x.name, status="bump",
                   src=src.name, dmg=dmg, hp=max(0, round(x.hp)))
@@ -1274,15 +1274,15 @@ class Battle:
         other = self.holder(t, dest)
         if other is not None and (other.rooted or not other.alive):    # a wall: the bump without the swap
             self.emit("wall", f"      {t.name} is slammed into {other.name}!", unit=t.name, wall=other.name)
-            self.bumped(u, t); self.bumped(u, other); return
+            self.bumped(u, t, other); self.bumped(u, other, t); return
         if other is not None: other.cell = t.cell
         old = t.cell; t.cell = dest
         self.emit("move", f"      {t.name} is {'thrown back' if a.get('push') else 'swept forward'}"
                           f"{', trading places with ' + other.name if other else ''}.", unit=t.name, cell=dest,
                   swapped=other.name if other else None, other_cell=old if other else None, move=a["name"])
         if other is not None:
-            self.bumped(u, t)
-            if other.alive: self.bumped(u, other)
+            self.bumped(u, t, other)
+            if other.alive: self.bumped(u, other, t)
 
     def status_weak(self, u, a, t):
         """A status move against a foe weak to its element (new game): it lands for sure, a stack deeper, and earns
@@ -1591,7 +1591,7 @@ class Battle:
                     dest = None if f.rooted else self.shove_cell(f, a.get("push"))
                     if dest is not None:
                         other = self.holder(f, dest)
-                        if other is not None: s += self.bump(u, f) + self.bump(u, other)
+                        if other is not None: s += self.bump(f, other) + self.bump(other, f)
                         if not a.get("push") and f.cell[0] == "rear" and melee: s += AI_SHOVE_VALUE * ref * len(melee)   # into the blades
                         if a.get("push") and f.cell[0] == "front" and self.wants_front(f): s += AI_SHOVE_VALUE * ref       # its blade halved
                     if s > 0: options.append((s - cost_pen, a, f))

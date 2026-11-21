@@ -723,8 +723,8 @@ AI_PAYOFF_VALUE = 0.5     # AI: x ref for a status someone on the side can cash 
 KNOT_CAP = 3              # Knots (Wave 4c; classes.md Part 7): a pool on the Skurmar, tied by Knyta (a knot a tier), spent by
 KNOT_BLAST = 1.25         # the untie spells, never decaying. Held: 1+ Blast hits harder (x this); 2+ Blixt can't graze;
 KNOT_MP = 0.5             # 3: this share of a Meditate's MP back at each round's start
-BUMP_SHARE = 0.10         # Kasta and Svepa: a unit shoved into an occupied cell, and the occupant, each take this share of max HP
-                          # (approved default; pending Joseph's call on bumping off the caster's power instead)
+BUMP_SHARE = 0.05         # Kasta and Svepa (Nov 20, Joseph): in a crash, each of the two takes this share of its own max HP
+                          # plus this share of the other's: damage relative to both bodies, so small things are bowled over
 AI_KNOT_HORIZON = 3       # AI: knots are worth what holding them pays per round (stronger Blasts, sure Blixts, MP) over
                           # this many rounds: tying adds it, an untie spell's spending loses it...
 AI_KNOT_PLAN = 0.8        # ...and a knot that brings an untie spell within reach is worth this x what that spell would deal

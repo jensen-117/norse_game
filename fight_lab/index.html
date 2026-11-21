@@ -89,6 +89,12 @@ details summary { cursor: pointer; color: var(--dim); font-size: 12px; }
         <label class="check"><input type="checkbox" id="artonly" checked> Drawn units only</label>
       </div>
       <div class="row"><button id="rollpack">Roll pack</button></div>
+      <div class="row">
+        <label class="field">Calibration<select id="calshape"><option value="fodder:3">fodder, 3 slots</option><option value="elite:4">elite, 4 slots</option><option value="boss:4">boss, 4 slots</option></select></label>
+        <label class="field">Adds<select id="caladd"><option value="">as rolled</option><option value="Trash">+2 Trash</option><option value="Regular">+2 Regular</option></select></label>
+        <label class="field">Room<input id="calno" type="number" min="1" max="60" value="1" style="width:56px"></label>
+      </div>
+      <div class="row"><button id="calload">Load calibration room</button></div>
       <div class="cards" id="packcards"></div>
     </section>
     <section>
@@ -234,6 +240,8 @@ function initPanel() {
   $("#kit").value = String(store.get("kit", 1)); $("#kit").onchange = () => { store.set("kit", +$("#kit").value); makeParty(); };
   $("#rollparty").onclick = () => { partySpec.forEach((s, i) => $(`#cls${i}`).value = "random"); makeParty(); };
   $("#rollpack").onclick = rollPack;
+  $("#calload").onclick = calibRoom;
+  { const c = store.get("cal", null); if (c) { $("#calshape").value = c[0]; $("#caladd").value = c[1]; $("#calno").value = c[2]; } }
   $("#start").onclick = () => startFight("party");
   $("#auto").onclick = () => startFight("auto");
   $("#seed").onchange = () => { store.set("seed", +$("#seed").value); lab.set_seed(+$("#seed").value); makeParty(); rollPack(); };
@@ -264,6 +272,16 @@ function makeParty() {
     el("div", { class: "mv" }, h.moves.map(m => m.name + (m.cost ? ` ${m.cost}${m.cost_type === "HP" ? "hp" : ""}` : "")).join(" · ")),
     h.waiting && h.waiting.length ? el("div", { class: "mv" }, "not yet playable: " + h.waiting.join(", ")) : "")));
   partyReady = true; armStart();
+}
+function calibRoom() {          // the sweep's rooms by shape and number: Claude replays the AI on the same room
+  const [kind, budget] = $("#calshape").value.split(":");
+  store.set("cal", [$("#calshape").value, $("#caladd").value, +$("#calno").value]);
+  const r = call("calib_room", kind, +budget, $("#caladd").value, +$("#calno").value);
+  const box = $("#packcards"); box.textContent = "";
+  if (r.error) { box.append(el("div", { class: "card foe" }, "Couldn't build that room: " + r.error)); packReady = false; armStart(); return; }
+  box.append(el("div", { class: "card foe" }, el("b", {}, `Calibration: ${kind} ${budget}${$("#caladd").value ? " +2 " + $("#caladd").value : ""}, room ${+$("#calno").value}`), ` · ${r.where}`));
+  r.pack.forEach(u => box.append(el("div", { class: "card foe" }, el("b", {}, u.name), ` · ${u.cell[0]} ${u.cell[1] + 1} · cost ${u.cost}${u.art ? "" : " · no art yet"}`)));
+  packReady = true; armStart();
 }
 function rollPack() {
   store.set("hab", $("#hab").value);

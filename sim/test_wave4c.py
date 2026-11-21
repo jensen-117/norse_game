@@ -109,7 +109,13 @@ class Shoving(unittest.TestCase):
         b, s, a, c, nm = self.setup(); c.cell = ("rear", 0)
         orders(b, {s.uid: (key(s, nm), a.uid)})
         self.assertEqual((a.cell, c.cell), (("rear", 0), ("front", 0)))
-        for x in (a, c): self.assertEqual(x.maxhp - x.hp, max(1, int(x.maxhp * BUMP_SHARE)))
+        for x in (a, c): self.assertEqual(x.maxhp - x.hp, max(1, int(BUMP_SHARE * (a.maxhp + c.maxhp))))
+
+    def test_small_things_are_bowled_over(self):
+        """Relative to both bodies (Nov 20): a small one shoved into a big one takes more than its own share."""
+        b, s, a, c, nm = self.setup(); c.cell = ("rear", 0); a.maxhp = a.hp = 1000; c.maxhp = c.hp = 9000
+        orders(b, {s.uid: (key(s, nm), a.uid)})
+        self.assertEqual((1000 - a.hp, 9000 - c.hp), (500, 500))           # 5% of 1,000 + 5% of 9,000: half the small one
 
     def test_a_pinned_target_doesnt_budge(self):
         b, s, a, c, nm = self.setup(); b.apply_status(s, a, "Pinned", 1.0)

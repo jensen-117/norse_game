@@ -217,6 +217,31 @@ def compose(rng, pool, rules=None, log=None, tries=200):
         if c in caps: caps[c] -= 1
     return picks
 
+# ---------------------------------------------------------------- room shapes (the sweep's, the Lab's calibration rooms)
+ROOM_KINDS = {"fodder": {"Trash", "Regular"}, "elite": {"Trash", "Regular", "Elite"}, "boss": {"Trash", "Regular", "Boss"}}
+CALIB_PLACES = ("Barrow", "Wildwood", "Rapids")
+CALIB_SEED = 1000             # calibration room n (1-based) is rolled from Random(CALIB_SEED + n - 1), in CALIB_PLACES[(n-1) % 3]
+
+def tier_of(e):
+    return "Boss" if e["cost"] >= 3 else "Trash" if e["rank"].startswith(("Halv", "Litel")) else \
+        "Elite" if e["rank"].startswith("Stor") else "Regular"
+
+def shaped_room(rng, cat, where, kind, budget, add=None):
+    """One room of a shape (sweep.py; the Lab's calibration rooms; checks/adds_sweep.py): a fodder, elite or boss room
+    of `budget` slots from the place's pool (odd sizes fill with Trash), and optionally two more Trash or Regulars
+    from the same pool. Returns the placed picks; the same rng state gives the same room everywhere."""
+    pool = habitat(cat, where)
+    for _ in range(200):
+        picks = compose(rng, [e for e in pool if tier_of(e) in ROOM_KINDS[kind]], dict(budget=budget, cost_caps={3: 1}))
+        ts = [tier_of(e) for e in picks]
+        if kind == "elite" and "Elite" not in ts: continue
+        if kind == "boss" and "Boss" not in ts: continue
+        if add:
+            extra = [e for e in pool if tier_of(e) == add]
+            picks = picks + [rng.choice(extra) for _ in range(2)]
+        return place(picks)
+    raise CompositionError(f"no {kind} room in {where}")
+
 def place(picks):
     """Assign cells: 3 lanes x (Front, Rear). Front-liners fill Front first, casters fill Rear first."""
     cells = {"front": [], "rear": []}

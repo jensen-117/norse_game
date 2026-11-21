@@ -5,24 +5,8 @@ import os, random, statistics, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import sweep
 from engine import *
-from composer import habitat, compose, place, spawn as spawn_pack
 
-TIER = lambda e: "Boss" if e["cost"] >= 3 else "Trash" if e["rank"].startswith(("Halv", "Litel")) else "Elite" if e["rank"].startswith("Stor") else "Regular"
-
-def room(rng, where, kind, budget, add=None):
-    pool = habitat(sweep.CAT, where)
-    want = {"fodder": {"Trash", "Regular"}, "elite": {"Trash", "Regular", "Elite"}, "boss": {"Trash", "Regular", "Boss"}}[kind]
-    picks = None
-    for _ in range(200):
-        p = compose(rng, [e for e in pool if TIER(e) in want], dict(budget=budget, cost_caps={3: 1}))
-        ts = [TIER(e) for e in p]
-        if kind == "elite" and "Elite" not in ts: continue
-        if kind == "boss" and "Boss" not in ts: continue
-        picks = p; break
-    if add:                                               # the adds come from the same place's pool
-        extra = [e for e in pool if TIER(e) == add]
-        picks = picks + [rng.choice(extra) for _ in range(2)]
-    return spawn_pack(place(picks), ENEMY_LEVEL)
+def room(rng, where, kind, budget, add=None): return sweep.room(rng, where, kind, ENEMY_LEVEL, budget, add)
 
 def run(n, party_classes, leg, kind, budget, add):
     wins, lost, falls, rs = 0, [], 0, []
