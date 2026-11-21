@@ -69,27 +69,31 @@ def predict(base, die, d0, p, d, tier):
 
 # ---------------------------------------------------------------- Layer 2: rooms, played
 CAT = catalog()
-def room(rng, where, kind, L):
+def room(rng, where, kind, L, budget=6):
     pool = habitat(CAT, where)
     tierof = lambda e: "Boss" if e["cost"] >= 3 else "Trash" if e["rank"].startswith(("Halv", "Litel")) else "Elite" if e["rank"].startswith("Stor") else "Regular"
-    want = {"fodder": {"Trash", "Regular"}, "elite": {"Regular", "Elite"}, "boss": {"Trash", "Regular", "Boss"}}[kind]
+    want = {"fodder": {"Trash", "Regular"}, "elite": {"Trash", "Regular", "Elite"}, "boss": {"Trash", "Regular", "Boss"}}[kind]   # odd sizes fill with Trash
     pool = [e for e in pool if tierof(e) in want]
     for _ in range(200):
-        picks = compose(rng, pool, dict(budget=6, cost_caps={3: 1}))
+        picks = compose(rng, pool, dict(budget=budget, cost_caps={3: 1}))
         ts = [tierof(e) for e in picks]
         if kind == "elite" and "Elite" not in ts: continue
         if kind == "boss" and "Boss" not in ts: continue
         return spawn_pack(place(picks), L)
     raise CompositionError(f"no {kind} room in {where}")
 
-def layer2(n, party_classes=("Vasara", "Ullar", "Brennumar"), leg=1):
+SHAPES = [("fodder", 3), ("fodder", 4), ("fodder", 5), ("fodder", 6), ("elite", 4), ("elite", 5), ("elite", 6),
+          ("boss", 4), ("boss", 5), ("boss", 6)]
+
+def layer2(n, party_classes=("Vasara", "Ullar", "Brennumar"), leg=1, shapes=SHAPES):
+    """Rooms of each shape (kind, slot budget), played by the AI: wins, rounds, HP and MP spent (of wins), falls."""
     out = {}
-    for kind in ("fodder", "elite", "boss"):
+    for kind, budget in shapes:
         wins = rounds = 0; lost, spent, falls = [], [], 0; rs = []
         for i in range(n):
             rng = random.Random(1000 + i); where = ("Barrow", "Wildwood", "Rapids")[i % 3]
             party = [build_hero(c, leg) for c in party_classes]
-            foes = room(rng, where, kind, ENEMY_LEVEL)
+            foes = room(rng, where, kind, ENEMY_LEVEL, budget)
             b = Battle(party, foes, rng); w = b.fight()
             hp0 = sum(h.maxhp for h in party)
             if w == "party":
@@ -98,7 +102,7 @@ def layer2(n, party_classes=("Vasara", "Ullar", "Brennumar"), leg=1):
                 mags = [h for h in party if CLASSES[h.cls]["kind"] == "magical"]
                 if mags: spent.append(1 - sum(h.mp for h in mags) / sum(h.maxmp for h in mags))
             falls += sum(h.stats["downs"] for h in party)
-        out[kind] = dict(win=wins / n, rounds=med(rs) if rs else None, hp=statistics.mean(lost) if lost else None,
+        out[(kind, budget)] = dict(win=wins / n, rounds=med(rs) if rs else None, hp=statistics.mean(lost) if lost else None,
                          mp=statistics.mean(spent) if spent else None, falls=falls / n)
     return out
 
@@ -126,18 +130,18 @@ def report(n):
           "| Power | Trash | Regular | Elite | Boss |", "|---|---|---|---|---|"]
     for q in (1.15, 1.25, 1.35, 1.4, 1.5):
         L.append(f"| x{q} | " + " | ".join(f"{base[t] * tier[t] / q:.1f}" for t in TIERS_) + " |")
-    L += ["", "## Layer 2: rooms, played by the AI (a floor: it plays worse than a person)", "",
-          f"{n} fights per room type, rotating the Barrow, the Wildwood and the Rapids; every fight from full HP and MP; "
-          "rounds and HP and MP spent are for wins. Room costs the pace table wants, played well: fodder 10-25% of the "
-          "party's HP, elite 40-50%, boss most of it.", ""]
-    for label, cls in (("The starting three (Vasara, Ullar, Brennumar)", ("Vasara", "Ullar", "Brennumar")),
-                       ("With the Dagskald for the Ullar", ("Vasara", "Dagskald", "Brennumar")),
-                       ("With the Skurmar for the Brennumar", ("Vasara", "Ullar", "Skurmar"))):
-        r = layer2(n, cls)
-        L += [f"**{label}, kit leg 1:**", "", "| Room | Wins | Rounds | HP spent | MP spent | Falls per fight |", "|---|---|---|---|---|---|"]
-        for k, v in r.items():
+    L += ["", "## Layer 2: room shapes, played by the AI (a floor: it plays worse than a person)", "",
+          f"{n} fights per shape (kind, slots), rotating the Barrow, the Wildwood and the Rapids; every enemy acts once a "
+          f"round (ENEMY_ACTIONS {ENEMY_ACTIONS}); every fight from full HP and MP; rounds and HP and MP spent are for "
+          "wins. Room costs the pace table wants, played well: fodder 10-25% of the party's HP, elite 40-50%, boss most of it.", ""]
+    for label, cls, leg in (("The starting three, kit leg 1", ("Vasara", "Ullar", "Brennumar"), 1),
+                            ("The starting three, kit leg 3", ("Vasara", "Ullar", "Brennumar"), 3),
+                            ("Vasara, Dagskald, Brennumar, kit leg 1", ("Vasara", "Dagskald", "Brennumar"), 1)):
+        r = layer2(n, cls, leg)
+        L += [f"**{label}:**", "", "| Room (slots) | Wins | Rounds | HP spent | MP spent | Falls per fight |", "|---|---|---|---|---|---|"]
+        for (k, bud), v in r.items():
             f = lambda x, pct=True: "-" if x is None else (f"{x:.0%}" if pct else f"{x:g}")
-            L.append(f"| {k} | {v['win']:.0%} | {f(v['rounds'], False)} | {f(v['hp'])} | {f(v['mp'])} | {v['falls']:.2f} |")
+            L.append(f"| {k} ({bud}) | {v['win']:.0%} | {f(v['rounds'], False)} | {f(v['hp'])} | {f(v['mp'])} | {v['falls']:.2f} |")
         L.append("")
     return "\n".join(L) + "\n", (p, d, tier)
 

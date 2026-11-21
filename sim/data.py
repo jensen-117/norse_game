@@ -690,6 +690,16 @@ AI_TAUNT_VALUE = 0.6      # AI: x ref per ally Egga would shield (hurt, or a win
 ENEMY_LEVEL = 50
 HERO_POWER = {c: 1.4 for c in ("Vasara", "Ullar", "Brennumar", "Dagskald", "Skurmar")}   # x damage dealt (not items)
 ENEMY_DAMAGE = 2.5        # x damage enemies deal
+ENEMY_ACTIONS = 1         # each enemy acts once a round (Nov 20); a multi-stage move is authored on the move, not as actions
+# The classes' stat blocks (Nov 20, Joseph): multipliers on derived stats, in the families' value scale (HP, ATK, MAT 1;
+# DEF, MDF, SPD 0.5; WIL 0.25), each within +0.1 of neutral; a stat the class never uses stays at 1.0.
+CLASS_BODIES = {
+    "Vasara":    dict(HP=1.25, ATK=0.85, DEF=1.25, MDF=1.0, SPD=0.75),   # the anvil: takes the hits, slow
+    "Ullar":     dict(HP=0.85, ATK=1.2, DEF=0.85, MDF=0.9, SPD=1.3),     # fast and deadly, fragile
+    "Brennumar": dict(HP=0.8, MAT=1.3, DEF=0.85, MDF=1.0, SPD=1.0),      # glass cannon
+    "Dagskald":  dict(HP=1.05, MAT=0.9, DEF=1.0, MDF=1.25, SPD=0.9),     # hardy against magic, steady
+    "Skurmar":   dict(HP=0.85, MAT=1.15, DEF=0.85, MDF=1.0, SPD=1.3),    # tempo: quick, light
+}
 TIER_HP = {"Trash": 1.0, "Regular": 1.0, "Elite": 1.7, "Boss": 1.85}    # x enemy HP by tier: the rank reshape
 def enemy_tier(u):
     """The pace table's tier of an enemy (pillars Part 5b): the 3-cost Drott is Boss, Halv and Litel Trash, Stor Elite."""

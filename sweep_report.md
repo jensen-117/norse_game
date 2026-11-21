@@ -6,94 +6,85 @@ Current settings: HERO_POWER x1.4, ENEMY_DAMAGE x2.5, TIER_HP {'Trash': 1.0, 'Re
 
 | | Trash | Regular | Elite | Boss |
 |---|---|---|---|---|
-| Party hits to kill: now | 3.0 | 5.9 | 11.9 | 18.2 |
+| Party hits to kill: now | 2.6 | 5.2 | 10.9 | 16.7 |
 | Party hits to kill: target | 3 | 6+ | 12+ | 18+ |
-| Its hits to kill a hero: now | 6.4 | 5.8 | 4.6 | 3.1 |
+| Its hits to kill a hero: now | 5.2 | 5.0 | 3.7 | 2.6 |
 | Its hits to kill a hero: target | 6.5 | 5 | 4 | 3 |
 
 **By class, its hits to kill a hero:**
 
 | Tier | Vasara | Ullar | Brennumar | Dagskald | Skurmar |
 |---|---|---|---|---|---|
-| Trash | 6.6 | 5.9 | 5.9 | 10.6 | 5.9 |
-| Regular | 7.7 | 5.8 | 5.8 | 6.4 | 5.8 |
-| Elite | 5.1 | 4.2 | 4.2 | 7.0 | 4.2 |
-| Boss | 3.3 | 2.8 | 2.8 | 5.1 | 2.8 |
+| Trash | 8.4 | 4.4 | 4.3 | 14.0 | 4.7 |
+| Regular | 10.5 | 4.2 | 4.0 | 6.7 | 4.2 |
+| Elite | 6.3 | 3.2 | 3.1 | 7.5 | 3.5 |
+| Boss | 4.0 | 2.2 | 2.3 | 5.3 | 2.4 |
 
 ### The solver's fit
 
-HERO_POWER **x1.40**, ENEMY_DAMAGE **x2.70**, TIER_HP **Elite x1.70, Boss x1.83**. Predicted at those settings:
+HERO_POWER **x1.21**, ENEMY_DAMAGE **x2.23**, TIER_HP **Elite x1.61, Boss x1.72**. Predicted at those settings:
 
 | | Trash | Regular | Elite | Boss |
 |---|---|---|---|---|
-| Party hits to kill | 3.0 | 5.9 | 12.0 | 18.0 |
-| Its hits to kill a hero | 5.9 | 5.4 | 4.2 | 2.9 |
+| Party hits to kill | 3.0 | 6.0 | 12.0 | 18.0 |
+| Its hits to kill a hero | 5.8 | 5.6 | 4.1 | 2.9 |
 
 **Joseph's power ladder** (at the solved enemy damage and tier HP): party hits to kill Trash / Regular / Elite / Boss
 
 | Power | Trash | Regular | Elite | Boss |
 |---|---|---|---|---|
-| x1.15 | 3.7 | 7.2 | 14.6 | 21.9 |
-| x1.25 | 3.4 | 6.6 | 13.4 | 20.1 |
-| x1.35 | 3.2 | 6.1 | 12.4 | 18.6 |
-| x1.4 | 3.0 | 5.9 | 12.0 | 18.0 |
-| x1.5 | 2.8 | 5.5 | 11.2 | 16.8 |
+| x1.15 | 3.2 | 6.3 | 12.6 | 18.9 |
+| x1.25 | 2.9 | 5.8 | 11.6 | 17.4 |
+| x1.35 | 2.7 | 5.3 | 10.7 | 16.1 |
+| x1.4 | 2.6 | 5.2 | 10.3 | 15.5 |
+| x1.5 | 2.4 | 4.8 | 9.7 | 14.5 |
 
-## Layer 2: rooms, played by the AI (a floor: it plays worse than a person)
+## Layer 2: room shapes, played by the AI (a floor: it plays worse than a person)
 
-60 fights per room type, rotating the Barrow, the Wildwood and the Rapids; every fight from full HP and MP; rounds and HP and MP spent are for wins. Room costs the pace table wants, played well: fodder 10-25% of the party's HP, elite 40-50%, boss most of it.
+30 fights per shape (kind, slots), rotating the Barrow, the Wildwood and the Rapids; every enemy acts once a round (ENEMY_ACTIONS 1); every fight from full HP and MP; rounds and HP and MP spent are for wins. Room costs the pace table wants, played well: fodder 10-25% of the party's HP, elite 40-50%, boss most of it.
 
-**The starting three (Vasara, Ullar, Brennumar), kit leg 1:**
+**The starting three, kit leg 1:**
 
-| Room | Wins | Rounds | HP spent | MP spent | Falls per fight |
+| Room (slots) | Wins | Rounds | HP spent | MP spent | Falls per fight |
 |---|---|---|---|---|---|
-| fodder | 17% | 5 | 79% | 51% | 2.80 |
-| elite | 0% | - | - | - | 3.00 |
-| boss | 0% | - | - | - | 3.00 |
+| fodder (3) | 97% | 2 | 37% | 14% | 0.43 |
+| fodder (4) | 90% | 3 | 55% | 21% | 1.00 |
+| fodder (5) | 77% | 4 | 69% | 28% | 1.60 |
+| fodder (6) | 43% | 5 | 77% | 43% | 2.37 |
+| elite (4) | 60% | 4 | 63% | 27% | 2.00 |
+| elite (5) | 40% | 4.5 | 75% | 34% | 2.33 |
+| elite (6) | 13% | 7 | 67% | 52% | 2.73 |
+| boss (4) | 60% | 4.5 | 69% | 35% | 1.90 |
+| boss (5) | 33% | 5.5 | 75% | 42% | 2.57 |
+| boss (6) | 23% | 5 | 76% | 48% | 2.70 |
 
-**With the Dagskald for the Ullar, kit leg 1:**
+**The starting three, kit leg 3:**
 
-| Room | Wins | Rounds | HP spent | MP spent | Falls per fight |
+| Room (slots) | Wins | Rounds | HP spent | MP spent | Falls per fight |
 |---|---|---|---|---|---|
-| fodder | 40% | 5 | 57% | 44% | 2.20 |
-| elite | 18% | 5 | 55% | 54% | 2.65 |
-| boss | 5% | 4 | 66% | 47% | 2.90 |
+| fodder (3) | 100% | 2 | 37% | 19% | 0.17 |
+| fodder (4) | 93% | 3 | 48% | 26% | 0.63 |
+| fodder (5) | 93% | 3 | 59% | 33% | 1.07 |
+| fodder (6) | 80% | 4 | 65% | 39% | 1.37 |
+| elite (4) | 87% | 3 | 59% | 36% | 1.20 |
+| elite (5) | 73% | 3.5 | 68% | 36% | 1.63 |
+| elite (6) | 37% | 4 | 81% | 60% | 2.47 |
+| boss (4) | 87% | 3 | 60% | 40% | 1.27 |
+| boss (5) | 67% | 3.5 | 66% | 44% | 1.53 |
+| boss (6) | 53% | 4 | 77% | 57% | 2.17 |
 
-**With the Skurmar for the Brennumar, kit leg 1:**
+**Vasara, Dagskald, Brennumar, kit leg 1:**
 
-| Room | Wins | Rounds | HP spent | MP spent | Falls per fight |
+| Room (slots) | Wins | Rounds | HP spent | MP spent | Falls per fight |
 |---|---|---|---|---|---|
-| fodder | 0% | - | - | - | 3.00 |
-| elite | 0% | - | - | - | 3.00 |
-| boss | 0% | - | - | - | 3.00 |
+| fodder (3) | 97% | 3 | 36% | 19% | 0.43 |
+| fodder (4) | 87% | 3.5 | 42% | 27% | 0.80 |
+| fodder (5) | 70% | 3 | 47% | 31% | 1.27 |
+| fodder (6) | 53% | 4 | 51% | 38% | 1.80 |
+| elite (4) | 80% | 4 | 48% | 36% | 0.97 |
+| elite (5) | 57% | 4 | 56% | 40% | 1.70 |
+| elite (6) | 43% | 7 | 63% | 54% | 2.17 |
+| boss (4) | 60% | 4 | 41% | 39% | 1.47 |
+| boss (5) | 47% | 5 | 46% | 40% | 1.90 |
+| boss (6) | 43% | 5 | 60% | 50% | 2.07 |
 
-
-## Layer 2 variants (Nov 20, 30 fights per room type, the starting three, AI play)
-
-The hit counts meet the targets, but rooms cost far more than the pace table's last column, because a room is several
-enemies and an enemy acts once per slot it costs (a Regular attacks twice a round). Room size, actions per enemy, and
-the kit (All-moves end fodder rooms fast) matter more than per-hit numbers.
-
-| Variant | Fodder room | Elite room | Boss room |
-|---|---|---|---|
-| Now: 6-slot rooms, enemy damage x2.7 | 23% wins, 78% HP | 0% | 0% |
-| Each enemy acts once (not once per slot) | 30%, 72% | 20%, 75% | 7%, 95% |
-| 3-slot fodder, 4-slot elite and boss | 83%, 48% | 30%, 77% | 3%, 93% |
-| 4-slot rooms, each enemy acts once | 80%, 59% | 57%, 62% | 33%, 65% |
-| Old enemy damage x1.0, 6-slot rooms | 80%, 59% | 53%, 72% | 30%, 84% |
-| Leg 3 kits, 4-slot rooms, x2.7 | 83%, 60% | 57%, 70% | 57%, 76% |
-| *Pace table's room cost, played well* | *10-25% HP* | *40-50%* | *most of it* |
-
-## Draft stat blocks (not applied: for Joseph to react to)
-
-Multipliers on each class's derived stats, in the families' value scale (FAMILY_BODIES: HP, ATK and MAT 1; DEF, MDF
-and SPD 0.5; WIL 0.25). A stat the class never uses stays at 1.0, so it can't be dumped for free power. Each block is
-within +0.1 of neutral.
-
-| Class | Role | HP | ATK | MAT | DEF | MDF | SPD | Value vs neutral |
-|---|---|---|---|---|---|---|---|---|
-| Vasara | The anvil: takes the hits, slow | 1.25 | 0.85 | (1.0) | 1.25 | 1.0 | 0.75 | +0.10 |
-| Ullar | Fast and deadly, fragile | 0.85 | 1.2 | (1.0) | 0.85 | 0.9 | 1.3 | +0.08 |
-| Brennumar | Glass cannon | 0.8 | (1.0) | 1.3 | 0.85 | 1.0 | 1.0 | +0.03 |
-| Dagskald | Hardy against magic, steady | 1.05 | (1.0) | 0.9 | 1.0 | 1.25 | 0.9 | +0.03 |
-| Skurmar | Tempo: quick, light | 0.85 | (1.0) | 1.15 | 0.85 | 1.0 | 1.3 | +0.08 |

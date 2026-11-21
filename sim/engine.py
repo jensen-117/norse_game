@@ -355,6 +355,8 @@ def build_hero(cls, leg=1, level=None, playable=True, name=None):
             a["reach"] = RANGES[root_range(a["root"], c["weapon"])]; a["weapon"] = c["weapon"]
     u.kit_leg, u.excluded = leg, excluded
     u.dmg_mult = HERO_POWER.get(cls, 1.0)            # baked into the character, not a buff
+    u.body = dict(CLASS_BODIES.get(cls, {}))         # the class's stat block (HP, ATK, MAT, DEF, MDF, SPD)
+    u.maxhp *= u.b("HP"); u.hp = u.maxhp
     price_bars(u)
     return u
 
@@ -419,8 +421,10 @@ class Battle:
     # ------------------------------------------------------------ the board
     def new_game_enemy(self, e, hp_share=1.0):
         """Apply the new game's enemy settings (ENEMY_DAMAGE, TIER_HP) to e, at full HP or at a share of it."""
+        tier = enemy_tier(e)                         # read before acting once changes what a 3-cost looks like
         e.dmg_mult = ENEMY_DAMAGE
-        e.maxhp *= TIER_HP[enemy_tier(e)]; e.hp = e.maxhp * hp_share
+        e.maxhp *= TIER_HP[tier]; e.hp = e.maxhp * hp_share
+        e.actions_per_round = ENEMY_ACTIONS
 
     def wants_front(self, u):
         """Front-liners: martial heroes, and enemies whose damage is mostly martial (Mogel, Draugr...)."""

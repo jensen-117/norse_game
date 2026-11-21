@@ -46,4 +46,26 @@ class Tuning(unittest.TestCase):
         self.assertAlmostEqual(m.maxhp, fresh.maxhp * TIER_HP["Trash"])
         self.assertAlmostEqual(m.hp, m.maxhp * MOGEL_REFORM_HP)
 
+class Bodies(unittest.TestCase):
+    def test_stat_blocks(self):
+        v = build_hero("Vasara"); plain = sheet_attrs("Vasara", SHEET_LEVEL)
+        self.assertAlmostEqual(v.maxhp, HP_MULT * (20 + 2 * plain["CON"] + 2 * SHEET_LEVEL) * 1.25)
+        self.assertAlmostEqual(v.DEF, plain["CON"] * 1.25)
+        u = build_hero("Ullar"); self.assertGreater(u.speed(), v.speed())
+        self.assertEqual(build_hero("Brennumar").b("ATK"), 1.0)          # a stat the class never uses stays neutral
+
+    def test_value_is_near_neutral(self):
+        W = dict(HP=1, ATK=1, MAT=1, DEF=0.5, MDF=0.5, SPD=0.5, WIL=0.25)
+        for c, body in CLASS_BODIES.items():
+            v = sum(W[k] * (m - 1) for k, m in body.items())
+            self.assertTrue(-0.01 <= v <= 0.11, (c, v))
+
+    def test_enemies_act_once_in_the_new_game(self):
+        boss = spawn_family("Draugr", "Forndraugr", 50); reg = spawn_family("Draugr", "Draugr", 50)
+        Battle(party(), [boss, reg], random.Random(1))
+        self.assertEqual((boss.actions_per_round, reg.actions_per_round), (1, 1))
+        self.assertEqual(enemy_tier(boss), "Boss")                      # still a boss
+        old = spawn_family("Draugr", "Draugr", 50); Battle([birth("Vasara", 50, random.Random(1))], [old], random.Random(1))
+        self.assertEqual(old.actions_per_round, 2)                       # legacy fights unchanged
+
 if __name__ == "__main__": unittest.main()
