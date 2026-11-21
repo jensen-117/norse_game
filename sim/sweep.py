@@ -116,7 +116,8 @@ SOURCES = ("data.py", "words.py", "engine.py", "grammar.py", "composer.py", "swe
 REPORT = os.path.join(HERE, "..", "sweep_report.md")
 PARTIES = (("The starting three, kit leg 1", ("Vasara", "Ullar", "Brennumar"), 1),
            ("The starting three, kit leg 3", ("Vasara", "Ullar", "Brennumar"), 3),
-           ("Vasara, Dagskald, Brennumar, kit leg 1", ("Vasara", "Dagskald", "Brennumar"), 1))
+           ("Vasara, Dagskald, Brennumar, kit leg 1", ("Vasara", "Dagskald", "Brennumar"), 1),
+           ("Vasara, Dagskald, Brennumar, kit leg 3", ("Vasara", "Dagskald", "Brennumar"), 3))   # the song (Wave 4b)
 
 def source_hash():
     """SHA-256 over the sources the sweep's numbers depend on (line endings normalised), first 12 hex digits."""
@@ -127,7 +128,7 @@ def source_hash():
 def provenance(n):
     return (f"Source hash `{source_hash()}` ({', '.join(SOURCES)}); rules profile new; {n} fights per room shape, seeds "
             f"1000+i, places rotating Barrow, Wildwood, Rapids; shapes {', '.join(f'{k} {b}' for k, b in SHAPES)}; parties "
-            f"{'; '.join(f'{c} leg {g}' for _, c, g in PARTIES)}. Check with `python3 sweep.py --check [--rerun]`.")
+            f"{'; '.join('/'.join(c) + f' leg {g}' for _, c, g in PARTIES)}. Check with `python3 sweep.py --check [--rerun]`.")
 
 def report(n):
     kill, die = hits()

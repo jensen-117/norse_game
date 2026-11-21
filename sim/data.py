@@ -581,6 +581,8 @@ KNOW_MP_KILLS = 40          # ...and its MP
 # things); manner_power (this verb's own multiplier for a manner: Hevn's Bid doubles, the rest keep MANNERS').
 # Kinds the engine doesn't resolve yet (song, knot, displace) arrive in Waves 4b and 4c.
 DJUPANDA_SHARE = 0.40     # Djupanda: a wind-up (Bid), then this share of max MP
+KVAD_CAP = 3              # Kvad (Wave 4b; Nov 20, Joseph): verses on the singer, up to three; a verse a tier per singing
+KVAD_SHARE = 1 / 3        # each verse heals each living ally this share of the singer's Base Lak, at each round's start
 VERBS = {
     # Brennumar (Eld school; magical)
     "Eld":      dict(halv=True, targets=("Flok", "All"), cls="Brennumar", kind="damage", element="Eld", rider=("Scorched", "Sveda")),
@@ -603,9 +605,9 @@ VERBS = {
     "Hevn":     dict(cls="Vasara", kind="damage", answer=True, root="Krosh", element="Crush", halv=True,
                      manner_power={"Bid": 2.0}),   # +HEVN_PER_HIT a hit taken; Bidhevn releases double (Nov 20)
     # Dagskald (Sol school, child Lak; magical)
-    "Lak":      dict(targets=("All",), cls="Dagskald", kind="heal", element="Lak", target="ally", rider=("cleanse_one", "Lonn")),
+    "Lak":      dict(targets=("Flok", "All"), cls="Dagskald", kind="heal", element="Lak", target="ally", rider=(("EVA", 1), "Sol")),   # Solak: and Nimble (Nov 20)
     "Sol":      dict(halv=True, targets=("Flok", "All"), cls="Dagskald", kind="damage", element="Sol", rider=("Blinded", "Blinda")),   # Blindasol
-    "Kvad":     dict(cls="Dagskald", kind="song", target="allies"),
+    "Kvad":     dict(cls="Dagskald", kind="song", target="allies"),   # a verse a tier (Merkvad two), up to KVAD_CAP
     "Skolja":   dict(targets=("All",), cls="Dagskald", kind="cleanse", target="ally"),
     "Vakna":    dict(cls="Dagskald", kind="revive", target="fallen"),
     "Aukraft":  dict(targets=("All",), cls="Dagskald", kind="stat", stat="ATK", up=True, target="ally", rider=(("DEF", 1), "Lonn")),
@@ -709,6 +711,8 @@ HEVN_CAP = 1.0            # ...up to +100%
 AI_DOT_VALUE = 0.8        # AI: x the HP a Scorch would burn (it lands over three rounds)
 AI_ALSO_VALUE = 0.4       # AI: x ref for a second status riding the first (Lonnsveda's Feeble, Lonnpeka's Sundered)
 AI_PAYOFF_VALUE = 0.5     # AI: x ref for a status someone on the side can cash in (Pinned, with a Banskott)
+AI_SONG_VALUE = 1.2       # AI: x the healing a verse adds at the next round's start (what's missing now)...
+AI_SONG_HOPE = 0.25       # ...plus this share of a verse's full healing, for the hits still to come
 AI_GLIDE_VALUE = 0.6      # AI: x ref for a glide out of the Front (the Ullar wants the Rear), +0.15 for the Nimble
 
 # ---------------------------------------------------------------- the new game's tuning settings (Nov 20; the sweep tunes)

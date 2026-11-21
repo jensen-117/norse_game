@@ -92,7 +92,7 @@ Power is set by **how long fights last**, not by a level: tune stats until these
 | **Target, manner** | One/row/all (Flok, All); Snar, Tung, Bid, Jarf, Drif (Part 5) | Carved, found, or bestowed |
 
 - **A move is its built-in effect plus one rider slot.** Lonn fills it; a rider weapon fills it only if it's empty (Part 6).
-- **A Lonn rider never duplicates a sibling verb's whole job** (Lonnlak cleanses one status; Skolja is the Cleanse verb).
+- **A Lonn rider never duplicates a sibling verb's whole job** (Solak adds Nimble to a heal; Skolja is the Cleanse verb).
 - **Every move has designated riders.** Lonn offers only those. A move with no sensible one has no Lonn branch (Eld has no Styngeld).
 
 ### The cap and capstones
@@ -128,7 +128,7 @@ Players learn two shapes, once, and every status uses one:
 | EVA | **Marked** | **Nimble** |
 | SPD | **Slowed** | **Quick** |
 
-**Cleansing lifts lowered stats to neutral** and leaves raised ones alone (Skolja: every harmful status and every lowered stat; Lonnlak: one of them). So a Feeble 3 hero can be fixed two ways: Aukraft steps it up (and can overshoot into Mighty), Skolja resets it to zero.
+**Cleansing lifts lowered stats to neutral** and leaves raised ones alone (Skolja: every harmful status and every lowered stat). So a Feeble 3 hero can be fixed two ways: Aukraft steps it up (and can overshoot into Mighty), Skolja resets it to zero.
 
 **Marked is the EVA-down counter** (Marked *N* = *N* EVA stages down), not a yes/no "can't dodge". In the engine, Marked 2 already removes grazes and Marked 3 adds crits, so "can't dodge" is what Marked 2 does. Merpeka (+2) has something to notice, so it's off the shelf.
 

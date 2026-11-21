@@ -6,7 +6,7 @@ SPELLED = {   # the kits as classes.md and the Nov 20 kit list spell them
     "Vasara":    {1: "Krosh Egga", 2: "Krosh Egga Brakrosh Lya", 3: "Snarbrakrosh Lonnegga Lya Hevn"},
     "Ullar":     {1: "Skott Naglskott", 2: "Blotskott Naglskott Peka", 3: "Merblotskott Styngnaglskott Lonnpeka Banskott"},
     "Brennumar": {1: "Eld Reyk", 2: "Eld Reyk Sveda Alleld", 3: "Mereld Alleld Lonnsveda Djupanda"},
-    "Dagskald":  {1: "Lak Sol", 2: "Lak Sol Kvad", 3: "Lonnlak Sol Merkvad Allaukraft"},
+    "Dagskald":  {1: "Lak Sol", 2: "Lak Sol Kvad", 3: "Solak Sol Merkvad Allaukraft"},
     "Skurmar":   {1: "Blast Knyta", 2: "Blast Knyta Kuling Blixt", 3: "Blast Merknyta Storm Lonnblixt"},
 }
 
@@ -28,7 +28,8 @@ class TestParts(unittest.TestCase):
         self.assertEqual(compile_verb("Skott", lonn=True)["status"], "Bleeding")
         self.assertEqual(compile_verb("Sveda", lonn=True)["also_status"], "Feeble")
         self.assertEqual(compile_verb("Aukraft", lonn=True)["also"], [("DEF", 1)])
-        self.assertTrue(compile_verb("Lak", lonn=True)["cleanse_one"])
+        lak = compile_verb("Lak", lonn=True)                                      # Solak (Nov 20): Lak and Nimble
+        self.assertEqual((lak["name"], lak["also"]), ("Solak", [("EVA", 1)]))
 
     def test_illegal_parts(self):
         with self.assertRaises(ValueError): compile_verb("Eld", styng=True)       # no Styngeld: Eld is the damage

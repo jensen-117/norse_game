@@ -112,15 +112,15 @@ The first four classes (the vertical slice), designed the same way: **fantasy �
 
 | Verb | Job | Basic move | Lonn rider | Notes |
 |---|---|---|---|---|
-| **Mend** | Heal | **Lak** | **Cleanse one status** → **Lonnlak** | Starting kit |
+| **Mend** | Heal | **Lak**: one ally; **Flok** a row, **All** the party (Nov 20), each scaled like damage | **Nimble**, spoken Sol → **Solak** ("light-mending": the light makes them harder to hit; Nov 20, replacing "cleanse one", which needed an order players would have to memorise). Floksolak, Allsolak, Mersolak (Nimble 2) | Starting kit. **Heals read WIS** in the new game (Nov 20): the healer's own lever, apart from attack magic's MAT |
 | **Smite** | Daylight damage | **Sol** (a weak Ray) | **Blinded**, spoken Blinda → **Blindasol** | Starting kit. Not Scorched: that stays the Brennumar's |
 | **Sing** | Sustained healing that grows | **Kvad** (Norwegian/Danish *kvad*, "a lay, a poem"; ON *kvæði*) | | His signature (below). Merkvad adds two verses |
-| **Cleanse** | Clear statuses | **Skolja** (Swedish *skölja*, "to rinse") | | Clears every harmful status and lifts every lowered stat to neutral; Lonnlak clears one, so the rider doesn't duplicate the verb |
+| **Cleanse** | Clear statuses | **Skolja** (Swedish *skölja*, "to rinse") | | Clears every harmful status and lifts every lowered stat to neutral: cleansing is wholly Skolja's job (no cleanse-one: if one returns, the badges sit worst-first and it clears the front one, so the order is on screen) |
 | **Wake** | Bring back the Dying | **Vakna** (Swedish *vakna*, "to wake"): revive a Dying ally | | |
 | **Inspire** | Lift the party | **Aukraft** (+1 ATK; the doubled k collapses at the seam): one ally, then by mutation all (a battle-song) | **+1 DEF** → **Lonnaukraft** (ATK and DEF up) | Stat grammar: Kraft is ATK |
 
 **Signature mechanic: the Song, Kvad** (the build shape, pillars Part 5c).
-- **Each singing adds a verse** (Merkvad adds two), **up to three.** The party heals every round: **verse × base.**
+- **Each singing adds a verse** (Merkvad adds two), **up to three.** The party heals every round: **verse × base.** *As built (Wave 4b, Nov 20): the verses live on the singer; at each round's start every living ally heals verses × a third of his Base Lak, at his WIS (so a talisman or omen scales it); singing this round heals from next round; a stun or freeze costs the singing; the Dying aren't healed (they need Vakna); the song ends at once if he falls. Measured, not trimmed: the sweep decides.*
 - **At the end of every round he doesn't sing, it loses a verse.**
 - So each turn he chooses: advance the song, hold it at three (which costs his turn), or let it fade while he does something else (a Djupanda, a Vakna). A real tempo game.
 - **Touches the Vasara:** Lya and Egga keep the singer singing, and **Kvad on the Vasara loops with Egga and Hevn**: she draws the hits, the song keeps her up, and every hit she survives feeds her answer.

@@ -155,7 +155,7 @@ class A01_OneContract(unittest.TestCase):
                 for a in compile_kit(cls, leg): self.assertEqual(check_move(a), [], a["name"])
 
     def test_an_unfinished_move_cant_enter_a_fight(self):
-        song = compile_verb("Kvad")
+        song = compile_verb("Knyta")                                                # (Kvad plays since Wave 4b)
         self.assertTrue(song["unresolved"])
         u = birth("Dagskald", 10, random.Random(1)); u.actions = [song]
         with self.assertRaises(ValueError): Battle([u], [spawn_family("Bein", "Beinbryn", 10)], random.Random(1))

@@ -232,7 +232,6 @@ def compile_verb(verb, tier=None, target=None, manners=(), styng=False, lonn=Fal
     if kind == "revive": a.update(VAKNA[eff])
     if rider is not None:                                                # what Lonn adds
         if isinstance(rider, tuple): a["also"] = [rider]                 # a second stat stage (Lonnaukraft: DEF up)
-        elif rider == "cleanse_one": a["cleanse_one"] = True             # Lonnlak
         elif kind == "damage":
             a["status"] = rider                                          # Blotskott: may Bleed
             if rider in COUNTER_OF: a["rider_sure"] = True               # Brakrosh: a counter rider lands on every hit
@@ -266,10 +265,11 @@ def compile_verb(verb, tier=None, target=None, manners=(), styng=False, lonn=Fal
 # engine can't yet carry out, so a compiled but unfinished move can't be put in a playable kit (Battle refuses it).
 EXECUTABLE_KINDS = {"damage", "heal", "cleanse", "status", "stat", "revive", "cover", "defend", "move", "flee", "mp",
                     "taunt", "meditate",                     # Wave 3: Egga and Meditate
-                    "glide", "windfall"}                     # Wave 4a: Skrida and Djupanda
+                    "glide", "windfall",                     # Wave 4a: Skrida and Djupanda
+                    "song"}                                  # Wave 4b: Kvad
 KIND_NEEDS = {"revive": ("reaches", "hp", "wound"), "stat": ("stat", "direction"), "status": ("status",),
               "glide": ("stat", "direction"), "windfall": ("amount",)}
-WAVE4_FIELDS = ("cleanse_one", "knots", "follow", "push")   # effects not yet resolved (4a resolved also_status, pays_on, pays_below, styng)
+WAVE4_FIELDS = ("knots", "follow", "push")   # effects not yet resolved (4a: also_status, pays_on, pays_below, styng; 4b: cleanse_one gone)
 RUNTIME_STATUSES = set(STATUSES) | set(COUNTER_OF) | {"Death"}
 CORE_FIELDS = ("kind", "name", "element", "tier", "all", "cost", "cost_type", "power", "status", "stat", "direction",
                "target", "pct_current")
