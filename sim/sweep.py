@@ -1,82 +1,148 @@
-"""The level sweep, Layer 1: hit counts (refactor_plan Wave 3/5; pillars Part 5b).
+"""The level sweep (refactor_plan Waves 3 and 5; pillars Part 5b).
 
-For each level, the five classes' sheet heroes against every enemy rank of every family at the same level:
-  - hits from the party to kill one: the enemy's max HP over one hero's expected base-attack hit;
-  - hits it needs to kill a hero: the hero's max HP over the enemy's best expected single-target hit.
-Expected hits from the damage model (Battle.expected_damage: the graze/hit/crit roll included), neutral affinities
-(weakness and resistance stripped on both sides), so the numbers are the bodies and moves, not the matchup. Ranks map
-to the pace table's tiers: Halv (and Litel) Trash, base Regular, Stor Elite, the 3-cost Drott Boss.
+Layer 1, hit counts: the five sheet heroes (kit leg 1) against every enemy rank of every family, in a new-game Battle
+(so HERO_POWER, ENEMY_DAMAGE and TIER_HP apply exactly as in play). Expected hits from the damage model (the
+graze/hit/crit roll included), neutral affinities, each class's base attack:
+  - party hits to kill one: its max HP over one hero's expected hit;
+  - its hits to kill a hero: the hero's max HP over the enemy's best expected single-target hit.
+The solver finds the settings that best fit the targets: HERO_POWER from Trash and Regular, TIER_HP for Elite and
+Boss, ENEMY_DAMAGE from all four (least squares on the logs, since hits scale as 1/multiplier).
 
-    python3 sweep.py                 # levels 5..40, writes ../sweep_report.md
+Layer 2, real fights: the starting party against rooms rolled by the composer in each place (a fodder fight, an
+elite fight, a boss fight), played by the AI: win rate, rounds, HP and MP spent. The AI plays worse than a person,
+so these are a floor.
+
+    python3 sweep.py [n_fights]          # writes ../sweep_report.md
 """
-import random, statistics, sys, os
+import math, random, statistics, sys, os
+import data
 from engine import *
+from composer import catalog, habitat, compose, place, spawn as spawn_pack, CompositionError
 
 TARGET_KILL = {"Trash": 3, "Regular": 6, "Elite": 12, "Boss": 18}        # party hits to kill one (at least, above Trash)
 TARGET_DIE = {"Trash": 6.5, "Regular": 5, "Elite": 4, "Boss": 3}         # its hits to kill a hero
+TARGET_COST = {"fodder": "10-25%", "elite": "40-50%", "boss": "most of it"}   # party HP a room should cost, played well
 TIERS_ = ["Trash", "Regular", "Elite", "Boss"]
 CLASSES5 = list(KITS)
 
-def tier_of(name, cost):
-    if cost >= 3: return "Boss"
-    if name.startswith(("Halv", "Litel")): return "Trash"
-    if name.startswith("Stor"): return "Elite"
-    return "Regular"
-
 def roster(L):
-    """Every enemy rank at level L: (family, tier, unit)."""
+    """Every enemy rank at level L, freshly spawned: (family, unit)."""
     out = []
     for fam in ("Draugr", "Bein", "Drattr", "Djur"):
-        for r in rank_rows(fam):
-            out.append((fam, tier_of(r["name"], r["cost"]), spawn_family(fam, r["name"], L, job=r["job"])))
+        for r in rank_rows(fam): out.append((fam, spawn_family(fam, r["name"], L, job=r["job"])))
     for rank, r in SPIRIT_RANKS:
-        for el in ("Eld", "Vatn", "Blast", "Jord"):
-            u = spawn_spirit(rank, el, L); out.append(("Ande", tier_of(u.name if rank != "Ande" else "Ande", r["cost"]), u))
-    for rank, r in MOGEL_RANKS:
-        u = spawn_mogel(rank, "Jord", L); out.append(("Mogel", tier_of(rank, r["cost"]), u))
+        for el in ("Eld", "Vatn", "Blast", "Jord"): out.append(("Ande", spawn_spirit(rank, el, L)))
+    for rank, r in MOGEL_RANKS: out.append(("Mogel", spawn_mogel(rank, "Jord", L)))
     return out
 
-def neutral(u): u.aff = {}; return u
-
-def measure(L):
-    heroes = {c: neutral(build_hero(c, 1, L)) for c in CLASSES5}
-    foes = [(f, t, neutral(e)) for f, t, e in roster(L)]
+def hits(H=None, E=None):
+    """Layer 1 at the current settings: {tier: [party hits]}, {tier: {class: [its hits]}}."""
+    H, E = H or SHEET_LEVEL, E or ENEMY_LEVEL
     kill = {t: [] for t in TIERS_}; die = {t: {c: [] for c in CLASSES5} for t in TIERS_}
-    for f, t, e in foes:
-        for c, h in heroes.items():
-            b = Battle([h], [e], random.Random(1))
-            atk = next(a for a in h.actions if a["name"] == BASIC_VERB[c])   # the class's base attack (Krosh, Skott, Eld, Sol, Blast)
-            kill[t].append(e.maxhp / max(1e-6, b.expected_damage(h, e, atk)))
+    for fam, e in roster(E):
+        heroes = [build_hero(c, 1, H) for c in CLASSES5]
+        for h in heroes: h.aff = {}
+        e.aff = {}
+        t = enemy_tier(e)
+        b = Battle(heroes, [e], random.Random(1))          # a new-game fight: the settings apply to e once
+        for h in heroes:
+            atk = next(a for a in h.actions if a["name"] == BASIC_VERB[h.cls])
+            kill[t].append(e.maxhp / b.expected_damage(h, e, atk))
             best = max((b.expected_damage(e, h, a) for a in e.actions if a["kind"] == "damage" and not a["all"]), default=0)
-            if best: die[t][c].append(h.maxhp / best)
-    return heroes, kill, die
+            if best: die[t][h.cls].append(h.maxhp / best)
+    return kill, die
 
-def report(levels):
-    lines = ["# Level sweep, Layer 1: hit counts (generated by sim/sweep.py)", "",
-             "Each class's sheet hero (kit leg 1) against every enemy rank at the same level, neutral affinities. "
-             "Medians. Targets from pillars Part 5b: party hits to kill one (Trash 3, Regular 6+, Elite 12+, Boss 18+); "
-             "its hits to kill a hero (Trash 6-7, Regular 5, Elite 4, Boss 3).", ""]
-    lines += ["## Party hits to kill one", "", "| Level | " + " | ".join(f"{t} (target {TARGET_KILL[t]}{'' if t == 'Trash' else '+'})" for t in TIERS_) + " |",
-              "|---" * (len(TIERS_) + 1) + "|"]
-    dies = {}
-    for L in levels:
-        heroes, kill, die = measure(L); dies[L] = (heroes, die)
-        lines.append(f"| {L} | " + " | ".join(f"{statistics.median(kill[t]):.1f}" for t in TIERS_) + " |")
-    lines += ["", "## Its hits to kill a hero (median over that tier's enemies), by class", ""]
-    for t in TIERS_:
-        lines += [f"**{t}** (target {TARGET_DIE[t]:g})", "", "| Level | " + " | ".join(CLASSES5) + " |", "|---" * (len(CLASSES5) + 1) + "|"]
-        for L in levels:
-            heroes, die = dies[L]
-            lines.append(f"| {L} | " + " | ".join(f"{statistics.median(die[t][c]):.1f}" for c in CLASSES5) + " |")
-        lines.append("")
-    lines += ["## The heroes' bars", "", "| Level | " + " | ".join(f"{c} HP/MP" for c in CLASSES5) + " |", "|---" * (len(CLASSES5) + 1) + "|"]
-    for L in levels:
-        heroes, _ = dies[L]
-        lines.append(f"| {L} | " + " | ".join(f"{h.maxhp:.0f}/{h.maxmp:.0f}" for h in heroes.values()) + " |")
-    return "\n".join(lines) + "\n"
+def med(xs): return statistics.median(xs)
+def die_all(die, t): return [x for c in CLASSES5 for x in die[t][c]]
+
+def solve(kill, die):
+    """The settings that best fit the targets, from a measurement at the current settings."""
+    p0, d0, hp0 = HERO_POWER["Vasara"], ENEMY_DAMAGE, dict(TIER_HP)
+    base = {t: med(kill[t]) * p0 / hp0[t] for t in TIERS_}           # hits per unit of tier HP, at power 1
+    p = math.exp(statistics.mean(math.log(base[t] / TARGET_KILL[t]) for t in ("Trash", "Regular")))
+    tier = {t: (1.0 if t in ("Trash", "Regular") else TARGET_KILL[t] * p / base[t]) for t in TIERS_}
+    d = math.exp(statistics.mean(math.log(med(die_all(die, t)) * d0 / TARGET_DIE[t]) for t in TIERS_))
+    return p, d, tier, base
+
+def predict(base, die, d0, p, d, tier):
+    return ({t: base[t] * tier[t] / p for t in TIERS_}, {t: med(die_all(die, t)) * d0 / d for t in TIERS_})
+
+# ---------------------------------------------------------------- Layer 2: rooms, played
+CAT = catalog()
+def room(rng, where, kind, L):
+    pool = habitat(CAT, where)
+    tierof = lambda e: "Boss" if e["cost"] >= 3 else "Trash" if e["rank"].startswith(("Halv", "Litel")) else "Elite" if e["rank"].startswith("Stor") else "Regular"
+    want = {"fodder": {"Trash", "Regular"}, "elite": {"Regular", "Elite"}, "boss": {"Trash", "Regular", "Boss"}}[kind]
+    pool = [e for e in pool if tierof(e) in want]
+    for _ in range(200):
+        picks = compose(rng, pool, dict(budget=6, cost_caps={3: 1}))
+        ts = [tierof(e) for e in picks]
+        if kind == "elite" and "Elite" not in ts: continue
+        if kind == "boss" and "Boss" not in ts: continue
+        return spawn_pack(place(picks), L)
+    raise CompositionError(f"no {kind} room in {where}")
+
+def layer2(n, party_classes=("Vasara", "Ullar", "Brennumar"), leg=1):
+    out = {}
+    for kind in ("fodder", "elite", "boss"):
+        wins = rounds = 0; lost, spent, falls = [], [], 0; rs = []
+        for i in range(n):
+            rng = random.Random(1000 + i); where = ("Barrow", "Wildwood", "Rapids")[i % 3]
+            party = [build_hero(c, leg) for c in party_classes]
+            foes = room(rng, where, kind, ENEMY_LEVEL)
+            b = Battle(party, foes, rng); w = b.fight()
+            hp0 = sum(h.maxhp for h in party)
+            if w == "party":
+                wins += 1; rs.append(b.round)
+                lost.append(1 - sum(max(0, h.hp) for h in party) / hp0)
+                mags = [h for h in party if CLASSES[h.cls]["kind"] == "magical"]
+                if mags: spent.append(1 - sum(h.mp for h in mags) / sum(h.maxmp for h in mags))
+            falls += sum(h.stats["downs"] for h in party)
+        out[kind] = dict(win=wins / n, rounds=med(rs) if rs else None, hp=statistics.mean(lost) if lost else None,
+                         mp=statistics.mean(spent) if spent else None, falls=falls / n)
+    return out
+
+def report(n):
+    kill, die = hits()
+    p, d, tier, base = solve(kill, die)
+    pk, pd = predict(base, die, ENEMY_DAMAGE, p, d, tier)
+    L = [f"# Level sweep (generated by sim/sweep.py, {SHEET_LEVEL} v {ENEMY_LEVEL})", "",
+         f"Current settings: HERO_POWER x{HERO_POWER['Vasara']}, ENEMY_DAMAGE x{ENEMY_DAMAGE}, TIER_HP {TIER_HP}.", "",
+         "## Layer 1: hit counts (medians; neutral affinities; kit leg 1)", "",
+         "| | " + " | ".join(TIERS_) + " |", "|---" * 5 + "|",
+         "| Party hits to kill: now | " + " | ".join(f"{med(kill[t]):.1f}" for t in TIERS_) + " |",
+         "| Party hits to kill: target | " + " | ".join(f"{TARGET_KILL[t]}{'' if t == 'Trash' else '+'}" for t in TIERS_) + " |",
+         "| Its hits to kill a hero: now | " + " | ".join(f"{med(die_all(die, t)):.1f}" for t in TIERS_) + " |",
+         "| Its hits to kill a hero: target | " + " | ".join(f"{TARGET_DIE[t]:g}" for t in TIERS_) + " |", "",
+         "**By class, its hits to kill a hero:**", "", "| Tier | " + " | ".join(CLASSES5) + " |", "|---" * 6 + "|"]
+    for t in TIERS_: L.append(f"| {t} | " + " | ".join(f"{med(die[t][c]):.1f}" for c in CLASSES5) + " |")
+    L += ["", "### The solver's fit", "",
+          f"HERO_POWER **x{p:.2f}**, ENEMY_DAMAGE **x{d:.2f}**, TIER_HP **Elite x{tier['Elite']:.2f}, Boss x{tier['Boss']:.2f}**. "
+          "Predicted at those settings:", "",
+          "| | " + " | ".join(TIERS_) + " |", "|---" * 5 + "|",
+          "| Party hits to kill | " + " | ".join(f"{pk[t]:.1f}" for t in TIERS_) + " |",
+          "| Its hits to kill a hero | " + " | ".join(f"{pd[t]:.1f}" for t in TIERS_) + " |", "",
+          "**Joseph's power ladder** (at the solved enemy damage and tier HP): party hits to kill Trash / Regular / Elite / Boss", "",
+          "| Power | Trash | Regular | Elite | Boss |", "|---|---|---|---|---|"]
+    for q in (1.15, 1.25, 1.35, 1.4, 1.5):
+        L.append(f"| x{q} | " + " | ".join(f"{base[t] * tier[t] / q:.1f}" for t in TIERS_) + " |")
+    L += ["", "## Layer 2: rooms, played by the AI (a floor: it plays worse than a person)", "",
+          f"{n} fights per room type, rotating the Barrow, the Wildwood and the Rapids; every fight from full HP and MP; "
+          "rounds and HP and MP spent are for wins. Room costs the pace table wants, played well: fodder 10-25% of the "
+          "party's HP, elite 40-50%, boss most of it.", ""]
+    for label, cls in (("The starting three (Vasara, Ullar, Brennumar)", ("Vasara", "Ullar", "Brennumar")),
+                       ("With the Dagskald for the Ullar", ("Vasara", "Dagskald", "Brennumar")),
+                       ("With the Skurmar for the Brennumar", ("Vasara", "Ullar", "Skurmar"))):
+        r = layer2(n, cls)
+        L += [f"**{label}, kit leg 1:**", "", "| Room | Wins | Rounds | HP spent | MP spent | Falls per fight |", "|---|---|---|---|---|---|"]
+        for k, v in r.items():
+            f = lambda x, pct=True: "-" if x is None else (f"{x:.0%}" if pct else f"{x:g}")
+            L.append(f"| {k} | {v['win']:.0%} | {f(v['rounds'], False)} | {f(v['hp'])} | {f(v['mp'])} | {v['falls']:.2f} |")
+        L.append("")
+    return "\n".join(L) + "\n", (p, d, tier)
 
 if __name__ == "__main__":
-    levels = [5, 10, 15, 20, 25, 30, 40]
-    out = report(levels)
+    n = int(sys.argv[1]) if len(sys.argv) > 1 else 60
+    out, fit = report(n)
     open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "sweep_report.md"), "w").write(out)
     print(out)
