@@ -590,42 +590,42 @@ KVAD_SHARE = 4 / 9        # each stack heals its ally this share of the singer's
                           # Flokvad and Allkvad take their reach's share: a third, and ALL_SHARE of 4/9)
 VERBS = {
     # Brennumar (Eld school; magical)
-    "Eld":      dict(halv=True, targets=("Flok", "All"), cls="Brennumar", kind="damage", element="Eld", rider=("Scorched", "Sveda")),
-    "Reyk":     dict(targets=("Flok", "All"), cls="Brennumar", kind="status", element="Reyk", status="Blinded", rider=("Poisoned", "Eitr"), styng=True),
-    "Sveda":    dict(targets=("Flok", "All"), cls="Brennumar", kind="status", element="Eld", status="Scorched", rider=("Feeble", "Lonn"), styng=True),
-    "Aukseid":  dict(cls="Brennumar", kind="stat", stat="MAT", up=True, target="self"),
+    "Eld":      dict(cost=6, halv=True, targets=("Flok", "All"), cls="Brennumar", kind="damage", element="Eld", rider=("Scorched", "Sveda")),
+    "Reyk":     dict(cost=3, targets=("Flok", "All"), cls="Brennumar", kind="status", element="Reyk", status="Blinded", rider=("Poisoned", "Eitr"), styng=True),
+    "Sveda":    dict(cost=6, targets=("Flok", "All"), cls="Brennumar", kind="status", element="Eld", status="Scorched", rider=("Feeble", "Lam"), styng=True),
+    "Aukseid":  dict(cost=3, cls="Brennumar", kind="stat", stat="MAT", up=True, target="self"),
     "Djupanda": dict(cls=None, kind="windfall", manners=("Bid",), free=True, target="self", amount=DJUPANDA_SHARE),   # any magical
     # Ullar (Bow; martial)
-    "Skott":    dict(halv=True, targets=("Flok", "All"), cls="Ullar", kind="damage", root="Skott", element="Pierce", rider=("Bleeding", "Blot")),
-    "Naglskott": dict(targets=("Flok", "All"), cls="Ullar", kind="status", root="Skott", element="Pierce", status="Pinned", styng=True),
-    "Peka":     dict(targets=("Flok", "All"), cls="Ullar", kind="status", root="Skott", element="Pierce", status="Marked", rider=("Sundered", "Lonn"), styng=True),
-    "Banskott": dict(targets=("Flok", "All"), cls="Ullar", kind="damage", root="Skott", element="Pierce", pays_on="Pinned", pays=1.5, halv=True),   # x1.5 on the Pinned
-    "Avliva":   dict(cls="Ullar", kind="damage", root="Skott", element="Pierce", pays_below=0.5, pays=2.0, halv=True),   # Swedish "to put down": x2 under half HP
-    "Skrida":   dict(cls="Ullar", kind="glide", stat="EVA", up=True, target="cell", group=1),   # aimed at a cell, like Move
+    "Skott":    dict(cost=16, halv=True, targets=("Flok", "All"), cls="Ullar", kind="damage", root="Skott", element="Pierce", rider=("Bleeding", "Blot")),
+    "Naglskott": dict(cost=8, targets=("Flok", "All"), cls="Ullar", kind="status", root="Skott", element="Pierce", status="Pinned", styng=True),
+    "Peka":     dict(cost=8, targets=("Flok", "All"), cls="Ullar", kind="status", root="Skott", element="Pierce", status="Marked", rider=("Sundered", "Lonn"), styng=True),
+    "Banskott": dict(cost=16, targets=("Flok", "All"), cls="Ullar", kind="damage", root="Skott", element="Pierce", pays_on="Pinned", pays=1.5, halv=True),   # x1.5 on the Pinned
+    "Avliva":   dict(cost=16, cls="Ullar", kind="damage", root="Skott", element="Pierce", pays_below=0.5, pays=2.0, halv=True),   # Swedish "to put down": x2 under half HP
+    "Skrida":   dict(cost=8, cls="Ullar", kind="glide", stat="EVA", up=True, target="cell", group=1),   # aimed at a cell, like Move
     # Vasara (Hammer; martial)
-    "Krosh":    dict(halv=True, targets=("Flok", "All"), cls="Vasara", kind="damage", root="Krosh", element="Crush", rider=("Sundered", "Brak")),
-    "Egga":     dict(targets=("Flok",), cls="Vasara", kind="taunt", root="Krosh", target="enemy", rider=("Blinded", "Lonn"), styng=True),   # taunts one foe, or a row
-    "Lya":      dict(cls="Vasara", kind="cover", target="ally", free=True),
-    "Aukskold": dict(targets=("Flok", "All"), cls="Vasara", kind="stat", stat="DEF", up=True, target="self"),   # herself; Flok her row; All everyone
-    "Hevn":     dict(cls="Vasara", kind="damage", answer=True, root="Krosh", element="Crush", halv=True,
+    "Krosh":    dict(cost=16, halv=True, targets=("Flok", "All"), cls="Vasara", kind="damage", root="Krosh", element="Crush", rider=("Sundered", "Brak")),
+    "Egga":     dict(cost=8, targets=("Flok",), cls="Vasara", kind="taunt", root="Krosh", target="enemy", rider=("Blinded", "Lonn"), styng=True),   # taunts one foe, or a row
+    "Lya":      dict(cost=8, cls="Vasara", kind="cover", target="ally"),   # Nov 21: 8, to test (a stance you also pay for in hits)
+    "Aukskold": dict(cost=8, targets=("Flok", "All"), cls="Vasara", kind="stat", stat="DEF", up=True, target="self"),   # herself; Flok her row; All everyone
+    "Hevn":     dict(cost=16, cls="Vasara", kind="damage", answer=True, root="Krosh", element="Crush", halv=True,
                      manner_power={"Bid": 2.0}),   # +HEVN_PER_HIT a hit taken; Bidhevn releases double (Nov 20)
     # Dagskald (Sol school, child Lak; magical)
-    "Lak":      dict(targets=("Flok", "All"), cls="Dagskald", kind="heal", element="Lak", target="ally", rider=(("EVA", 1), "Sol")),   # Solak: and Nimble (Nov 20)
-    "Sol":      dict(halv=True, targets=("Flok", "All"), cls="Dagskald", kind="damage", element="Sol", rider=("Blinded", "Blinda")),   # Blindasol
-    "Kvad":     dict(targets=("Flok", "All"), cls="Dagskald", kind="song", target="ally"),   # a Song stack a tier on one ally (Nov 20)
-    "Skolja":   dict(targets=("All",), cls="Dagskald", kind="cleanse", target="ally"),
-    "Vakna":    dict(cls="Dagskald", kind="revive", target="fallen"),
-    "Aukraft":  dict(targets=("All",), cls="Dagskald", kind="stat", stat="ATK", up=True, target="ally", rider=(("DEF", 1), "Lonn")),
+    "Lak":      dict(cost=8, targets=("Flok", "All"), cls="Dagskald", kind="heal", element="Lak", target="ally", rider=(("EVA", 1), "Sol")),   # Solak: and Nimble (Nov 20)
+    "Sol":      dict(cost=6, halv=True, targets=("Flok", "All"), cls="Dagskald", kind="damage", element="Sol", rider=("Blinded", "Blinda")),   # Blindasol
+    "Kvad":     dict(cost=6, targets=("Flok", "All"), cls="Dagskald", kind="song", target="ally"),   # a Song stack a tier on one ally (Nov 20)
+    "Skolja":   dict(cost=6, targets=("All",), cls="Dagskald", kind="cleanse", target="ally"),
+    "Vakna":    dict(cost=6, cls="Dagskald", kind="revive", target="fallen"),
+    "Aukraft":  dict(cost=3, targets=("All",), cls="Dagskald", kind="stat", stat="ATK", up=True, target="ally", rider=(("DEF", 1), "Lonn")),
     # Skurmar (Blast school, child Blixt; magical)
-    "Blast":    dict(halv=True, targets=("Flok", "All"), cls="Skurmar", kind="damage", element="Blast"),
-    "Knyta":    dict(cls="Skurmar", kind="knot", target="self"),
-    "Blixt":    dict(halv=True, targets=("Flok", "All"), cls="Skurmar", kind="damage", element="Blixt", rider=("Stunned", "Lonn")),
-    "Kuling":   dict(cls="Skurmar", kind="damage", element="Blast", target="all", weight=1, knots=1),
-    "Storm":    dict(cls="Skurmar", kind="damage", element="Blast", target="all", weight=2, knots=2, tier="Mer"),
-    "Orkan":    dict(cls="Skurmar", kind="damage", element="Blast", target="all", weight=3, knots=3, tier="Mer", follow="Blixt"),
-    "Kasta":    dict(cls="Skurmar", kind="displace", element="Blast", push=True, styng=True),    # push a row back; Styng: the gust batters
-    "Svepa":    dict(cls="Skurmar", kind="displace", element="Blast", push=False, styng=True),   # pull a row forward
-    "Medvind":  dict(targets=("Flok", "All"), cls="Skurmar", kind="stat", stat="SPD", up=True, target="ally"),   # Swedish "tailwind": Quick
+    "Blast":    dict(cost=6, halv=True, targets=("Flok", "All"), cls="Skurmar", kind="damage", element="Blast"),
+    "Knyta":    dict(cost=3, cls="Skurmar", kind="knot", target="self"),
+    "Blixt":    dict(cost=8, share=1.0, halv=True, targets=("Flok", "All"), cls="Skurmar", kind="damage", element="Blixt", rider=("Stunned", "Stel")),   # the tiring, spiky one (Nov 21)
+    "Kuling":   dict(cost=6, cls="Skurmar", kind="damage", element="Blast", target="all", weight=3, knots=1),   # All; a knot pays a step: 24
+    "Storm":    dict(cost=6, cls="Skurmar", kind="damage", element="Blast", target="all", weight=4, knots=2, tier="Mer"),   # Mer, All: 24
+    "Orkan":    dict(cost=6, cls="Skurmar", kind="damage", element="Blast", target="all", weight=5, knots=3, tier="Mer", follow="Blixt"),   # Mer, All, follow: 24
+    "Kasta":    dict(cost=6, cls="Skurmar", kind="displace", element="Blast", push=True, styng=True),    # push a row back; Styng: the gust batters
+    "Svepa":    dict(cost=6, cls="Skurmar", kind="displace", element="Blast", push=False, styng=True),   # pull a row forward
+    "Medvind":  dict(cost=3, targets=("Flok", "All"), cls="Skurmar", kind="stat", stat="SPD", up=True, target="ally"),   # Swedish "tailwind": Quick
 }
 
 # Upgrade parts beyond tier, target and manner (pillars Part 5c). The cap: at most UPGRADE_CAP parts on one move;
@@ -643,11 +643,15 @@ BYNAME_LETTERS = 15
 BYNAMES = {
     "Geirskott": ("Naglskott", frozenset({"Mer", "Styng"})),   # ON geirr, "spear": a pike-length shaft that pins the leg
 }
+# Root names (Nov 21, Joseph): a verb and some of its parts get a word of their own, and further parts attach to it
+# (Merdaska, Snargenomskott). An exact capstone or byname still wins. A rider with its own spoken part (Brak, Blot, Lam,
+# Stel) composes in front of the root and needs no entry here.
+ROOT_NAMES = {
+    "Daska":      ("Egga", frozenset({"Lonn"})),        # Swedish daska, to smack: the taunt that Blinds
+    "Genomskott": ("Naglskott", frozenset({"Styng"})),  # a through-shot: it hurts and Pins
+    "Genomskoda": ("Peka", frozenset({"Lonn"})),        # Swedish genomskada, to see through someone: Marked and Sundered
+}
 
-# Costs as a share of the hero's own bar (pillars Part 5c): a plain base move costs the base share; each upgrade part
-# multiplies it by the step; Halv is free. MP: 1/16, 1/10, 1/6, ~1/4. HP: 1/36, 1/24, 1/16, ~1/10.
-BASE_SHARE = {"MP": 1 / 16, "HP": 1 / 36}
-PART_STEP = {"MP": 1.6, "HP": 1.5}
 TIER_WEIGHT = {"Halv": 0, "Base": 0, "Mer": 1, "Jatte": 2, "Ur": 3}   # every tier priced on purpose (review C08)
 
 # Where a move comes from decides the highest tier PART it may add (pillars Part 5c; review C08): carving adds Mer,
@@ -664,7 +668,7 @@ SPEED_MANNERS = {"Snar", "Tung"}
 TARGET_PARTS = {"Flok", "All"}                        # the target parts a class verb can carve (Mark is enemies' paint)
 # Reach is a real choice (Nov 20, Joseph): Flok a row at 75% each for one step; All everyone at 60% each for two steps;
 # Mer one target at 140% for one. Prices only: the parts count once each against UPGRADE_CAP. Old fights keep 0.75.
-TARGET_STEPS = {"Flok": 1, "All": 2}
+TARGET_STEPS = {"Flok": 2, "All": 3}   # Nov 21: Flok two steps, All three (the cost ladder)
 ALL_SHARE = 0.60          # a carved All's per-target share (damage, heals, a Scorch's blow, a Song's heal)
 
 # Speed-group keywords (pillars Part 5c), printed on move cards; the glossary gives the hover line.
@@ -740,7 +744,21 @@ AI_GLIDE_VALUE = 0.6      # AI: x ref for a glide out of the Front (the Ullar wa
 # regression are untouched. Hero power is baked into the character (not a buff); enemy damage and HP by tier are
 # applied to the enemies when the fight starts, and again when a Mogel re-forms.
 ENEMY_LEVEL = 50
-HERO_POWER = {c: 1.2 for c in ("Vasara", "Ullar", "Brennumar", "Dagskald", "Skurmar")}   # x damage dealt (not items); Nov 20: 1.2 with the stat blocks
+# The hero pass (Nov 21, Joseph; classes.md Parts 7b, 7c): heroes are authored against the yardstick. A hero's damage
+# is anchored, not tuned by a knob: his class's share-1.0 move lands KROSH_CLEAN on the plain foe at SHEET_LEVEL
+# (engine.anchor_mult), and a base Lak heals LAK_CLEAN. Pools are written at SHEET_LEVEL and scale with level.
+KROSH_CLEAN = 104          # a clean Krosh on the plain foe: the measure of everything
+LAK_CLEAN = 100            # a base Lak's heal: one Krosh, one and a half normal foe hits
+PLAIN_GUARD = 60           # the plain foe's DEF and MDF (yardstick.py): no affinities, no body
+HERO_POOLS = {"Vasara": (1000, 0), "Ullar": (600, 0), "Brennumar": (500, 150), "Dagskald": (700, 200), "Skurmar": (600, 100)}
+CLASS_SHARE = {"Vasara": 1.0, "Ullar": 0.75, "Brennumar": 0.9, "Dagskald": 0.9, "Skurmar": 0.9}   # melee, ranged, magic
+CLASS_TIER = {"Halv": 0.5, "Base": 1.0, "Mer": 5 / 3}    # a class verb's tier, x its base (Jatte, Ur: TIER_POWER's ratio)
+RIDER_SHARE = 0.6          # a damage move carrying its rider (Lonn) hits at 0.6
+CLASS_MANNER_POWER = {"Snar": 1.0}   # going first costs a step, not power (Bid, Tung, Jarf keep MANNERS')
+# Costs: one ladder for both resources. A verb's authored rung ("cost") x 2 a step; Halv has its own rung. Steps: Mer +1,
+# Flok +2, All +3 (carved or the verb's own reach: "weight"), a manner +1, Styng +1, the rider +1; a knot spent pays one.
+COST_LADDER = (2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64, 96, 128)
+HALV_COST = {"HP": 4, "MP": 2}
 ENEMY_DAMAGE = 2.25       # x damage enemies deal (Nov 20: the solver's 2.23, rounded)
 ENEMY_ACTIONS = 1         # each enemy acts once a round (Nov 20); a multi-stage move is authored on the move, not as actions
 # The classes' stat blocks (Nov 20, Joseph): multipliers on derived stats, in the families' value scale (HP, ATK, MAT 1;

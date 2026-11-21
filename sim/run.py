@@ -52,7 +52,7 @@ def batch(level, training, n=3000, seed=1):
             for k, v in u.stats.items(): by_class[u.cls][k] += v
             by_class[u.cls]["rounds"] += b.round
             by_class[u.cls]["survived"] += u.alive
-            by_class[u.cls]["mp_left"] += u.mp / u.maxmp
+            by_class[u.cls]["mp_left"] += (u.mp / u.maxmp) if u.maxmp else 0.0   # a martial hero has no pool (Nov 21)
             for k in ("graze", "hits", "crit"): agg[k] += u.stats[k]
     print(f"\n=== Level {level}, training {training}, {n} fights vs 3 random of 6 creatures ===")
     print(f"  party win rate {wins/n:.0%}   avg rounds {rounds/n:.1f}   bonus rounds per fight {bonus/n:.2f}")

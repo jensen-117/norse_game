@@ -215,10 +215,16 @@ def compile_verb(verb, tier=None, target=None, manners=(), styng=False, lonn=Fal
     elif carved:                     # a byname for a long spoken name within the cap (Geirskott)
         name = next((nm for nm, (vb, ps) in BYNAMES.items() if vb == verb and ps == frozenset(carved)), None)
     eff, own = n["eff"], n["own"]
-    mkw, mpower, _ = merge_manners(tuple(v.get("manners", ())) + n["manners"], v.get("manner_power"))
+    mkw, mpower, _ = merge_manners(tuple(v.get("manners", ())) + n["manners"], {**CLASS_MANNER_POWER, **v.get("manner_power", {})})
     rider, part = (v["rider"] if n["lonn"] else (None, None))
+    # a root name (Daska, Genomskott) takes the parts it stands for; the rest attach to it (Merdaska)
+    root, used = verb, frozenset()
+    if name is None:
+        for nm, (vb, ps) in ROOT_NAMES.items():
+            if vb == verb and ps <= frozenset(carved): root, used = nm, ps; break
     spoken = name or join_morphemes([x for x in (n["target"], None if n["tier"] == "Base" else n["tier"],
-                                                 "Styng" if n["styng"] else None, *n["manners"], part, verb) if x])
+                                                 "Styng" if n["styng"] and "Styng" not in used else None, *n["manners"],
+                                                 None if "Lonn" in used else part, root) if x])
     # who it reaches: eligibility (self, ally, enemy, fallen) and scope (one, row, all) kept apart (review C09)
     vt = v.get("target", "enemy")
     a = act(kind, spoken, tier=eff, all=(n["target"] == "All" or vt in ("all", "allies")),
@@ -226,10 +232,19 @@ def compile_verb(verb, tier=None, target=None, manners=(), styng=False, lonn=Fal
             element=v.get("element"), status=v.get("status"), stat=v.get("stat"),
             direction=None if v.get("up") is None else (1 if v["up"] else -1))
     if n["target"] == "Flok": a["shape"] = "row"
-    if n["target"] == "All": a["all_power"] = ALL_SHARE                 # wide, and thinner (Nov 20)
+    if n["target"] == "All" or vt == "all": a["all_power"] = ALL_SHARE  # wide, and thinner (Nov 20; the untie spells too, Nov 21)
     if vt == "cell": a["by_cell"] = True                                 # aimed at a cell, like Move (Skrida)
-    if kind in SCALES: a["power"] = TIER_POWER[eff] * mpower          # damage, answers and heals all scale (C11)
-    if n["styng"]: a["styng"] = TIER_POWER[eff] * STYNG_POWER * mpower  # a hit added to a move with no damage of its own
+    # power, as a share of a clean Krosh (Nov 21): the tier's share of base x the class's (melee 1.0, ranged 0.75, magic
+    # 0.9) or the verb's own (Blixt 1.0). The element's power and hits are the old game's table, divided back out so a
+    # class verb lands its share exactly; the hero's anchor (engine.anchor_mult) turns power 20 into KROSH_CLEAN.
+    tier_share = CLASS_TIER.get(eff, TIER_POWER[eff] / TIER_POWER["Base"])
+    share = v.get("share", CLASS_SHARE.get(v.get("cls"), 1.0))
+    if kind == "damage":
+        el = ELEMENT[v["element"]]
+        a["power"] = TIER_POWER["Base"] * tier_share * share * mpower / (el["power"] * el["hits"]) \
+            * (RIDER_SHARE if n["lonn"] else 1.0)
+    elif kind in SCALES: a["power"] = TIER_POWER["Base"] * tier_share * mpower   # heals and answers: the healer's anchor
+    if n["styng"]: a["styng"] = TIER_POWER["Base"] * tier_share * share * STYNG_POWER * mpower   # a hit added to a move with no damage of its own
     if kind == "revive": a.update(VAKNA[eff])
     if rider is not None:                                                # what Lonn adds
         if isinstance(rider, tuple): a["also"] = [rider]                 # a second stat stage (Lonnaukraft: DEF up)
@@ -246,13 +261,16 @@ def compile_verb(verb, tier=None, target=None, manners=(), styng=False, lonn=Fal
     a.update(mkw)
     group = a.get("release_group", a.get("group", SPEED_GROUP_BY_KIND.get(kind, 0)))
     a["keywords"] = [k for k in (GROUP_KEYWORD.get(group), "Patient" if a.get("bide") else None) if k]
-    # the price: a share of the hero's own bar; every carved part is one step, a rung above the verb's own is one step
+    # the price (Nov 21, classes.md Part 7c): the verb's rung (Halv its own) x 2 a step. Steps: a rung above the verb's
+    # own, Flok 2, All 3, a manner, Styng, the rider, the verb's built-in reach (weight); a knot spent pays one. Written
+    # at SHEET_LEVEL; engine.price_bars scales it with the hero's pool at other levels.
     a["cost_type"] = "HP" if v.get("cls") in MARTIAL_CLASSES else "MP"
     steps = (TIER_WEIGHT[eff] - TIER_WEIGHT[own] if n["tier"] != "Halv" else 0) \
-        + TARGET_STEPS.get(n["target"], 0) + len(n["manners"]) + int(n["styng"]) + int(n["lonn"]) + v.get("weight", 0)
-    if v.get("free") or (eff == "Halv" and steps == 0): share = 0.0
-    else: share = BASE_SHARE[a["cost_type"]] * PART_STEP[a["cost_type"]] ** (steps - (1 if eff == "Halv" else 0))
-    a["share"], a["cost"] = share, 0
+        + TARGET_STEPS.get(n["target"], 0) + len(n["manners"]) + int(n["styng"]) + int(n["lonn"]) \
+        + v.get("weight", 0) - v.get("knots", 0)
+    if v.get("free"): price = 0
+    else: price = (HALV_COST[a["cost_type"]] if eff == "Halv" else v["cost"]) * 2 ** steps
+    a["price"], a["cost"] = price, 0                                     # the ladder number at SHEET_LEVEL (engine.price_bars)
     a["parts"] = dict(verb=verb, tier=n["tier"], target=n["target"], manners=n["manners"], styng=n["styng"], lonn=n["lonn"],
                       source=n["source"], capstone=name if len(carved) > UPGRADE_CAP else None,
                       byname=name if len(carved) <= UPGRADE_CAP else None)

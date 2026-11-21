@@ -32,7 +32,7 @@ def set_seed(seed):
 
 # ------------------------------------------------------------ the party
 def hero_card(u):
-    halv = next((a for a in u.actions if a.get("tier") == "Halv" and a["cost"] == 0 and a["kind"] == "damage"), None)
+    halv = next((a for a in u.actions if a.get("basic")), None)
     return dict(name=u.name, cls=u.cls, level=u.level, hp=round(u.maxhp), mp=round(u.maxmp), kit=getattr(u, "kit_leg", None),
                 waiting=[n for n, _ in getattr(u, "excluded", [])],
                 attrs={k: round(v) for k, v in u.attrs.items()}, sign=u.sign,

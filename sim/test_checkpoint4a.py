@@ -168,7 +168,7 @@ class C17_WholeMoveValue(unittest.TestCase):
         e.stages["EVA"] = -3
         self.assertGreater(b.status_value(u, lp, e, 100), 0)
         u.actions = [lp]                                                   # nothing else to do: it's picked, at e
-        self.assertTrue(any(a["name"] == "Lonnpeka" and t is e for a, t in [b.declare(u) for _ in range(30)]))
+        self.assertTrue(any(a["name"] == "Genomskoda" and t is e for a, t in [b.declare(u) for _ in range(30)]))
         e.stages["DEF"] = -3                                               # Marked 3 and Sundered 3: truly redundant
         self.assertEqual(b.status_value(u, lp, e, 100), 0)
 
@@ -223,7 +223,7 @@ class C19_CoverCatchesStyng(unittest.TestCase):
     def test_styngnaglskott_hits_and_pins_the_protector(self):
         u = hero("Ullar", ("Naglskott", dict(styng=True)))
         b, e1, e2 = self.fixture(u, coverer_weak="Pierce")                 # weak: the Pin lands for sure
-        b.submit(u.uid, key(u, "Styngnaglskott"), e1.uid); b.commit()
+        b.submit(u.uid, key(u, "Genomskott"), e1.uid); b.commit()
         self.assertTrue(evs(b, "covered", unit=e2.name))
         self.assertEqual([x["unit"] for x in evs(b, "hit", src=u.name)], [e2.name])
         self.assertIn("Pinned", e2.status); self.assertNotIn("Pinned", e1.status)
@@ -281,7 +281,7 @@ class Nov20Rules(unittest.TestCase):
         for v in ("Lak", "Vakna", "Skolja", "Sveda", "Reyk", "Naglskott", "Egga", "Knyta", "Kvad", "Aukskold", "Skrida", "Djupanda"):
             with self.assertRaises(ValueError, msg=v): compile_verb(v, tier="Halv")
         for v in ("Eld", "Skott", "Krosh", "Sol", "Blast", "Blixt", "Banskott", "Avliva", "Hevn"):
-            self.assertEqual(compile_verb(v, tier="Halv")["share"], 0.0, v)
+            h = compile_verb(v, tier="Halv"); self.assertEqual(h["price"], HALV_COST[h["cost_type"]], v)   # Nov 21: Halv's own rung
 
     def test_a_pinned_vasara_still_covers(self):
         """Cover moves no one (Nov 20): a Pin doesn't stop Lya."""

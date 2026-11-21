@@ -3,11 +3,11 @@ import random, unittest
 from engine import *
 
 SPELLED = {   # the kits as classes.md and the Nov 20 kit list spell them
-    "Vasara":    {1: "Krosh Egga", 2: "Krosh Egga Brakrosh Lya", 3: "Snarbrakrosh Lonnegga Lya Hevn"},
-    "Ullar":     {1: "Skott Naglskott", 2: "Blotskott Naglskott Peka", 3: "Merblotskott Styngnaglskott Lonnpeka Banskott"},
-    "Brennumar": {1: "Eld Reyk", 2: "Eld Reyk Sveda Alleld", 3: "Mereld Alleld Lonnsveda Djupanda"},
+    "Vasara":    {1: "Krosh Egga", 2: "Krosh Egga Brakrosh Lya", 3: "Snarbrakrosh Daska Lya Hevn"},
+    "Ullar":     {1: "Skott Naglskott", 2: "Blotskott Naglskott Peka", 3: "Merblotskott Genomskott Genomskoda Banskott"},
+    "Brennumar": {1: "Eld Reyk", 2: "Eld Reyk Sveda Alleld", 3: "Mereld Alleld Lamsveda Djupanda"},
     "Dagskald":  {1: "Lak Sol", 2: "Lak Sol Kvad", 3: "Solak Sol Merkvad Allaukraft"},
-    "Skurmar":   {1: "Blast Knyta", 2: "Blast Knyta Kuling Blixt", 3: "Blast Merknyta Storm Lonnblixt"},
+    "Skurmar":   {1: "Blast Knyta", 2: "Blast Knyta Kuling Blixt", 3: "Blast Merknyta Storm Stelblixt"},   # names: Nov 21
 }
 
 class TestKits(unittest.TestCase):
@@ -24,7 +24,8 @@ class TestKits(unittest.TestCase):
 class TestParts(unittest.TestCase):
     def test_lonn_names(self):
         self.assertEqual(compile_verb("Krosh", lonn=True)["name"], "Brakrosh")     # Sundered spoken Brak on Krosh...
-        self.assertEqual(compile_verb("Peka", lonn=True)["name"], "Lonnpeka")      # ...and Lonn on Peka
+        self.assertEqual(compile_verb("Sveda", lonn=True)["name"], "Lamsveda")     # Feeble spoken Lam (Nov 21)...
+        self.assertEqual(compile_verb("Blixt", lonn=True)["name"], "Stelblixt")    # ...and Stunned spoken Stel
         self.assertEqual(compile_verb("Skott", lonn=True)["status"], "Bleeding")
         self.assertEqual(compile_verb("Sveda", lonn=True)["also_status"], "Feeble")
         self.assertEqual(compile_verb("Aukraft", lonn=True)["also"], [("DEF", 1)])
@@ -46,7 +47,15 @@ class TestParts(unittest.TestCase):
     def test_bynames(self):
         self.assertEqual(compile_verb("Naglskott", tier="Mer", styng=True)["name"], "Geirskott")
         self.assertEqual(compile_verb("Sol", lonn=True)["name"], "Blindasol")
-        self.assertEqual(compile_verb("Egga", lonn=True)["name"], "Lonnegga")
+    def test_root_names(self):     # Nov 21: a word for the verb and some parts; further parts attach to it
+        self.assertEqual(compile_verb("Egga", lonn=True)["name"], "Daska")
+        self.assertEqual(compile_verb("Peka", lonn=True)["name"], "Genomskoda")
+        self.assertEqual(compile_verb("Naglskott", styng=True)["name"], "Genomskott")
+        self.assertEqual(compile_verb("Egga", target="Flok", lonn=True)["name"], "Flokdaska")
+        self.assertEqual(compile_verb("Naglskott", manners=("Snar",), styng=True)["name"], "Snargenomskott")
+        self.assertEqual(compile_verb("Naglskott", tier="Mer", styng=True)["name"], "Geirskott")   # an exact byname wins
+
+    def test_long_names_need_a_byname(self):
         for cls in KITS:
             for leg in KITS[cls]:
                 for a in compile_kit(cls, leg): self.assertLessEqual(len(a["name"]), BYNAME_LETTERS, a["name"])
@@ -55,27 +64,36 @@ class TestParts(unittest.TestCase):
         self.assertEqual(compile_verb("Storm")["tier"], "Mer")
         self.assertEqual(compile_verb("Storm", tier="Mer")["tier"], "Jatte")
         self.assertEqual(compile_verb("Orkan", tier="Mer")["knots"], 3)           # Merorkan: still 3 knots, more MP
-        self.assertGreater(compile_verb("Orkan", tier="Mer")["share"], compile_verb("Orkan")["share"])
+        self.assertGreater(compile_verb("Orkan", tier="Mer")["price"], compile_verb("Orkan")["price"])
 
-class TestPrice(unittest.TestCase):
+class TestPrice(unittest.TestCase):     # the cost ladder (Nov 21, classes.md Part 7c): the rung x 2 a step
+    def P(self, verb, **k): return compile_verb(verb, **k)["price"]
+
     def test_mp_ladder(self):
-        self.assertAlmostEqual(compile_verb("Eld")["share"], 1 / 16)
-        self.assertAlmostEqual(compile_verb("Eld", tier="Mer")["share"], 1 / 10)
-        self.assertAlmostEqual(1 / compile_verb("Eld", tier="Jatte", source="find")["share"], 6.25, places=2)
-        self.assertAlmostEqual(1 / compile_verb("Orkan")["share"], 3.9, places=1)
-        self.assertEqual(compile_verb("Eld", tier="Halv")["share"], 0.0)              # Halv is free
-        self.assertEqual(compile_verb("Djupanda")["share"], 0.0)
+        self.assertEqual([self.P("Eld", tier="Halv"), self.P("Reyk"), self.P("Eld"), self.P("Eld", tier="Mer"),
+                          self.P("Eld", target="Flok"), self.P("Eld", target="All")], [2, 3, 6, 12, 24, 48])
+        self.assertEqual(self.P("Eld", tier="Jatte", source="find"), 24)
+        self.assertEqual(self.P("Djupanda"), 0)
+        self.assertEqual((self.P("Lak"), self.P("Lak", lonn=True), self.P("Kvad"), self.P("Kvad", tier="Mer")), (8, 16, 6, 12))
+        self.assertEqual((self.P("Blixt"), self.P("Blixt", lonn=True), self.P("Knyta"), self.P("Knyta", tier="Mer")), (8, 16, 3, 6))
+
+    def test_knots_pay_steps(self):     # All 3 steps, Mer 1, a follow-up 1; each knot spent pays one: all three 24
+        self.assertEqual([self.P(v) for v in ("Kuling", "Storm", "Orkan")], [24, 24, 24])
 
     def test_hp_ladder(self):
-        self.assertAlmostEqual(compile_verb("Skott")["share"], 1 / 36)
-        self.assertAlmostEqual(compile_verb("Skott", lonn=True)["share"], 1 / 24)
-        self.assertAlmostEqual(compile_verb("Skott", tier="Mer", lonn=True)["share"], 1 / 16)
+        self.assertEqual([self.P("Skott", tier="Halv"), self.P("Naglskott"), self.P("Skott"), self.P("Skott", lonn=True),
+                          self.P("Skott", tier="Mer", lonn=True), self.P("Skott", target="Flok", lonn=True)], [4, 8, 16, 32, 64, 128])
+        self.assertEqual((self.P("Krosh", manners=("Snar",), lonn=True), self.P("Egga", lonn=True), self.P("Lya")), (64, 16, 8))
         self.assertEqual(compile_verb("Skott")["cost_type"], "HP")
+        for v in VERBS:                                        # every rung is on the ladder
+            if not VERBS[v].get("free"): self.assertIn(VERBS[v]["cost"], COST_LADDER, v)
 
-    def test_priced_by_the_bar(self):
-        u = birth("Brennumar", 10, random.Random(1)); u.maxmp = 80
-        u.actions = compile_kit("Brennumar", 3); price_bars(u)
-        self.assertEqual([a["cost"] for a in u.actions], [8, 13, 8, 0])          # 80/10; Alleld two steps (80 x 0.16); Djupanda free
+    def test_priced_by_the_pool(self):     # the ladder number at the sheet's level; elsewhere, in proportion to the pool
+        u = build_hero("Brennumar", 3)
+        self.assertEqual([a["cost"] for a in u.actions], [2, 12, 48, 12, 0])
+        low = build_hero("Brennumar", 3, level=25)
+        self.assertEqual([a["cost"] for a in low.actions], [max(1, round(a["price"] * low.maxmp / 150)) if a["price"] else 0 for a in low.actions])
+        self.assertLess(low.actions[2]["cost"], 48)
 
 class TestKeywords(unittest.TestCase):
     def test_groups(self):

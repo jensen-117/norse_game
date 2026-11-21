@@ -122,8 +122,8 @@ class Solak(unittest.TestCase):
 class WisHeals(unittest.TestCase):
     def test_the_new_game_heals_from_wis(self):
         d = hero("Dagskald", "Lak"); b = Battle([d], [dummy()], random.Random(1)); lak = d.actions[1]
-        self.assertAlmostEqual(b.heal_amount(d, lak), 1.5 * lak["power"] * level_factor(d.level) * d.attrs["WIS"] / avg_attr(d.level))
-        self.assertGreater(b.heal_amount(d, lak) / (1.5 * lak["power"] * level_factor(d.level) * d.MAT / avg_attr(d.level)), 1.1)
+        self.assertAlmostEqual(b.heal_amount(d, lak), 1.5 * lak["power"] * level_factor(d.level) * d.attrs["WIS"] / avg_attr(d.level) * d.heal_mult)
+        self.assertGreater(b.heal_amount(d, lak) / (1.5 * lak["power"] * level_factor(d.level) * d.MAT / avg_attr(d.level) * d.heal_mult), 1.1)
 
     def test_old_fights_heal_from_mat(self):
         u = birth("Dagskald", 30, random.Random(1)); b = Battle([u], [dummy()], random.Random(1)); lak = heal_spell("Base")

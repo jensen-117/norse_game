@@ -9,13 +9,13 @@ side: a foe's normal hit takes 10-12% of a mid hero's HP, a wind-up 30-40%.
 The yardstick foe is plain on purpose: no affinities, no body quirks, DEF and MDF equal (CON = WIS = 60, where a clean
 Krosh is ~104), the other attributes average. Martial and magic moves meet the same guard, so they compare on their own
 merits; a family's real defenses (the Ande's high MDF, the Beinar's high DEF) are its deviation from the yardstick.
-These are targets: nothing here changes the game. The hero pass applies them."""
+The heroes' side was applied in the hero pass (Nov 21); the foes' side is still a target (the enemy pass)."""
 import math, random
 from engine import *
 from composer import catalog, spawn, tier_of
 
 LEVEL = 50
-POOLS = {"Vasara": (1000, 50), "Ullar": (600, 50), "Brennumar": (500, 150), "Dagskald": (700, 200), "Skurmar": (600, 100)}
+POOLS = HERO_POOLS              # applied in the hero pass (Nov 21): martial MP is 0
 TIERS = {"Trash": 130, "Regular": 450, "Elite": 950, "Boss": 1700}
 HITS = {"Trash": "2 (1 with a stage)", "Regular": "4-5", "Elite": "9-10", "Boss": "~5 party rounds"}
 FOE_HIT = (0.10, 0.12)          # a foe's normal hit, as a share of a mid hero's HP
@@ -68,7 +68,7 @@ def foe_rows():
 def report():
     pct = lambda x: "-" if x is None else f"{x:.0%}"
     L = [f"# The yardstick (level {LEVEL} soft launch)", "",
-         "Targets, not yet applied. A hit count is clean hits (no graze, no crit) on the plain foe; a graze halves a hit, a crit is x1.5.", "",
+         "Heroes: as applied (Nov 21). Foes: targets. A hit count is clean hits (no graze, no crit) on the plain foe; a graze halves a hit, a crit is x1.5.", "",
          "## Hero pools", "", "| Class | HP now | HP target | MP now | MP target |", "|---|---|---|---|---|"]
     for c, (hp, mp) in POOLS.items():
         h = build_hero(c, 1, LEVEL)

@@ -498,7 +498,7 @@ const Screen = (() => {
       const col = u.state === "dead" ? C.hpLo : u.state === "dying" ? C.hpMid : u.id === current ? C.gold : C.white;
       tiny(3, y, u.name.slice(0, 9), col);
       tiny(41, y, `${u.hp}/${u.maxhp}`, u.state === "up" ? C.white : col);
-      tiny(77, y, String(u.mp), C.absorb);
+      if (u.maxmp) tiny(77, y, String(u.mp), C.absorb);   // a martial hero has no MP pool (Nov 21)
       y += 6;
     }
     if (S) { const s = S.phase === "over" ? "OVER" : `ROUND ${S.round}${S.phase === "bonus" ? " BONUS" : ""}`; tiny(W - 3 - tinyW(s), 2, s, S.phase === "bonus" ? C.weak : C.white); }
@@ -656,7 +656,7 @@ const Screen = (() => {
       const cost = mv.cost ? String(mv.cost) : "";
       const nm = clip(mv.shown, BOX.costR[col] - x - (cost ? textW(cost) + 4 : 0));
       boxItem(x, y, textW(nm), nm, () => pick(mv), ok, pending && pending.key === mv.key);
-      if (cost) text(BOX.costR[col] - textW(cost), y, cost, ok ? C.dim : C.mute);
+      if (cost) text(BOX.costR[col] - textW(cost), y, cost, !ok ? C.mute : mv.drops ? C.hpLo : C.dim);   // red: a last swing
     });
   }
   const RANGE_TAG = { melee: "RANGE SHORT", reach: "RANGE MEDIUM", any: "RANGE LONG" };   // Nov 10: range is the weapon's
@@ -668,15 +668,16 @@ const Screen = (() => {
     boxItem(10, BOX.rows[0], textW("<"), "<", back);
     const x = text(BOX.wordX[0] + 2, BOX.rows[0], mv.shown, C.gold);
     if (tag) tiny(x + 4, BOX.rows[0] + 3, tag, C.dim);
-    text(BOX.costR[1] - textW(cost), BOX.rows[0], cost, C.dim);
+    text(BOX.costR[1] - textW(cost), BOX.rows[0], cost, mv.drops ? C.hpLo : C.dim);
     const hint = mv.afford && (mv.aim === "self" || mv.aim === "all");      // inside the box, on its last row (Nov 21)
-    const rows = hint || !mv.afford ? 1 : 2;
+    const rows = hint || !mv.afford || mv.drops ? 1 : 2;
     const ls = wrap(plain, BOX.costR[1] - BOX.wordX[0]);
     scroll = Math.min(scroll, Math.max(0, ls.length - rows));
     ls.slice(scroll, scroll + rows).forEach((l, i) => text(BOX.wordX[0], BOX.rows[1 + i], l, C.white));
     if (ls.length > scroll + rows) tiny(BOX.costR[1] - 3, BOX.rows[rows] + 4, "V", C.gold, null);
     if (scroll > 0) tiny(BOX.costR[1] - 3, BOX.rows[1] - 1, "^", C.gold, null);
     if (!mv.afford) text(BOX.wordX[0], BOX.rows[2], mv.why === "Silenced" ? "Silenced." : `Not enough ${mv.cost_type}.`, C.hpLo);
+    else if (mv.drops) tiny(BOX.wordX[0] + (hint ? 92 : 0), BOX.rows[2] + 3, "LAST SWING: YOU WILL FALL", C.hpLo, null);   // the last-HP rule (Nov 21)
     else if (hint) tiny(BOX.wordX[0], BOX.rows[2] + 3, "CLICK AGAIN TO USE", C.gold, null);
   }
   function drawInspect() {                       // the sheet, as the Company remembers it
@@ -687,7 +688,7 @@ const Screen = (() => {
     const sub = [c.rank, c.element, c.side === "party" ? c.cls : null, `L${c.level}`].filter(Boolean).join(" ");
     tiny(x0 + w - 6 - tinyW(sub), y0 + 7, sub, C.dim);
     tiny(x0 + 6, y0 + 18, "HP " + (c.hp === null ? "?" : `${c.hp}/${c.maxhp}`), C.white);
-    tiny(x0 + 70, y0 + 18, "MP " + (c.mp === null ? "?" : `${c.mp}/${c.maxmp}`), C.white);
+    if (c.maxmp !== 0) tiny(x0 + 70, y0 + 18, "MP " + (c.mp === null ? "?" : `${c.mp}/${c.maxmp}`), C.white);
     if (c.known && !c.known.all && c.side === "enemy") tiny(x0 + 134, y0 + 18, `FELLED ${c.known.kills}`, C.dim);
     let y = y0 + 27;
     if (c.intent) {
@@ -845,7 +846,7 @@ const Screen = (() => {
   const NARRATE = new Set(["act", "transform", "hit", "absorb", "heal", "stat", "status", "resist", "defend", "cover", "covered", "move", "windup", "bide_lost",
     "paint", "skip", "silenced", "tick", "down", "reform", "crawl", "pile", "scatter", "reassemble", "dying", "breath", "dead", "revive",
     "stabilised", "item", "mp", "fled", "flee_failed", "retarget", "fizzle", "shatter", "flurry", "cleanse", "immune", "thaw",
-    "taunt", "drawn", "flare", "rooted", "weak", "out_of_reach", "song", "song_fades", "knot", "follow", "wall"]);
+    "taunt", "drawn", "flare", "rooted", "weak", "out_of_reach", "song", "song_fades", "knot", "follow", "wall", "spent"]);
   const UPS = new Set(["Mighty", "Fortified", "Keen", "Nimble", "Quick"]);   // the counters' up names
   async function play(r) {
     const g = gen, live = () => g === gen;       // this session only: a newer fight retires it

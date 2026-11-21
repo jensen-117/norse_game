@@ -1,7 +1,7 @@
 """Wave 4c: the Skurmar, tested in complete turns (classes.md Part 7).
 
 Knots (a pool tied by Knyta, spent by Kuling, Storm and Orkan; held: Blast harder, Blixt sure, MP at three), Orkan's
-lightning, Blixt's Stun only on Lonnblixt (a class verb's riders are its own), Kasta and Svepa (a shove a row back or
+lightning, Blixt's Stun only on Stelblixt (was Lonnblixt) (a class verb's riders are its own), Kasta and Svepa (a shove a row back or
 forward; into an occupied cell both swap and are slammed; a Pinned unit is a wall), and Medvind (Quick).
 """
 import random, unittest
@@ -98,9 +98,9 @@ class Lightning(unittest.TestCase):
     def test_lonnblixt_can(self):
         for seed in range(40):
             s = hero("Skurmar", ("Blixt", dict(lonn=True))); e = dummy(); b = fight([s], [e], seed)
-            orders(b, {s.uid: (key(s, "Lonnblixt"), e.uid)})
+            orders(b, {s.uid: (key(s, "Stelblixt"), e.uid)})
             if evs(b, "status", status="Stunned"): return
-        self.fail("Lonnblixt never stunned")
+        self.fail("Stelblixt never stunned")
 
 class Shoving(unittest.TestCase):
     def setup(self, verb="Kasta", **parts):
@@ -173,6 +173,6 @@ class TheKitsPlay(unittest.TestCase):
             foes = spawn(place(compose(rng, habitat(cat, ("Barrow", "Wildwood", "Rapids")[i % 3]))), ENEMY_LEVEL)
             b = Battle(party, foes, rng, events=True); b.fight()
             seen |= {e.get("move") for e in b.events if e["kind"] == "intent" and e.get("unit") == "Skurmar"}
-        self.assertTrue({"Merknyta", "Storm", "Lonnblixt"} <= seen, seen)
+        self.assertTrue({"Merknyta", "Storm", "Stelblixt"} <= seen, seen)
 
 if __name__ == "__main__": unittest.main()

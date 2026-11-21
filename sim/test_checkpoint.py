@@ -91,7 +91,7 @@ class C08_TierAccessAndPrice(unittest.TestCase):
         for verb in VERBS:
             shares = []
             for t in (None, "Mer", "Jatte", "Ur"):
-                try: shares.append((t, compile_verb(verb, tier=t, source="gear")["share"]))
+                try: shares.append((t, compile_verb(verb, tier=t, source="gear")["price"]))
                 except ValueError: pass
             for (t1, s1), (t2, s2) in zip(shares, shares[1:]):
                 if s1: self.assertGreater(s2, s1, f"{verb}: {t2} costs less than {t1}")
@@ -173,7 +173,7 @@ class A02_ModifierPolicy(unittest.TestCase):
 
     def test_the_meteor_is_order_free(self):
         a, b = compile_verb("Eld", manners=("Bid", "Tung")), compile_verb("Eld", manners=("Tung", "Bid"))
-        self.assertEqual((a["release_group"], a["share"]), (b["release_group"], b["share"]))
+        self.assertEqual((a["release_group"], a["price"]), (b["release_group"], b["price"]))
 
     def test_redundant_parts(self):
         with self.assertRaises(ValueError): compile_verb("Egga", manners=("Snar",))       # already First

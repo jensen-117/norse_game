@@ -7,6 +7,10 @@ from words import *        # naming, the move record, and the one compiler every
 def clamp(x, lo, hi): return max(lo, min(hi, x))
 def stage_mult(n): return (3 + n) / 3 if n >= 0 else 3 / (3 - n)
 def level_factor(level): return 0.6 + level / 20
+def mp_need(u):
+    """How much of its MP pool a unit is missing, 0..1 (Nov 21): a unit with no pool (a martial hero) misses nothing,
+    so whatever values getting MP back sees nothing to gain."""
+    return 1 - u.mp / u.maxmp if u.maxmp else 0.0
 def attr_at(gene, level, growth_mult=1.0):
     return 10 + gene / 2 + (level - 1) * (0.6 + gene / 50) * growth_mult
 def avg_attr(level): return attr_at(15.5, level)
@@ -264,13 +268,17 @@ class Unit:
         if a.get("knots") and not a.get("_release") and self.knots < a["knots"]: return False   # untie spells: knots on top of MP
         if a["cost_type"] == "MP": return self.mp >= a["cost"]
         if a["pct_current"]: return self.hp > 1
+        if getattr(self, "last_hp", False): return a["cost"] <= 2 * self.hp   # the last-HP rule (Nov 21): see pay
         return self.hp > a["cost"]
 
     def pay(self, a):
         if a.get("knots") and not a.get("_release"): self.knots -= a["knots"]
         if a["cost_type"] == "MP": self.mp -= a["cost"]
         elif a["pct_current"]: self.hp -= max(1, int(self.hp * a["pct_current"]))
-        else: self.hp -= a["cost"]
+        else:
+            self.hp -= a["cost"]
+            if getattr(self, "last_hp", False) and self.hp <= 0:   # a last swing: the move lands, then the hero drops
+                self.hp, self.overpaid = 1, True                   # (Battle.resolve drops them once it is done)
 
 def status_stat(u, stat):
     """What u's statuses do to one stat, in stages (Chilled: SPD -1; a Curse's rolled stats)."""
@@ -379,17 +387,42 @@ def build_hero(cls, leg=1, level=None, playable=True, name=None, kit=None):
     kit = [compile_verb(v, **parts) for v, parts in kit] if kit is not None else compile_kit(cls, leg)   # kit: (verb, parts)
     excluded = [(a["name"], a["unresolved"]) for a in kit if a["unresolved"]] if playable else []
     if playable: kit = [a for a in kit if not a["unresolved"]]
-    basic = compile_verb(BASIC_VERB[cls], tier="Halv")
+    basic = compile_verb(BASIC_VERB[cls], tier="Halv"); basic["basic"] = True   # the Halv slot (Nov 21: it has a price now)
     u = Unit(name or cls, "party", L, sheet_attrs(cls, L), c["atk"], c["mat"], sheet_affinity(cls), [basic] + kit, cls=cls)
     for a in u.actions:                    # a martial verb's range: its root in this class's weapon (Skott on a Bow: Long)
         if a.get("root") and c.get("weapon"):                  # damage, and a status move's arrow (Naglskott, Peka)
             a["reach"] = RANGES[root_range(a["root"], c["weapon"])]; a["weapon"] = c["weapon"]
     u.kit_leg, u.excluded = leg, excluded
-    u.dmg_mult = HERO_POWER.get(cls, 1.0)            # baked into the character, not a buff
     u.body = dict(CLASS_BODIES.get(cls, {}))         # the class's stat block (HP, ATK, MAT, DEF, MDF, SPD)
-    u.maxhp *= u.b("HP"); u.hp = u.maxhp
+    # the hero pass (Nov 21): pools written at SHEET_LEVEL and grown with the sheet's own curve; damage and heals
+    # anchored to the yardstick (a share-1.0 move: KROSH_CLEAN on the plain foe; a base Lak: LAK_CLEAN)
+    hp0, mp0 = HERO_POOLS[cls]
+    raw_hp, raw_mp = sheet_bars(cls, L); ref_hp, ref_mp = sheet_bars(cls, SHEET_LEVEL)
+    u.maxhp = hp0 * raw_hp / ref_hp; u.hp = u.maxhp
+    u.maxmp = mp0 * raw_mp / ref_mp; u.mp = u.maxmp
+    u.pool_scale = {"HP": u.maxhp / hp0, "MP": (u.maxmp / mp0) if mp0 else 1.0}
+    u.dmg_mult, u.heal_mult = anchor_mult(cls)
     price_bars(u)
     return u
+
+def sheet_bars(cls, level):
+    """A class sheet's raw HP and MP at a level (the old derivation): the curve a written pool grows along."""
+    c = CLASSES[cls]
+    u = Unit(cls, "party", level, sheet_attrs(cls, level), c["atk"], c["mat"], {}, [], cls=cls)
+    u.body = dict(CLASS_BODIES.get(cls, {}))
+    return u.maxhp * u.b("HP"), u.maxmp
+
+def anchor_mult(cls):
+    """The hero's damage and heal multipliers (Nov 21): at SHEET_LEVEL, a power-20 move of his kind (ATK for a martial
+    class, MAT for a magical one), single hit, element power 1, lands KROSH_CLEAN on the plain foe (DEF = MDF =
+    PLAIN_GUARD); a base Lak (power 20) heals LAK_CLEAN. Class verbs carry their share of that in their power."""
+    c = CLASSES[cls]
+    u = Unit(cls, "party", SHEET_LEVEL, sheet_attrs(cls, SHEET_LEVEL), c["atk"], c["mat"], {}, [], cls=cls)
+    u.body = dict(CLASS_BODIES.get(cls, {}))
+    A = u.ATK if cls in MARTIAL_CLASSES else u.MAT
+    hit = TIER_POWER["Base"] * A / PLAIN_GUARD * level_factor(SHEET_LEVEL)
+    heal = 1.5 * TIER_POWER["Base"] * level_factor(SHEET_LEVEL) * u.attrs["WIS"] / avg_attr(SHEET_LEVEL)
+    return KROSH_CLEAN / hit, LAK_CLEAN / heal
 
 def recruit(level, rng, training="1pt"):
     n = roll_normal(rng)
@@ -462,6 +495,7 @@ class Battle:
         self.profile = rules_profile(party, profile)        # "new" or "legacy", never a silent mix (review C15)
         for u in list(party) + list(enemies): u.knots = 0   # knots are tied for this fight only (Nov 21, Joseph)
         self.new_game = self.profile == "new"
+        for p in party: p.last_hp, p.overpaid = self.new_game, False   # the last-HP rule is the new game's (Nov 21)
         if self.new_game:                            # the new game's tuning: enemy damage, and HP by tier
             for e in enemies: self.new_game_enemy(e)
         if USE_BOARD:
@@ -686,7 +720,7 @@ class Battle:
         """A heal's amount on one target. The new game heals from WIS (Nov 20, Joseph: the healer's own lever, apart
         from attack magic's MAT); old fights from MAT, as before. All and a row share it out like damage."""
         power = healer.attrs["WIS"] if getattr(self, "new_game", False) else healer.MAT
-        h = 1.5 * a["power"] * level_factor(healer.level) * power / avg_attr(healer.level)
+        h = 1.5 * a["power"] * level_factor(healer.level) * power / avg_attr(healer.level) * getattr(healer, "heal_mult", 1.0)
         if a.get("shape"): h *= SHAPE_MULT.get(a["shape"], 1.0)
         return h * (a.get("all_power", ALL_POWER_MULT) if a["all"] else 1)
 
@@ -969,6 +1003,18 @@ class Battle:
         return False
 
     def resolve(self, u, a, chosen, bonus):
+        """One action. The last-HP rule (Nov 21, Joseph): a hero may pay an HP cost up to twice what she has; paying
+        more than she has is a last swing, and once it's done she drops (to Dying: the rows shift, the party's
+        damage falls)."""
+        self._resolve(u, a, chosen, bonus)
+        if getattr(u, "overpaid", False):
+            u.overpaid = False
+            if u.alive:
+                u.hp = 0
+                self.emit("spent", f"      {u.name} gives everything.", unit=u.name)
+                self.downed(u)
+
+    def _resolve(self, u, a, chosen, bonus):
         if not u.alive: return
         release = a.get("_release")
         if release and not self.holds(u, a): return       # interrupted since it was queued: already lost (C05)
@@ -1424,7 +1470,7 @@ class Battle:
         if p is None: return 0.0
         a, t = p
         if a["kind"] == "damage": return self.expected_damage(f, t, a) if t is not None else 0.0
-        if a["kind"] == "windfall": return AI_MEDITATE_VALUE * ref * a["amount"] / MEDITATE_SHARE * (1 - f.mp / f.maxmp)
+        if a["kind"] == "windfall": return AI_MEDITATE_VALUE * ref * a["amount"] / MEDITATE_SHARE * mp_need(f)
         return 0.8 * ref
 
     def transform(self, u, job):
@@ -1521,6 +1567,7 @@ class Battle:
         options = []
         for a in u.actions + self.item_actions(u):
             if not u.can_afford(a): continue
+            if getattr(u, "last_hp", False) and a["cost_type"] == "HP" and a["cost"] and a["cost"] >= u.hp: continue   # the AI never spends its last
             if a.get("once") and (a["name"] in u.once_used or (u.uid, a["name"]) in getattr(self, "once_claims", ())): continue
             if u.silenced and a["cost_type"] == "MP" and a["cost"] > 0: continue
             cost_pen = 0.25 * a["cost"] if a["cost_type"] == "MP" else 0.15 * a["cost"]
@@ -1662,11 +1709,11 @@ class Battle:
                     options.append((AI_GLIDE_VALUE * ref + nimble - cost_pen, dict(a, cell=cell), u))
             elif a["kind"] == "windfall":                       # Djupanda: Meditate's worth, larger, over two turns
                 if u.mp < 0.5 * u.maxmp:
-                    s = AI_MEDITATE_VALUE * ref * self.recovery(u, a["amount"]) / MEDITATE_SHARE * (1 - u.mp / u.maxmp) * AI_MANNER_VALUE["Bid"]
+                    s = AI_MEDITATE_VALUE * ref * self.recovery(u, a["amount"]) / MEDITATE_SHARE * mp_need(u) * AI_MANNER_VALUE["Bid"]
                     options.append((s - cost_pen, a, u))
         if self.can_meditate(u) and u.mp < u.maxmp:                # the universal Meditate
-            share = min(self.recovery(u, MEDITATE_SHARE), (u.maxmp - u.mp) / u.maxmp)   # three knots: a deeper breath
-            if u.mp < 0.5 * u.maxmp: options.append((AI_MEDITATE_VALUE * ref * share / MEDITATE_SHARE * (1 - u.mp / u.maxmp), meditate(), u))
+            share = min(self.recovery(u, MEDITATE_SHARE), mp_need(u))   # three knots: a deeper breath
+            if u.maxmp and u.mp < 0.5 * u.maxmp: options.append((AI_MEDITATE_VALUE * ref * share / MEDITATE_SHARE * mp_need(u), meditate(), u))
         if USE_BOARD and USE_ROTATION:
             options += self.board_options(u, ref)
         options = [(sc * (AI_ITEM_THRIFT if a.get("item") and a["kind"] in ("damage", "stat") else 1.0), a, t)
@@ -1713,7 +1760,7 @@ class Battle:
                     graze = max(0.0, GRAZE_BASE - STEP * self.net_stage(u, f0))
                     v += best("Blixt") * graze * (1 - GRAZE_MULT)
             if k >= KNOT_CAP and getattr(u, "maxmp", 0):
-                v += 0.5 * AI_MEDITATE_VALUE * ref * KNOT_MP * (1 - u.mp / u.maxmp)   # a better Meditate, some rounds
+                v += 0.5 * AI_MEDITATE_VALUE * ref * KNOT_MP * mp_need(u)   # a better Meditate, some rounds
             return v
         finally:
             u.knots = held
@@ -2127,7 +2174,8 @@ class Battle:
     def slots(self, u):
         """The hero's Halv move and their four slotted moves (fight_lab_spec Part 2). Defend is Guard, not a slot;
         a martial hero with a free slot gets Cover, which the AI uses through the board rules."""
-        halv = next((a for a in u.actions if a.get("tier") == "Halv" and a["cost"] == 0 and a["kind"] == "damage"), None)
+        halv = next((a for a in u.actions if a.get("basic")), None) or \
+            next((a for a in u.actions if a.get("tier") == "Halv" and a["cost"] == 0 and a["kind"] == "damage"), None)
         moves = [a for a in u.actions if a is not halv and a["kind"] != "defend"]
         if CLASSES.get(u.cls, {}).get("kind") == "martial" and len(moves) < 4 and USE_BOARD and getattr(u, "kit_leg", None) is None:
             moves.append(act("cover", "Cover", target="ally"))          # old recruits only: Lya is the Vasara's
@@ -2161,6 +2209,7 @@ class Battle:
         parts = a.get("parts") or {}
         return dict(key=key, slot=slot, name=a["name"], shown=self.shown(u, a), kind=a["kind"], element=a.get("element"),
                     cost=a["cost"], cost_type=a["cost_type"], afford=afford, why=None if afford else ("Silenced" if silenced else "cost"),
+                    drops=bool(afford and getattr(u, "last_hp", False) and a["cost_type"] == "HP" and a["cost"] and a["cost"] >= u.hp),   # a last swing
                     group=self.group_of(u, a), aim=self.aim(a), targets=[x.uid for x in tg],
                     card=dict(word=a["name"], plain=plain(a), english=a.get("english"), power=round(a.get("power") or 0, 1), tier=a.get("tier"),
                               reach=a.get("reach") or (REACH_BY_TYPE.get(a["element"]) if a.get("element") in MARTIAL else "any"),
@@ -2360,11 +2409,12 @@ def wield(u, weapon):
         if a["kind"] == "damage" and a.get("element") == WEAPONS[weapon][0] and not a.get("weapon"): arm(a, weapon)
 
 def price_bars(u):
-    """Moves priced as a share of the hero's own bar (pillars Part 5c) get their cost once the bars are known."""
+    """Class moves carry their ladder price at SHEET_LEVEL (Nov 21); a hero at another level pays it in proportion to
+    his pool there (u.pool_scale: his pools at this level over the sheet's), so the share of the bar holds."""
     for a in u.actions:
-        if "share" in a:
-            bar = u.maxmp if a["cost_type"] == "MP" else u.maxhp
-            a["cost"] = 0 if not a["share"] else max(1, round(a["share"] * bar))
+        if "price" in a:
+            k = getattr(u, "pool_scale", {}).get(a["cost_type"], 1.0) or 1.0
+            a["cost"] = 0 if not a["price"] else max(1, round(a["price"] * k))
 
 def price_shares(u):
     """Moves priced as a share of max MP (Splash) get their cost once the body is known."""

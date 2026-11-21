@@ -166,13 +166,13 @@ class Riders(unittest.TestCase):
     def test_lonnpeka_marks_and_sunders(self):
         def make(seed):
             u = hero("Ullar", ("Peka", dict(lonn=True))); e = dummy(); b = fight([u], [e], seed)
-            orders(b, {u.uid: (key(u, "Lonnpeka"), e.uid)}); return b, u, e
+            orders(b, {u.uid: (key(u, "Genomskoda"), e.uid)}); return b, u, e
         b, u, e = land_until(make, lambda b, u, e: e.stage("EVA") < 0)
         self.assertEqual((e.counter_name("EVA"), e.counter_name("DEF")), ("Marked 1", "Sundered 1"))
 
     def test_lonnegga_blinds_the_taunted(self):
         v = hero("Vasara", ("Egga", dict(lonn=True))); e1, e2 = dummy(), dummy(); b = fight([v], [e1, e2])
-        orders(b, {v.uid: (key(v, "Lonnegga"), e1.uid)})
+        orders(b, {v.uid: (key(v, "Daska"), e1.uid)})
         self.assertEqual((e1.counter_name("ACC"), e2.counter_name("ACC")), ("Blinded 1", None))
 
 # ================================================================ payoffs
@@ -237,9 +237,9 @@ class Payoffs(unittest.TestCase):
 class StatusMoves(unittest.TestCase):
     def test_styng_adds_a_hit_at_seventy_percent(self):
         u = hero("Ullar", ("Naglskott", dict(styng=True))); e = dummy(); b = fight([u], [e])
-        orders(b, {u.uid: (key(u, "Styngnaglskott"), e.uid)})
+        orders(b, {u.uid: (key(u, "Genomskott"), e.uid)})
         hit = evs(b, "hit", src=u.name); self.assertEqual(len(hit), 1); self.assertEqual(hit[0]["element"], "Pierce")
-        self.assertAlmostEqual(u.actions[1]["styng"], TIER_POWER["Base"] * STYNG_POWER)
+        self.assertAlmostEqual(u.actions[1]["styng"], TIER_POWER["Base"] * STYNG_POWER * CLASS_SHARE["Ullar"])   # 70% of his base hit (Nov 21: ranged 0.75)
 
     def test_styngegga_strikes_the_taunted(self):
         v = hero("Vasara", ("Egga", dict(styng=True))); e = dummy(); b = fight([v], [e])
@@ -334,7 +334,7 @@ class TheAIUsesThem(unittest.TestCase):
         theirs that Wave 4a made playable is chosen at least once."""
         from composer import catalog, habitat, compose, place, spawn
         cat, seen = catalog(), set()
-        want = {"Banskott", "Styngnaglskott", "Lonnpeka", "Lonnsveda", "Hevn"}     # Lonnegga, Djupanda: below
+        want = {"Banskott", "Genomskott", "Genomskoda", "Lamsveda", "Hevn"}     # Daska, Djupanda: below
         for i in range(40):
             rng = random.Random(500 + i)
             party = [build_hero(c, 3) for c in ("Vasara", "Ullar", "Brennumar")]
@@ -349,7 +349,7 @@ class TheAIUsesThem(unittest.TestCase):
         v, d = hero("Vasara", ("Egga", dict(lonn=True))), hero("Dagskald", "Sol"); d.hp = 0.3 * d.maxhp
         spear = dummy(actions=[skill("Pierce", "Spear", "Mer")]); b = Battle([v, d], [spear], random.Random(1))
         picks = [b.declare(v)[0]["name"] for _ in range(20)]
-        self.assertIn("Lonnegga", picks)
+        self.assertIn("Daska", picks)
 
     def test_a_low_brennumar_breathes_deep(self):
         """Djupanda over Meditate when the MP is low: it's worth more, over two turns."""

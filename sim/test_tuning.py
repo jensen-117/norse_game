@@ -28,7 +28,7 @@ class Tuning(unittest.TestCase):
         h, e = build_hero("Ullar"), spawn_family("Draugr", "Draugr", 50)
         plain = build_hero("Ullar"); plain.dmg_mult = 1.0
         b = Battle([h], [e], random.Random(1)); skott = h.actions[1]
-        self.assertAlmostEqual(b.raw_damage(h, e, skott) / b.raw_damage(plain, e, skott), HERO_POWER["Ullar"])
+        self.assertAlmostEqual(b.raw_damage(h, e, skott) / b.raw_damage(plain, e, skott), anchor_mult("Ullar")[0])   # the anchor (Nov 21)
         claw = e.actions[0]; e2 = spawn_family("Draugr", "Draugr", 50)
         self.assertAlmostEqual(b.raw_damage(e, h, claw) / b.raw_damage(e2, h, claw), ENEMY_DAMAGE)
 
@@ -50,7 +50,7 @@ class Tuning(unittest.TestCase):
 class Bodies(unittest.TestCase):
     def test_stat_blocks(self):
         v = build_hero("Vasara"); plain = sheet_attrs("Vasara", SHEET_LEVEL)
-        self.assertAlmostEqual(v.maxhp, HP_MULT * (20 + 2 * plain["CON"] + 2 * SHEET_LEVEL) * 1.25)
+        self.assertAlmostEqual(v.maxhp, HERO_POOLS["Vasara"][0])                       # the written pool (Nov 21)
         self.assertAlmostEqual(v.DEF, plain["CON"] * 1.25)
         u = build_hero("Ullar"); self.assertGreater(u.speed(), v.speed())
         self.assertEqual(build_hero("Brennumar").b("ATK"), 1.0)          # a stat the class never uses stays neutral

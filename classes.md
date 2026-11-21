@@ -217,6 +217,8 @@ A Flok-and-talisman build that invested hard (about +2 or +3) sweeps a row of Tr
 
 ## Part 7c: Every Kit Move on the Rules (Nov 21, agreed with Joseph)
 
+**Applied (Nov 21, the hero pass; option B: heroes only, today's foes unchanged until the enemy pass).** Pools, the ladder, power shares and the names are in the engine (`data.py`: HERO_POOLS, KROSH_CLEAN, LAK_CLEAN, CLASS_SHARE, CLASS_TIER, RIDER_SHARE, COST_LADDER, HALV_COST, ROOT_NAMES; each verb's `cost`). Also in: the last-HP rule (the menu shows the cost in red and "LAST SWING"; the AI never spends its last HP) and martial heroes with no MP pool. As built: Styng's added hit is 0.7 of the class's base hit (Genomskott: ~55); an All untie spell takes the All share (0.6). Rungs given to verbs outside the kits, for Joseph to check: Avliva 16, Skrida 8, Aukskold 8, Skolja 6, Vakna 6, Kasta 6, Svepa 6, Medvind 3, Aukseid 3.
+
 **The ladder** is one list for both resources: 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64, 96, 128. A step doubles; curation may move a move a **half-step** (x1.5) when its role calls for it, so every price stays on the list. A move's rung comes from its kind (Halv, minor, base); its parts add steps; a knot spent pays one. Past what a hero can pay, it becomes an item.
 
 **Element power**, from the magic base of 0.9: Eld 0.9; Blast 0.9 in two hits (cheaper, less reliable); Blixt **1.0 at 8 MP** (the tiring, spiky one); Sol 0.9; the rest 0.9 until they're designed. Reyk deals no damage of its own (0.6 for Styngreyk's added hit).
