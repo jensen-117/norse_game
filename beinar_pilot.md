@@ -187,3 +187,158 @@ Names: Nedskold is DEF down, Nedvig EVA down, Aukvig EVA up (*vig*, agile). An e
 - The wind-up's exact size and tell.
 - A Spettbein (stiletto Beinar: Aukhitt for Keen, Drifspett, Halvspett) as a second Striker.
 - Build order (refactor_plan Wave 7): Phase B (the Halv as a pick, Merknyta Late, Evasive), then this pilot (status rules first, then brains), then Phase C (the Circle).
+
+# Part 3: The Beinar Roster (draft for the focused session, Nov 22)
+
+The Beinar are the Barrow's dead warband. They kept their old jobs, and a Beinar room should read like a squad with a plan: **each job asks the party one question**, and the room is hard when the questions stack. Family rules stay: the pile (a non-Crush kill stands again in 2 rounds at 50%), weak to Crush and Sol, resist Slash, Pierce, Natt and Aska. Ranks are the yardstick's tiers: Halv is Trash (130 HP), base is Regular (450), Stor is Elite (950), Forn is the Boss (1700). Cost is actions a round (bestiary Part 1). Moves are English, the foes' register; each lists its twin in the heroes' grammar so the library and the audit can read it.
+
+## The roster at a glance
+
+| Job | Role | Its question to the party | Audit gaps it fills | State |
+|---|---|---|---|---|
+| **Beinbryn** (sword and shield) | Front: the guard | Can you reach the casters? | foe Taunt | built; Challenge new |
+| **Beinorv** (bow) | Burst and Control: the striker | Can you protect your weakest? | foe Mark, foe Pin | built; three shots new |
+| **Beinseidr** (staff and orb) | Setup: the pest | Can you clean up, and reach the Rear? | foe Silence, foe Burn | built; Hush, Grave Fire new |
+| **Beinlur** (bone horn) | Sustain: the dead skald | What do you kill first? | foe Song, foe Revive, Keen | new body |
+| **Spettbein** (spear) | Burst: the duelist | Can you blunt a crit-fisher? | Keen, Disarm | new body |
+| **Tork** (maul) | Front: the brute | Can you hold your formation? | foe Shove | new body (held name) |
+| **Skralla** (small rattling bones) | Swarm: fodder | Do you have area damage? | none: noise is its job | new body (held name) |
+| **Fornbein** (the red shield-king) | Commander: the boss | Can you break the order? | a dodgeable wind-up | built; Command, Grave Cleave new |
+
+## The jobs
+
+### Beinbryn: the guard
+*Trying to say:* "You'll have to go through me."
+
+| Move | What it does | Hero twin | State |
+|---|---|---|---|
+| Old Sword / Rusty Blade | Slash | Skar | built |
+| Shield Bash | Crush | Krosh | built |
+| Aukskold (Stor: Allaukskold) | Fortified | Aukskold | built |
+| Cover (a family rule) | takes the hits meant for an ally under half HP | Lya | built |
+| **Challenge** | one hero's single-target attacks this round must go to the Beinbryn, if they can reach it | Egga | new |
+
+Brain, goal *keep the casters standing*:
+1. A hero damaged a Beinseidr, a Beinlur or the boss last round: **Challenge** that hero ("the Beinbryn challenges the Ullar, who shot the Beinseidr").
+2. Cover, by the family rule.
+3. In the Front, not Fortified, and didn't brace last turn: Aukskold.
+4. Shield Bash the boss's focus. 5. Fall back.
+
+Counterplay: Crush (its weakness); area moves ignore Challenge (it pulls single-target attacks only); Kasta shoves it out of the Front; Sundered and Marked.
+
+### Beinorv: the striker
+*Trying to say:* "Your weakest is mine."
+
+| Move | What it does | Hero twin | State |
+|---|---|---|---|
+| Arrow | Pierce, reaches anywhere | Skott | built |
+| Volley | Pierce on a row | Flokskott | built |
+| Barbed Arrow | Pierce, may Bleed | Blotskott | built |
+| **Called Shot** | Marked | Peka | new |
+| **Pinning Shot** | Pinned | Naglskott | new |
+| **Killing Shot** | x1.5 on the Pinned | Fangskott | new |
+| **Arrow Rain** (Stor) | a wind-up on a spot: next round, whoever stands there is hit hard | Markbidskott | new |
+
+Ranks: Halv, Arrow; base, Arrow, Volley, Called Shot; Stor, all of it. Brain: the pilot's (Part 2, section 3): finish anyone in killing range; claim and Mark the weakest; Bleed the Marked; Pin; cash in.
+
+Counterplay: Evasive on the weakest (Gyllenlykt), Lya, Skolja the Pin; Blinded archers whiff (Reyk); reach the Rear (Skott, spells, Svepa pulls it forward).
+
+### Beinseidr: the pest
+*Trying to say:* "Everything gets worse while I live." Its element picks which question it asks.
+
+| Move | What it does | Hero twin | State |
+|---|---|---|---|
+| Its element's spell | Natt, Aska, Eld, Hrim or Blixt; the element's own rider (Hrim chills, Blixt stuns, Aska curses) | Eld, Sol... | built |
+| Curse (to become **Dokkn**) | Cursed: Hexed and Poisoned (planned bundle) | (none yet) | built as Cursed |
+| Allaukstav (Stor) | Warded on its side | (none yet) | built as MDF up |
+| **Hush** (Natt) | Silenced: no MP moves | Bannskott | new |
+| **Grave Fire** (Eld) | Scorched | Sveda | new |
+
+Brain, goal *soften the line*:
+1. (Natt) the party's strongest caster isn't Silenced: **Hush** it. Martials pay in HP, so Hush only ever goes to casters.
+2. (Eld) the boss's focus isn't Scorched: **Grave Fire** it.
+3. The boss's focus isn't Cursed: Curse it.
+4. (Stor) no ally is Warded and the party has two casters: Allaukstav.
+5. Its spell on the most-hurt Cursed hero. 6. Fall back.
+
+Counterplay: **Bannskott** (it pays MP: Silence it back), Skolja, Sol, and reaching the Rear.
+
+### Beinlur: the dead skald (new)
+*Trying to say:* "Get up. We're not done." The lur is the Dagskald's own Bronze Age horn: the Beinlur is what a Dagskald becomes in the Barrow, and the party's healer will recognise the job.
+
+| Move | What it does | Hero twin | State |
+|---|---|---|---|
+| **Dirge** | a Song verse on an ally (heals each round) | Kvad | new |
+| **Rise!** | a bone pile on its side stands now, at 50% | Vakna | new |
+| **Sound the Horn** | Keen on its side for two rounds (their hits crit 1 in 3) | Allaukhitt | new |
+| Horn Blow | a weak Crush, its own attack | Halvkrosh | new |
+
+Ranks: base and Stor only, in the Rear, low HP. Brain, goal *keep the warband standing*:
+1. A pile lies on its side and it didn't Rise last turn: **Rise** the most useful one (Beinseidr, then Beinorv, then Beinbryn).
+2. An ally under 60% without a verse: **Dirge** it.
+3. The boss named a focus and its side isn't Keen: **Sound the Horn**.
+4. Horn Blow, or fall back.
+
+Counterplay: the obvious priority kill (low HP, Rear); Crush the piles before it raises them; Bannskott (its songs cost MP); Sol. It makes the pile rule a race.
+
+### Spettbein: the duelist (new; was proposed)
+*Trying to say:* "I find the gap." Pierce, and the Vasara is weak to Pierce: the anvil's bane.
+
+| Move | What it does | Hero twin | State |
+|---|---|---|---|
+| Halvspett | a quick stab | Halvspett | new |
+| **Steady Eye** | Keen on itself | Aukhitt | new |
+| **Flurry of Stabs** | Pierce hits that keep coming on a coin flip | Drifspett | new |
+| **Hook Blade** | Disarmed | (none yet) | new |
+
+Brain: 1. Not Keen: Steady Eye. 2. The hero who dealt the most damage last round isn't Disarmed: Hook Blade it. 3. Keen: Flurry on a hero weak to Pierce, else the focus. 4. Fall back.
+
+Counterplay: Blinded pulls Keen back to even (Reyk); Evasive; Fortified; Crush.
+
+### Tork: the brute (new; the held name, "desiccated")
+*Trying to say:* "Out of my way." A big dried-out skeleton with a grave-stone maul; it breaks formations.
+
+| Move | What it does | Hero twin | State |
+|---|---|---|---|
+| **Bone Maul** | heavy Crush, acts late | Tungkrosh | new |
+| **Shoulder Charge** | shoves a Front hero back a row: it swaps with the hero behind, and both are slammed | Kasta | new |
+| **Brace** (Stor) | Steadfast: can't be Pinned or shoved | (Mot, planned) | new |
+
+Brain: 1. The weakest hero stands in the Rear behind a Front hero: **Shoulder Charge** that Front hero (the caster comes forward, into the archers and swords). 2. Bone Maul the boss's focus. 3. Fall back.
+
+Counterplay: a Pinned hero is a wall (it can't be moved); Steadfast (planned); kill it before it acts (it's Heavy); Lya.
+
+### Skralla: the swarm (new; the held name, "rattling")
+*Trying to say:* "There are so many of us." Small rattling bones in threes, Halv rank only: they test whether the party has area damage. **One Skralla dies for good** (too small to leave a pile; the room shouldn't drag). Move: **Rattle Jab**, a weak Pierce. **No brain:** the shared scorer is enough. Noise is their job.
+
+### Fornbein: the commander
+*Trying to say:* "On my word." The pilot's brain (Part 2, section 3) stays: Command names the focus each round; Ogn (Feared: pinned, guard down) on the focus; then the wind-up; Allaukskold only when no ally is Fortified.
+
+Change: **Grave Cleave is a spot wind-up** (the foes' wind-ups strike a spot, so a hero can step out; spellbook's Mark + Bid rule). Feared pins the hero in place, so Ogn then Grave Cleave is the combo, and the answers are clear: Skolja the Fear, Steadfast (can't be Pinned), or swap the hero out (Skrida trades places). Desperate mode (50% and below in the Front): drop the shield, Old Sword every turn.
+
+## Rooms (a first guess)
+
+| Room | Who | What it asks |
+|---|---|---|
+| Trash | 3 Skralla, a Halvbeinorv | area damage; protect the weakest |
+| Regular | Beinbryn, Beinseidr, Beinorv | the triangle: shield, pest, striker |
+| Elite | Storbeinbryn, Tork, Beinlur, Storbeinorv | hold formation; kill the horn first |
+| Boss | Fornbein, Beinlur, Beinbryn, Beinseidr (and their piles) | break the order before the Cleave lands |
+
+## What foes still can't do after this roster
+
+Feeble on a hero (a Draugr job: the grave-rot that weakens a grip), Knot (the Skurmar's identity: fine), and Bound beyond the Drattr's net (fine: rare by design).
+
+## What the build needs
+
+1. **The status rules** (Part 1): counter names, the bundles (Feared, Steadfast, Cursed), Hexed and Warded.
+2. **The brains** (Part 2), with the fallback counts.
+3. **Foe versions of hero mechanics:** Challenge (taunt aimed at the party's orders: the menu must say "Challenged: your attack goes to the Beinbryn"), Dirge (the song kind on foes), Shoulder Charge (displace on heroes: swapping Front and Rear), Hush on heroes. To check: whether a Mark + Bid spot wind-up resolves today (the Mogel's paint uses Mark; a bide on a spot may not).
+4. **Rise!**: a new action, standing a pile now.
+5. **Art:** Joseph's four starters cover the Beinbryn, Beinseidr and two Beinorv. New bodies (Beinlur, Spettbein, Tork, Skralla) need sprites; stand-ins can be the sword-and-shield frames, tinted.
+
+## For Joseph
+
+- **The pilot's size.** My proposal: the four built jobs plus the **Beinlur** (one new body, the biggest new question). Then Tork, Spettbein and Skralla.
+- **Rise and the pile rule:** with a Beinlur in the room, uncrushed piles become urgent. Is that the Barrow's lesson you want, or too much on top of the piles?
+- **The names:** Beinlur, Tork, Skralla, Spettbein; the English moves (Challenge, Called Shot, Pinning Shot, Killing Shot, Arrow Rain, Hush, Grave Fire, Dirge, Rise!, Sound the Horn, Steady Eye, Hook Blade, Shoulder Charge, Bone Maul, Grave Cleave).
