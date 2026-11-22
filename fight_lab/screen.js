@@ -614,8 +614,8 @@ const Screen = (() => {
     if (mode === "confirm" && confirmInfo && !busy) {          // Fight with orders missing: say so, then OK or Back
       const n = confirmInfo.missing.length;
       text(14, BOX.rows[0], `${NUM[n] || n} hero${n === 1 ? " does" : "es do"} not have orders.`, C.white);
-      text(14, BOX.rows[1], confirmInfo.stuck.length ? `${confirmInfo.stuck.join(", ")} will Guard (no Halv to use).`
-                                                   : (n === 1 ? "They will Halv-strike a foe at random." : "They will Halv-strike foes at random."), C.dim);
+      text(14, BOX.rows[1], confirmInfo.stuck.length ? `${confirmInfo.stuck.join(", ")} can't attack and will Guard.`
+                                                   : (n === 1 ? "They will strike a foe at random." : "They will strike foes at random."), C.dim);
       boxItem(BOX.utilX[0], BOX.rows[2], textW("OK"), "OK", autopilot, true, true);
       boxItem(BOX.utilX[1], BOX.rows[2], textW("Back"), "Back", back, true);
       return;
@@ -787,7 +787,9 @@ const Screen = (() => {
     if (!canFight()) return;
     if (!ready()) {                                // orders missing: ask first, autopilot on OK
       const missing = S.awaiting.filter(id => !orders[id]);
-      const stuck = missing.filter(id => { const h = opts[id] && opts[id].halv; return !h || !h.afford || (h.aim !== "self" && h.aim !== "all" && !h.targets.length); });
+      const usable = m => m && m.afford && !m.drops && (m.aim === "self" || m.aim === "all" || m.targets.length);
+      const stuck = missing.filter(id => { const o = opts[id]; if (!o) return true;   // no Halv: their simplest attack (lab.autofill)
+        return !(o.halv ? usable(o.halv) : o.moves.some(m => m.kind === "damage" && usable(m))); });
       confirmInfo = { missing, stuck: stuck.map(id => units[id] ? units[id].name : id) }; mode = "confirm"; pending = null; inspectCard = null;
       return;
     }

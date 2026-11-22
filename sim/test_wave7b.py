@@ -18,12 +18,22 @@ class TheHalvIsAPick(unittest.TestCase):
         o = b.options(v.uid)
         self.assertIsNone(o["halv"]); self.assertEqual(len(o["moves"]), 4)
 
-    def test_autofill_guards_without_a_halv(self):
+    def test_autofill_uses_the_simplest_attack_without_a_halv(self):   # Joseph, Nov 21: the cheapest damaging move, else Guard
         lab.set_seed(1)
         lab.make_party(json.dumps([dict(cls=c, level=50, kit=3) for c in ("Dagskald", "Skurmar", "Vasara")]))
         lab.calib_room("elite", 4, "", 1); lab.start("party")
+        out = {o["id"]: o for o in json.loads(lab.autofill())}
+        b = lab.S["battle"]; names = {u.uid: u.name for u in b.party}
+        shown = {names[k]: v["shown"] for k, v in out.items()}
+        self.assertEqual(shown, {"Dagskald": "Sol", "Skurmar": "Blast", "Vasara": "Hevn"}, shown)   # each kit's cheapest attack
+
+    def test_autofill_never_takes_a_last_swing(self):
+        lab.set_seed(1)
+        lab.make_party(json.dumps([dict(cls="Vasara", level=50, kit=3)]))
+        lab.calib_room("elite", 4, "", 1); lab.start("party")
+        v = lab.S["battle"].party[0]; v.hp = 10                                   # Hevn (16) and the rest would drop her
         out = json.loads(lab.autofill())
-        self.assertTrue(out); self.assertTrue(all(o["key"] == "guard" for o in out), out)
+        self.assertEqual(out[0]["key"], "guard")
 
     def test_ai_fights_without_one(self):
         from composer import shaped_room, catalog, spawn, CALIB_PLACES

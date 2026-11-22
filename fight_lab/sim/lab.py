@@ -148,7 +148,9 @@ def submit(uid, key, target_json="null"):
         return _j(dict(ok=False, error=str(e)))
 
 def autofill():
-    """Fight with missing orders: every hero without one Halv-strikes. Targets are random but spread: each pick skips
+    """Fight with missing orders: every hero without one Halv-strikes, or, with no Halv (a full kit, Nov 21), uses
+    their simplest attack: the cheapest damaging move they can afford that isn't a last swing; with none, Guards.
+    Targets are random but spread: each pick skips
     foes already picked this round, and the chain starts over once every foe is taken. Living foes before bone piles.
     No hidden information is used. Picks go through submit, so the record replays them exactly."""
     b = S["battle"]; pend = S["record"]["pending"]
@@ -160,7 +162,9 @@ def autofill():
         except (KeyError, ValueError, AttributeError): return False
     taken, out = [], []
     for uid in missing:
-        h = b.options(uid)["halv"]
+        o = b.options(uid)
+        h = o["halv"] or min((m for m in o["moves"] if m["kind"] == "damage" and m["afford"] and not m.get("drops")
+                              and (m["aim"] in ("self", "all") or m["targets"])), key=lambda m: m["cost"], default=None)
         if h and h["afford"] and (h["aim"] in ("self", "all") or h["targets"]):
             t = None
             if h["aim"] not in ("self", "all"):
