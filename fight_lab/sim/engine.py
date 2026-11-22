@@ -659,12 +659,13 @@ class Battle:
         """The new game's roll (Nov 21, classes.md 7d), as chances: (whiff, graze, crit). A damage hit reads the
         attacker's ACC against the target's EVA: ahead, crits 1 in 3 and no graze; behind, whiffs 1 in 3 (then the
         plain roll); even, the plain roll. A move that can't miss (Blixt on two knots) neither whiffs nor grazes.
-        A status move's own roll (a = None, or no damage) is always the plain one."""
+        A status move rolls the same way (Nov 22, Joseph: the accuracy roll is the only gamble); anything else
+        (a = None) takes the plain roll."""
         a = a or {}
         sure = self.sure_strike(att, a)
         bonus = a.get("crit_bonus", 0.0)
         graze, crit = (0.0 if sure else GRAZE_BASE), CRIT_BASE + att.attrs["DEX"] / 20 / 100 + bonus
-        if a.get("kind") != "damage": return 0.0, graze, crit
+        if a.get("kind") not in ("damage", "status"): return 0.0, graze, crit   # Nov 22: a status move rolls as a hit
         net = self.net_stage(att, dfn)
         if net >= 1: return 0.0, 0.0, AHEAD_CRIT + bonus
         if net <= -1 and not sure:
@@ -787,7 +788,9 @@ class Battle:
 
     def capped(self, t, status):
         """Is a counter status already as deep as it goes on t (Blinded 3)? Then landing it again does nothing."""
-        if status not in COUNTER_OF: return status in t.status
+        if status not in COUNTER_OF:
+            if self.stacked(status): return t.status.get(status, {}).get("rounds", 0) >= STACK_CAP
+            return status in t.status
         stat, sign = COUNTER_OF[status]
         return t.stage(stat) * sign >= STACK_CAP
 
@@ -801,13 +804,20 @@ class Battle:
         d = row["duration"]
         inst["rounds"] = UNTIL_USED if d is None else (rng.randint(*d) if rng else sum(d) / 2) if isinstance(d, tuple) else d
         if row.get("per_stack"): inst["rounds"] += row["per_stack"] * (stacks - 1)       # a Mer Pin lasts longer
+        if self.stacked(status): inst["rounds"] = min(STACK_CAP, stacks); inst["touched"] = True   # new game: rounds
         if "fade" in row: inst["step"] = 0
         if row.get("tick", {}).get("power"): inst["dmg"] = self.dot_blow(src, tgt, status, tier, move)
         return inst
 
+    def stacked(self, status):
+        """Is this status, in this fight, a flat ailment whose number is rounds (the new game, Nov 22)?"""
+        return getattr(self, "new_game", False) and status in STACKED_AILMENTS
+
     def reapplied(self, status, old, new):
         """The one re-application policy, read by the engine and the AI alike (review C17). None: refused."""
         row = STATUSES.get(status, dict(reapply="refuse"))
+        if self.stacked(status):                        # new game: adding adds, to the cap, and holds it this round
+            return new if old is None else dict(old, rounds=min(STACK_CAP, old["rounds"] + new["rounds"]), touched=True)
         if old is None or row["reapply"] == "overwrite": return new
         if row["reapply"] == "refresh": return dict(new, rounds=max(new["rounds"], old["rounds"]))
         return None                                     # refuse
@@ -842,7 +852,7 @@ class Battle:
             return True
         else:
             row = STATUSES.get(status, dict(duration=STATUS_DURATION, reapply="refuse"))
-            if row["reapply"] == "refuse" and status in tgt.status: return False
+            if row["reapply"] == "refuse" and status in tgt.status and not self.stacked(status): return False
             inst = self.reapplied(status, tgt.status.get(status), self.status_instance(src, tgt, status, stacks, tier, move, self.rng))
             tgt.status[status] = inst
         src.stats["statuses"] += 1
@@ -854,8 +864,9 @@ class Battle:
         if result in ("graze", "whiff") or not tgt.alive: return
         if a["status"] and a.get("rider_sure"):      # a counter rider lands on every hit, a stack a tier (Brakrosh)
             self.apply_status(att, tgt, a["status"], 1.0, STACKS_BY_TIER.get(a["tier"], 1), a["tier"])
-        elif a["status"]:    # martial skill with a status (Blot)
-            self.apply_status(att, tgt, a["status"], STATUS_LINE_CHANCE[a["tier"]] * self.wil_ratio(att, tgt), tier=a["tier"], move=a)
+        elif a["status"]:    # martial skill with a status (Blot); the new game: certain on a clean hit (Nov 22)
+            chance = 1.0 if self.new_game else STATUS_LINE_CHANCE[a["tier"]] * self.wil_ratio(att, tgt)
+            self.apply_status(att, tgt, a["status"], chance, tier=a["tier"], move=a)
         if a.get("styng_hit") or a.get("designated"): return   # Styng's hit, and a class verb, whose riders are its own
                                                                 # (Blixt's Stun is Lonnblixt's, not the element's; Wave 4c)
         rider = el["rider"]
@@ -1226,6 +1237,8 @@ class Battle:
             tgts, spot = self.intercept(u, a, tgts)        # the net, or an arrow that pins (Styng): Cover takes it whole
             for t in tgts:
                 stacks = STACKS_BY_TIER.get(a["tier"], 1)
+                if self.new_game:
+                    self.status_lands(u, a, t, tgts, spot, stacks, bonus); continue
                 if a.get("styng"):                          # Styng: a hit at 70% of the tier's power, then the status
                     self.styng_hit(u, a, t, tgts, bonus, spot.get(t, t))
                     if not t.alive: continue
@@ -1296,6 +1309,7 @@ class Battle:
             dmg = self.shatter(t, aff, dmg)
             total += dmg; parts.append(dmg)
             u.stats[res if res != "hit" else "hits"] += 1
+        self.last_results = results
         if all(r == "whiff" for r in results):
             self.emit("whiff", f"      Miss! {t.name} takes nothing.", src=u.name, unit=t.name, element=a["element"])
             return
@@ -1393,6 +1407,37 @@ class Battle:
         return getattr(self, "new_game", False) and a.get("element") and a["status"] != "Death" \
             and t.affinity(a["element"]) == "weak"
 
+    def status_lands(self, u, a, t, tgts, spot, stacks, bonus):
+        """The new game's status move on one target (Nov 22, Joseph): the accuracy roll is the only gamble. It rolls
+        as a hit does (behind on ACC against EVA, a whiff 1 in 3); a whiff or a graze lands nothing; a clean hit
+        lands the status for certain, its stacks as the tier gives (a weakness adds one, and the Bonus Round). With
+        Styng the status rides the Styng hit's own roll. Helvad keeps its own gamble."""
+        res = None
+        if a.get("styng"):
+            r = self.styng_hit(u, a, t, tgts, bonus, spot.get(t, t))
+            if not t.alive: return
+            if r == "miss": return                          # the hit whiffed or grazed: the status rode it
+            if r == "hit": res = "hit"
+        if res is None: res = "hit" if a.get("sure") else self.roll(u, t, a)
+        if res == "whiff":
+            u.stats["whiff"] += 1
+            self.emit("whiff", f"      Miss! {t.name} dodges it.", src=u.name, unit=t.name, element=a["element"]); return
+        if res == "graze":
+            self.emit("resist", f"      {t.name} shrugs it off.", unit=t.name); return
+        if res == "crit" and CRIT_EARNS_BONUS and not bonus: self.eligible.add(u)
+        if self.status_weak(u, a, t):                   # the weakness pays status moves too (classes.md: Reyk)
+            if not bonus: self.eligible.add(u); u.stats["weak"] += 1
+            self.emit("weak", f"      {t.name} is weak to it: it takes hold!", unit=t.name, src=u.name, element=a["element"])
+        main = stacks + (1 if self.status_weak(u, a, t) else 0)   # the weakness deepens the main status only
+        chance = 1.0
+        if a["status"] == "Death":
+            aff = {"resist": 0.5, "weak": 1.5, "null": 0.0, "absorb": 0.0}.get(t.affinity("Aska"), 1.0)
+            chance = HELVAD_CHANCE * self.wil_ratio(u, t) * aff
+        landed = self.apply_status(u, t, a["status"], chance, main, a["tier"], a)
+        if landed and not t.alive: self.downed(t); return
+        if landed and a.get("also_status") and t.alive:     # Lonnsveda's Feeble, Lonnpeka's Sundered
+            self.apply_status(u, t, a["also_status"], 1.0, stacks, a["tier"])
+
     def styng_hit(self, u, a, t, tgts, bonus, spot=None):
         """Styng's added hit on a move with no damage of its own (a status move, Egga): the move's damage type (or
         its weapon's) at a["styng"] power, through the shared damage path. No element rider: the move is the effect."""
@@ -1400,8 +1445,10 @@ class Battle:
         hit.update(kind="damage", element=a["styng_el"], power=a["styng"], status=None, styng_hit=True)
         spot = spot or t                                 # a coverer is reached where the ally stood
         if self.reach_mult(u, hit, spot) is None:
-            self.emit("out_of_reach", f"      {t.name} is out of reach of the strike.", unit=u.name, target=t.name); return
+            self.emit("out_of_reach", f"      {t.name} is out of reach of the strike.", unit=u.name, target=t.name); return None
+        self.last_results = []
         self.land(u, hit, t, self.shape_mult(hit, tgts.index(t)) if len(tgts) > 1 and not a["all"] else 1.0, spot, bonus)
+        return "hit" if any(r in ("hit", "crit") for r in self.last_results) else "miss"
 
     def holder(self, u, cell):
         """Who of u's side holds this cell besides u: a living ally, or a Dying hero, who still lies there (C18)."""
@@ -1869,7 +1916,9 @@ class Battle:
         it adds now, a second status riding it (it lands with the main one), someone on the side who cashes it in,
         Styng's hit (which strikes either way), and the Bonus Round a weakness earns. Zero: truly redundant."""
         weak = self.status_weak(u, a, f)
-        chance = 1.0 if weak or a.get("sure") else STATUS_LINE_CHANCE[a["tier"]]
+        if getattr(self, "new_game", False):            # the roll is the only gamble: a clean hit lands it (Nov 22)
+            w, g, _ = self.odds(u, f, a); chance = 1.0 if a.get("sure") else 1 - w - g
+        else: chance = 1.0 if weak or a.get("sure") else STATUS_LINE_CHANCE[a["tier"]]
         main, lands, share = self.status_gain(u, a, f, STACKS_BY_TIER.get(a["tier"], 1) + (1 if weak else 0), ref)
         s = main * chance
         if a.get("also_status") and lands: s += self.also_value(u, f, a, ref) * chance
@@ -2186,6 +2235,7 @@ class Battle:
             u.pushed = set()
         for u in self.units:      # only numbered rounds tick durations
             for s in list(u.status):
+                if self.stacked(s) and u.status[s].pop("touched", False): continue   # added to this round: holds
                 u.status[s]["rounds"] -= 1
                 if u.status[s]["rounds"] <= 0: del u.status[s]
 

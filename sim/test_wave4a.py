@@ -58,10 +58,10 @@ class Pinning(unittest.TestCase):
         b, u, e = self.pinned(dict(tier="Mer"))
         self.assertEqual(e.status["Pinned"]["rounds"], 2)                # three rounds: 1, 2, 3
 
-    def test_a_refresh_never_shortens(self):
+    def test_a_refresh_never_shortens(self):                 # Nov 22: adding adds, to the cap (status rules 7)
         b, u, e = self.pinned(dict(tier="Mer"))
         b.apply_status(u, e, "Pinned", 1.0, 1, "Base")
-        self.assertEqual(e.status["Pinned"]["rounds"], 2)
+        self.assertEqual(e.status["Pinned"]["rounds"], 3)
 
     def test_the_pinned_hero_cant_move_or_be_swapped(self):
         v, d = hero("Vasara", "Krosh"), hero("Dagskald", "Sol"); b = fight([v, d], [dummy()])
@@ -93,13 +93,18 @@ class Pinning(unittest.TestCase):
             self.assertIn(r.uid, next(x for x in b.options(u.uid)["moves"] if x["name"] == m)["targets"])
 
 # ================================================================ Scorched
+class Mid(random.Random):
+    """Every roll comes up the middle: a plain hit, no variance."""
+    def random(self): return 0.5
+
 class Scorching(unittest.TestCase):
     """Scorched ticks off the caster's power (Nov 20, Joseph): one Eld hit at the applying tier's power x SCORCH_POWER,
     from his MAT against the target's MDF and affinity, worked out when it lands; then 100/50/20% of it."""
     def burning(self, parts=None, weak=True):
         """A Sveda on a dummy weak to fire: it lands for sure (the weakness rule)."""
         u = hero("Brennumar", ("Sveda", parts or {})); e = dummy(aff={"Eld": "weak"} if weak else {})
-        b = fight([u], [e]); orders(b, {u.uid: (key(u, u.actions[1]["name"]), e.uid)})
+        b = fight([u], [e]); b.rng = Mid()        # Nov 22: a weakness no longer skips the roll; a plain hit lands it
+        orders(b, {u.uid: (key(u, u.actions[1]["name"]), e.uid)})
         return b, u, e
 
     def ticks(self, b, e): return [x["dmg"] for x in evs(b, "tick", unit=e.name, status="Scorched")]

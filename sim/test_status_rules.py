@@ -49,5 +49,67 @@ class APrintedSizeWins(unittest.TestCase):
         orders(b, {d.uid: (key(d, name), d.uid)})
         self.assertEqual((d.stage("ATK"), d.stage("DEF")), (2, 1))   # its own stat by Mer (2); the rider's printed 1
 
+# ------------------------------------------------------------------ step 2: ailments, flat, the number is rounds
+class Rng(random.Random):
+    """Every roll comes up the same: 0.0 is the first outcome (a whiff when there's one), 0.5 a plain hit."""
+    def __init__(self, x): super().__init__(1); self.x = x
+    def random(self): return self.x
+
+def ng(*units):
+    party = [u for u in units if u.side == "party"]; foes = [u for u in units if u.side == "enemy"]
+    b = Battle(party, foes, random.Random(1), profile="new"); return b
+
+class AilmentsAreRounds(unittest.TestCase):
+    def setUp(self):
+        self.u = hero("Ullar", "Skott"); self.e = dummy(); self.b = ng(self.u, self.e)
+
+    def land(self, status, n=1): return self.b.apply_status(self.u, self.e, status, 1.0, n)
+
+    def test_poison_1_lasts_the_round_after_it_lands(self):        # Joseph's: it won't drop until R2's end
+        self.land("Poisoned"); self.assertEqual(self.e.status["Poisoned"]["rounds"], 1)
+        self.b.end_round(); self.assertEqual(self.e.status["Poisoned"]["rounds"], 1)   # never the round it lands
+        self.b.end_round(); self.assertNotIn("Poisoned", self.e.status)
+
+    def test_adding_adds_and_holds_the_round(self):
+        self.land("Poisoned"); self.b.end_round()
+        self.land("Poisoned"); self.assertEqual(self.e.status["Poisoned"]["rounds"], 2)
+        self.b.end_round(); self.assertEqual(self.e.status["Poisoned"]["rounds"], 2)    # added to this round: no drop
+        self.b.end_round(); self.assertEqual(self.e.status["Poisoned"]["rounds"], 1)
+        self.b.end_round(); self.assertNotIn("Poisoned", self.e.status)
+
+    def test_the_cap_is_three(self):
+        for _ in range(5): self.land("Bleeding")
+        self.assertEqual(self.e.status["Bleeding"]["rounds"], STACK_CAP)
+        self.assertTrue(self.b.capped(self.e, "Bleeding"))
+
+    def test_refuse_is_gone(self):
+        self.assertTrue(self.land("Silenced")); self.assertTrue(self.land("Silenced"))
+        self.assertEqual(self.e.status["Silenced"]["rounds"], 2)
+
+    def test_the_old_game_keeps_its_rules(self):
+        b = Battle([self.u], [self.e], random.Random(1), profile="legacy")
+        b.apply_status(self.u, self.e, "Poisoned", 1.0); self.assertEqual(self.e.status["Poisoned"]["rounds"], STATUSES["Poisoned"]["duration"])
+        self.assertFalse(b.apply_status(self.u, self.e, "Poisoned", 1.0))             # refused, as before
+
+class TheRollIsTheOnlyGamble(unittest.TestCase):
+    def pin(self, eva, x):
+        u = hero("Ullar", "Naglskott"); e = dummy(); b = fight([u], [e]); e.stages["EVA"] = eva; b.rng = Rng(x)
+        orders(b, {u.uid: (key(u, "Naglskott"), e.uid)}); return e, b
+
+    def test_a_clean_hit_lands_it_for_certain(self):
+        e, b = self.pin(0, 0.5); self.assertIn("Pinned", e.status)
+
+    def test_behind_it_can_whiff(self):
+        e, b = self.pin(1, 0.0); self.assertNotIn("Pinned", e.status)
+        self.assertTrue(evs(b, "whiff", unit=e.name))
+
+    def test_a_graze_shrugs_it_off(self):
+        e, b = self.pin(0, 0.0); self.assertNotIn("Pinned", e.status)                  # even: 0.0 is a graze
+
+    def test_a_rider_lands_on_every_clean_hit(self):
+        u = hero("Ullar", ("Skott", dict(lonn=True))); e = dummy(); b = fight([u], [e]); b.rng = Rng(0.5)
+        orders(b, {u.uid: (key(u, "Blotskott"), e.uid)})
+        self.assertIn("Bleeding", e.status)
+
 if __name__ == "__main__":
     unittest.main()

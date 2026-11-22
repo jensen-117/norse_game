@@ -105,6 +105,8 @@ This replaces the counter and bundle timing in sections 2 and 3 (their names, tu
 - Poisoned ticks at the start of each round; Bleeding bites when its bearer acts; Slowed and Reeling are read when the round's order is set.
 - Base adds 1 round, Mer 2, Jatte 3; a Drif flurry adds one a hit.
 
+- **Built (step 2, Nov 22):** Poisoned, Bleeding, Pinned and Silenced are rounds in the new game (`data.STACKED_AILMENTS`): each landing adds, to 3; a round nobody added to it, it drops one, never the round it lands. A status move rolls as a hit does (a whiff 1 in 3 when behind; a graze shrugs it off); a clean hit lands it for certain, a weakness adds a stack to the main status only; with Styng the status rides the Styng hit's roll; damage riders land on every clean hit. Helvad keeps its gamble. Old fights identical; `test_status_rules.py`. The gauntlet barely moved (within the noise of 60 runs), since today's foes rarely lean on ailments: the trim waits for the Beinar, who will. Still to do: the move cards still say "may" (they change with the card pass).
+
 **Bundles** (Feared, Steadfast, Cursed, Venom, Disarmed) step down like a stat. **Their stat parts are as big as their number** (Cursed 2 is Hexed 2); **their ailment parts are on while they last** (Cursed 2 is also Poisoned while it holds).
 
 **One cap: 3** (stats -3 to +3, bundles 1 to 3, ailments up to 3 rounds). The escape hatch, if a fight needs breathing room: -5 to +5.

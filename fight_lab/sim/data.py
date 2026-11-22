@@ -399,6 +399,11 @@ STAT_NAMES = {"ATK": ("Feeble", "Mighty"), "DEF": ("Sundered", "Fortified"), "AC
               "EVA": ("Marked", "Evasive"), "SPD": ("Slowed", "Quick"), "MAT": (None, None), "MDF": (None, None)}
 COUNTER_OF = {n: (stat, sign) for stat, pair in STAT_NAMES.items() for n, sign in zip(pair, (-1, 1)) if n}
 COUNTER_OF["AccDown"] = ("ACC", -1)            # the Reyk spirits' old rider: Blinded 1
+# Nov 22 (beinar_pilot Part 1, 7 and 7b): in the new game these ailments are flat, and their number is rounds: each
+# landing adds its stacks (one a stack), to STACK_CAP; a round nobody added to it, it drops by one (never the round it
+# lands). Reeling and Chilled join in step 3, the bundles in step 4; the bespoke ones (Scorched, Frozen, Stunned, Bound,
+# Song) keep their own rules.
+STACKED_AILMENTS = ("Poisoned", "Bleeding", "Pinned", "Silenced")
 STACKS_BY_TIER = {"Halv": 1, "Base": 1, "Mer": 2, "Jatte": 3, "Ur": 3}   # a status move's stacks (Mer adds two)
 FADE = (1.0, 0.5, 0.2)    # the fade shape: Frozen's chance to hold, action by action; Scorched's tick, round by round
 KVAD_CAP = 3              # Song (Kvad; Nov 20, Joseph): a counter on each ally, up to three; a stack a tier per singing

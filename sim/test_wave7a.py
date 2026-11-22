@@ -50,11 +50,11 @@ class TheOdds(unittest.TestCase):
         self.u.stages["SPD"] = 3; self.e.stages["SPD"] = -3
         self.assertEqual(self.odds()[:2], (0.0, GRAZE_BASE))
 
-    def test_a_status_moves_roll_is_its_own(self):
+    def test_a_status_move_rolls_as_a_hit(self):            # Nov 22, Joseph: the accuracy roll is the only gamble
         self.e.stages["EVA"] = 3
         self.assertEqual(self.b.odds(self.u, self.e, None)[0], 0.0)
         nagl = next(a for a in hero("Ullar", "Naglskott").actions if a["name"] == "Naglskott")
-        self.assertEqual(self.b.odds(self.u, self.e, nagl)[0], 0.0)
+        self.assertAlmostEqual(self.b.odds(self.u, self.e, nagl)[0], 1 / 3)
 
     def test_a_sure_strike_never_misses(self):
         s = hero("Skurmar", "Blixt"); e = dummy(); b = battle(s, e); s.knots = 2
