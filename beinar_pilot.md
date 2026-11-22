@@ -349,7 +349,7 @@ Counterplay: Evasive on the weakest (Gyllenlykt), Lya, Skolja the Pin; Blinded a
 
 | Element | Bolt | Its extra |
 |---|---|---|
-| Eld | Fire Bolt | **Corpse Candle** (Scorched: the folklore lights over graves) |
+| Eld | Fire Bolt | **Corpse Candle** (Singed, toward Scorched: the folklore lights over graves) |
 | Hrim | Frost Bolt | the chill rides the bolt |
 | Blixt | Lightning Bolt | the stun rides the bolt |
 | Natt | Shadow Bolt | |
@@ -370,7 +370,7 @@ Brain, goal *soften the line*:
 1. The party's strongest caster isn't Silenced: **Silence** it.
 2. The boss's focus isn't Cursed (or has fewer stacks than this Beinseidr can give): Curse it.
 3. (Elite, Boss) the Front's toughest hero isn't Sundered: Sunder it.
-4. (Eld) the focus isn't Scorched: Corpse Candle.
+4. (Eld) the focus isn't Scorched: Corpse Candle (Singed; a single-target candle on Singed 2 scorches).
 5. Its bolt on the most-hurt Cursed hero (Hexed: magic lands harder). 6. Fall back.
 
 Counterplay: **Bannskott** (it pays MP: Silence it back), Skolja, Sol, and reaching the Rear.
