@@ -83,6 +83,29 @@ Two parts. **Part 1** is the status rules for the whole new game: what every mov
 - Variants are reward-card material from one grammar: **Mer** (two steps), **Flok** (a row), **Styng** (a hit of that element first, then the step), **Lonn** (the step plus the element's own rider: Eld gives Burn 1, Reyk gives Blinded; the rest when designed).
 - Names: the game reads Ogn as OH-gun, so Ognjord is OH-gun-yord (the j is the Norse y, learned from Jord); OG-n is the source's own reading, kept in its origin note. Mot without an n (Motnjord's "tnj" is hard in English).
 
+## 7. Under discussion (Nov 22): one number per status
+
+Joseph's questions: should the range grow (to -5 to +5), what a stack means, and whether Slowed is a minor Reeling. Claude's draft of the simpler system hiding in today's rules (most of it is already true, just unstated):
+
+1. **Every status is one number** (1 to the cap; opposites share one number, minus to plus).
+2. **It counts down one at the end of every round.** Adding to it adds (to the cap). No "untouched round" bookkeeping; topping up has to out-pace the count, and costs the topper its turn.
+3. **The tier says how much a move adds:** Halv 1, Base 2, Mer 3, Jatte 4, Ur 5. (This is the case for a cap of 5: one point per tier.)
+4. **Each status says what one point does, and is one of two kinds:**
+   - **scaling**, the effect times the number: Poisoned (damage a point), Fortified (DEF a point), Frozen (20% a point to lose the turn: Frozen 5 is certain, then 80, 60, 40, 20);
+   - **flat**, on while the number lasts, which is then only how long: Keen, Marked, Pinned, Silenced, Slowed, Reeling.
+5. **Opposites net on the one number:** Keen 2 meets Blinded 3, Blinded 1.
+6. **Named exceptions, few:** fades by use (Song, Stunned), breaks when hit (Frozen), counts when you act (Bleeding).
+
+Slowed and Reeling under it: both flat. Slowed puts you at the back of your group; Reeling drops you into Late. One reduction for N rounds, not five sizes of reduction: within a group there's only front and back, so there's nothing to scale.
+
+The cap: -3 to +3 is already seven values; -5 to +5 is eleven. Five gains the tier ladder one point each and finer steps (each DEF point near 15% instead of 25%, the same top); the cost is retuning every per-point number and statuses that last up to five rounds, most of a fight.
+
+## 8. Open, for later
+
+- **What Skolja washes off:** bundles, ailments, lowered stages, and also an Ogn push on the affinity ladder? If not, a forced weakness ends only by waiting or by Mot.
+- **Bosses and statuses:** a Fornbein that can be Pinned, Feared and Silenced at once may fold. A boss resists one kind, or every status counts down faster on a boss.
+- **Bundles with no opposite:** Cursed, Venom and Disarmed answer only to Skolja. Fine, or each wants an answer word, as Mot answers Ogn?
+
 ---
 
 # Part 2: Brains
