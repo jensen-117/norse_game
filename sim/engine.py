@@ -253,7 +253,8 @@ class Unit:
     def counter_name(self, stat):
         """The name a stat's counter shows (Blinded 2, Quick 1), or None at zero or for an unnamed stat."""
         n = self.stage(stat)
-        name = STAT_NAMES[stat][0 if n < 0 else 1] if n else None
+        names = NEW_GAME_STAT_NAMES.get(stat, STAT_NAMES[stat]) if getattr(self, "new_game", False) else STAT_NAMES[stat]
+        name = names[0 if n < 0 else 1] if n else None
         return f"{name} {abs(n)}" if name else None
 
     silenced = property(lambda s: s.has_flag("blocks_mp"))
@@ -285,6 +286,8 @@ def status_stat(u, stat):
     n, ng = 0, getattr(u, "new_game", False)
     for s, inst in u.status.items():
         row = STATUSES.get(s, {})
+        if ng and s in BUNDLES:                         # a bundle's stat parts are as big as its number (step 4)
+            n += BUNDLES[s].get("stats", {}).get(stat, 0) * inst.get("rounds", 1); continue
         n += (NEW_GAME_STAT_SOURCES[s] if ng and s in NEW_GAME_STAT_SOURCES else row.get("stats", {})).get(stat, 0)
         if "pick" in row: n -= inst.get("stats", []).count(stat)
     return n
@@ -790,7 +793,7 @@ class Battle:
     def capped(self, t, status):
         """Is a counter status already as deep as it goes on t (Blinded 3)? Then landing it again does nothing."""
         if status not in COUNTER_OF:
-            if self.stacked(status): return t.status.get(status, {}).get("rounds", 0) >= STACK_CAP
+            if self.stacked(status): return t.status.get(status, {}).get("rounds", 0) >= self.cap_of(status)
             return status in t.status
         stat, sign = COUNTER_OF[status]
         return t.stage(stat) * sign >= STACK_CAP
@@ -805,20 +808,29 @@ class Battle:
         d = row["duration"]
         inst["rounds"] = UNTIL_USED if d is None else (rng.randint(*d) if rng else sum(d) / 2) if isinstance(d, tuple) else d
         if row.get("per_stack"): inst["rounds"] += row["per_stack"] * (stacks - 1)       # a Mer Pin lasts longer
-        if self.stacked(status): inst["rounds"] = min(STACK_CAP, stacks); inst["touched"] = True   # new game: rounds
+        if self.stacked(status): inst["rounds"] = min(self.cap_of(status), stacks); inst["touched"] = True   # new game
         if "fade" in row: inst["step"] = 0
         if row.get("tick", {}).get("power"): inst["dmg"] = self.dot_blow(src, tgt, status, tier, move)
         return inst
 
     def stacked(self, status):
-        """Is this status, in this fight, a flat ailment whose number is rounds (the new game, Nov 22)?"""
-        return getattr(self, "new_game", False) and status in STACKED_AILMENTS
+        """Is this status, in this fight, one whose number counts (the new game, Nov 22): a flat ailment, where it
+        is rounds, or a bundle, where it is also the size of its stat parts?"""
+        return getattr(self, "new_game", False) and (status in STACKED_AILMENTS or status in BUNDLES)
+
+    def cap_of(self, status):
+        return BUNDLES.get(status, {}).get("cap", STACK_CAP) if getattr(self, "new_game", False) else STACK_CAP
+
+    def wears(self, u, ailment):
+        """Is u under this ailment, by itself or as part of a bundle (Cursed's Poison)? Flat: on or off."""
+        if ailment in u.status: return True
+        return getattr(self, "new_game", False) and any(ailment in BUNDLES[b].get("ailments", ()) for b in u.status if b in BUNDLES)
 
     def reapplied(self, status, old, new):
         """The one re-application policy, read by the engine and the AI alike (review C17). None: refused."""
         row = STATUSES.get(status, dict(reapply="refuse"))
         if self.stacked(status):                        # new game: adding adds, to the cap, and holds it this round
-            return new if old is None else dict(old, rounds=min(STACK_CAP, old["rounds"] + new["rounds"]), touched=True)
+            return new if old is None else dict(old, rounds=min(self.cap_of(status), old["rounds"] + new["rounds"]), touched=True)
         if old is None or row["reapply"] == "overwrite": return new
         if row["reapply"] == "refresh": return dict(new, rounds=max(new["rounds"], old["rounds"]))
         return None                                     # refuse
@@ -863,6 +875,13 @@ class Battle:
         else:
             row = STATUSES.get(status, dict(duration=STATUS_DURATION, reapply="refuse"))
             if row["reapply"] == "refuse" and status in tgt.status and not self.stacked(status): return False
+            opp = BUNDLE_OPPOSITE.get(status) if self.new_game else None
+            if opp and opp in tgt.status:                # opposite bundles pull stack for stack (Feared, Steadfast)
+                o = tgt.status[opp]; pulled = min(o["rounds"], stacks)
+                o["rounds"] -= pulled; o["touched"] = True; stacks -= pulled
+                if o["rounds"] <= 0: del tgt.status[opp]
+                self.emit("status", f"      {tgt.name}'s {opp} pulls against it.", unit=tgt.name, status=opp, src=src.name)
+                if stacks <= 0: return True
             inst = self.reapplied(status, tgt.status.get(status), self.status_instance(src, tgt, status, stacks, tier, move, self.rng))
             tgt.status[status] = inst
         src.stats["statuses"] += 1
@@ -1029,9 +1048,9 @@ class Battle:
         """Statuses that cost HP at this moment ("round_start": Poison; "action": Bleeding). False if u went down."""
         for s, row in STATUSES.items():
             tk = row.get("tick")
-            if not tk or tk["when"] != when or s not in u.status or not u.alive: continue
+            if not tk or tk["when"] != when or not self.wears(u, s) or not u.alive: continue
             if tk.get("heal"): continue                    # a healing tick (Song) is sing()'s, after the hurting ones
-            inst = u.status[s]
+            inst = u.status.get(s, {})
             if "power" in tk:                              # Scorched: the caster's blow, 100%, 50%, 20%, then out
                 dmg = max(1, int(inst["dmg"] * row["fade"][inst["step"]])); inst["step"] += 1
                 if inst["step"] >= len(row["fade"]): del u.status[s]
@@ -1375,6 +1394,10 @@ class Battle:
         """A crash (Kasta, Svepa) hurts x by BUMP_SHARE of its own max HP plus BUMP_SHARE of y's: relative to both bodies."""
         return max(1, int(BUMP_SHARE * (x.maxhp + y.maxhp)))
 
+    def unshoved(self, x):
+        """Can no shove move x? Pinned (rooted), or, in the new game, Steadfast (set feet: step 4)."""
+        return x.rooted or (getattr(self, "new_game", False) and "Steadfast" in x.status)
+
     def bumped(self, src, x, y):
         dmg = self.bump(x, y); x.hp -= dmg; src.stats["dealt"] += dmg
         if dmg > 0: x.hits_taken += 1
@@ -1393,13 +1416,14 @@ class Battle:
         if a.get("styng"):
             self.styng_hit(u, a, t, tgts, bonus, spot.get(t, t))
             if not t.alive: return
-        if t.rooted:
-            self.emit("rooted", f"      {t.name} is pinned: it doesn't budge.", unit=u.name, pinned=t.name, move=a["name"]); return
+        if self.unshoved(t):
+            how = "pinned" if t.rooted else "steadfast"
+            self.emit("rooted", f"      {t.name} is {how}: it doesn't budge.", unit=u.name, pinned=t.name, move=a["name"]); return
         dest = self.shove_cell(t, a.get("push"))
         if dest is None:
             self.emit("fizzle", f"      {t.name} can't go any further.", unit=u.name, move=a["name"], shown=self.shown(u, a)); return
         other = self.holder(t, dest)
-        if other is not None and (other.rooted or not other.alive):    # a wall: the bump without the swap
+        if other is not None and (self.unshoved(other) or not other.alive):    # a wall: the bump without the swap
             self.emit("wall", f"      {t.name} is slammed into {other.name}!", unit=t.name, wall=other.name)
             self.bumped(u, t, other); self.bumped(u, other, t); return
         if other is not None: other.cell = t.cell
@@ -1752,7 +1776,7 @@ class Battle:
                 melee = [x for x in self.allies(u) if self.wants_front(x) and x is not u]
                 for f in self.foes(u):
                     s = self.styng_value(u, a, f)
-                    dest = None if f.rooted else self.shove_cell(f, a.get("push"))
+                    dest = None if self.unshoved(f) else self.shove_cell(f, a.get("push"))
                     if dest is not None:
                         other = self.holder(f, dest)
                         if other is not None: s += self.bump(f, other) + self.bump(other, f)
@@ -2062,7 +2086,7 @@ class Battle:
         """The speed group an action resolves in (combat_spec Part 3)."""
         g = a.get("group", SPEED_GROUP_BY_KIND.get(a["kind"], 0))
         if g < PROTECT_GROUP and getattr(self, "new_game", False):   # Late, one primitive (Nov 22, step 3)
-            if any(s in u.status for s in LATE_STATUSES): g = min(g, FEAR_GROUP)
+            if any(s in u.status for s in LATE_STATUSES) and "Steadfast" not in u.status: g = min(g, FEAR_GROUP)
             return g
         if g < PROTECT_GROUP:                       # Fear drops anything below protection
             for s in u.status:

@@ -111,6 +111,8 @@ This replaces the counter and bundle timing in sections 2 and 3 (their names, tu
 
 **Bundles** (Feared, Steadfast, Cursed, Venom, Disarmed) step down like a stat. **Their stat parts are as big as their number** (Cursed 2 is Hexed 2); **their ailment parts are on while they last** (Cursed 2 is also Poisoned while it holds).
 
+- **Built (step 4, Nov 22):** `data.BUNDLES` in the new game: Feared (DEF -1 a stack, and Late), Steadfast (DEF +1 a stack; never made Late, never shoved; a wall for bumps; it can still be Chilled and frozen: the cold isn't the stagger), Cursed (MDF -1 a stack, Hexed, and Poisoned), Venom (Poisoned and Bleeding), Disarmed (ATK and MAT -1 a stack, Feeble and Waning; cap 2). Each counts like an ailment (adds, holds the round it's added to, drops one a round left alone); stat parts are as big as the number; ailment parts are on while it lasts, and two sources of one ailment keep a single one on (one Poison tick, not two). Feared and Steadfast pull stack for stack. MAT and MDF counters are named in the new game (Waxing, Waning, Warded, Hexed). The old game keeps its Cursed (two rolled stats) and its names. Old fights identical; the gauntlet within noise.
+
 **One cap: 3** (stats -3 to +3, bundles 1 to 3, ailments up to 3 rounds). The escape hatch, if a fight needs breathing room: -5 to +5.
 
 **Bespoke, one line each:** Frozen (loses turns; any damaging hit breaks it and shatters), Stunned (clears the first time it costs an action), Song (heals at each round's start until it runs out).

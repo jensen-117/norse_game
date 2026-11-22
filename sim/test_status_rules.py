@@ -158,5 +158,53 @@ class FrozenReplacesChilled(unittest.TestCase):
         u = hero("Ullar", "Skott"); e = dummy(); b = Battle([u], [e], random.Random(1), profile="legacy")
         b.apply_status(e, u, "Pinned", 1.0); self.assertEqual(u.stage("SPD"), -1)
 
+# ------------------------------------------------------------------ step 4: bundles
+class Bundles(unittest.TestCase):
+    def setUp(self):
+        self.u = hero("Ullar", "Skott"); self.e = dummy(); self.b = ng(self.u, self.e)
+
+    def land(self, s, n=1): return self.b.apply_status(self.u, self.e, s, 1.0, n)
+
+    def test_stat_parts_are_as_big_as_the_number(self):
+        self.land("Cursed", 2); self.assertEqual(self.e.stage("MDF"), -2); self.assertEqual(self.e.counter_name("MDF"), "Hexed 2")
+        self.land("Disarmed", 3); self.assertEqual(self.e.status["Disarmed"]["rounds"], 2)          # its own cap
+        self.assertEqual((self.e.stage("ATK"), self.e.stage("MAT")), (-2, -2))
+
+    def test_it_steps_down_like_an_ailment(self):
+        self.land("Cursed", 2); self.b.end_round(); self.assertEqual(self.e.status["Cursed"]["rounds"], 2)
+        self.b.end_round(); self.assertEqual(self.e.stage("MDF"), -1)
+        self.b.end_round(); self.assertNotIn("Cursed", self.e.status)
+
+    def test_its_ailment_parts_are_on_while_it_lasts_and_dont_double(self):
+        self.land("Cursed"); self.land("Poisoned"); hp = self.e.hp
+        self.assertTrue(self.b.tick_statuses(self.e, "round_start"))
+        self.assertEqual(hp - self.e.hp, max(1, int(self.e.maxhp * STATUSES["Poisoned"]["tick"]["share"])))   # one tick
+        self.assertTrue(self.b.wears(self.e, "Poisoned"))
+        del self.e.status["Poisoned"]; self.assertTrue(self.b.wears(self.e, "Poisoned"))   # Cursed alone keeps it on
+
+    def test_venom_poisons_and_bleeds(self):
+        self.land("Venom"); self.assertTrue(self.b.wears(self.e, "Poisoned")); self.assertTrue(self.b.wears(self.e, "Bleeding"))
+
+    def test_opposites_pull_stack_for_stack(self):
+        self.land("Feared", 2); self.land("Steadfast", 1)
+        self.assertEqual(self.e.status["Feared"]["rounds"], 1); self.assertNotIn("Steadfast", self.e.status)
+        self.land("Steadfast", 3)
+        self.assertNotIn("Feared", self.e.status); self.assertEqual(self.e.status["Steadfast"]["rounds"], 2)
+
+    def test_feared_is_late_and_drops_the_guard(self):
+        self.land("Feared", 2); self.assertEqual(self.e.stage("DEF"), -2)
+        self.assertEqual(self.b.group_of(self.e, dict(kind="damage")), FEAR_GROUP)
+
+    def test_steadfast_blocks_late_and_shoves_but_not_the_cold(self):
+        self.land("Steadfast"); self.land("Reeling")
+        self.assertEqual(self.b.group_of(self.e, dict(kind="damage")), 0)
+        self.assertTrue(self.b.unshoved(self.e))
+        self.land("Chilled"); self.land("Chilled"); self.assertIn("Frozen", self.e.status)
+
+    def test_the_old_game_keeps_its_curse(self):
+        b = Battle([self.u], [self.e], random.Random(1), profile="legacy")
+        b.apply_status(self.u, self.e, "Cursed", 1.0); self.assertIn("stats", self.e.status["Cursed"])    # the rolled pick
+        self.assertIsNone(self.e.counter_name("MDF") if self.e.stage("MDF") == 0 else None)
+
 if __name__ == "__main__":
     unittest.main()

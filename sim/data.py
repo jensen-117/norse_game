@@ -409,6 +409,20 @@ STACKED_AILMENTS = ("Poisoned", "Bleeding", "Pinned", "Silenced", "Reeling", "Ch
 # always spared them): Reeling is Late alone; Chilled is Late, and a second chill freezes (Frozen replaces it); Feared
 # is Late (its DEF part comes with the bundles). Pinned only roots: neither it nor Chilled slows SPD any more.
 LATE_STATUSES = ("Reeling", "Chilled", "Feared")
+
+# Step 4 (Nov 22): bundles, the new game's. A bundle is one named status holding a set of effects a stack; its number
+# steps down like an ailment's (a round nobody added to it, one less; never the round it lands). Its stat parts are as
+# big as its number (Cursed 2 is MDF -2, Hexed 2); its ailment parts are on while it lasts (a flat ailment is on or off:
+# Cursed and a separate Poison keep the one Poison on as long as either lasts). Opposites pull stack for stack.
+BUNDLES = {
+    "Feared":    dict(stats={"DEF": -1}, late=True),                       # Late, and the guard drops (Ogn)
+    "Steadfast": dict(stats={"DEF": 1}, blocks_late=True, unshoved=True),  # set feet: never Late, never shoved (Mot)
+    "Cursed":    dict(stats={"MDF": -1}, ailments=("Poisoned",)),          # Hexed and Poisoned (Dokkn; the foes' Curse)
+    "Venom":     dict(ailments=("Poisoned", "Bleeding")),                  # a weapon trait, or a move
+    "Disarmed":  dict(stats={"ATK": -1, "MAT": -1}, cap=2),                # Feeble and Waning (Disarm); 1 or 2 stacks
+}
+BUNDLE_OPPOSITE = {"Feared": "Steadfast", "Steadfast": "Feared"}
+NEW_GAME_STAT_NAMES = {"MAT": ("Waning", "Waxing"), "MDF": ("Hexed", "Warded")}   # named in the new game only
 NEW_GAME_STAT_SOURCES = {"Pinned": {}, "Chilled": {}}    # the new game's override of a status row's "stats"
 STACKS_BY_TIER = {"Halv": 1, "Base": 1, "Mer": 2, "Jatte": 3, "Ur": 3}   # a status move's stacks (Mer adds two)
 FADE = (1.0, 0.5, 0.2)    # the fade shape: Frozen's chance to hold, action by action; Scorched's tick, round by round
@@ -457,6 +471,8 @@ STATUSES = {
                      skip=dict(chance=1.0, used_up=True, line="{name} is caught in the net and loses the action!")),
     "Feared":   dict(duration=STATUS_DURATION, reapply="refuse", group=FEAR_GROUP),
     "Reeling":  dict(duration=1, reapply="refuse"),     # the new game's: Late alone (Vingla, Besk's crash); rounds
+    "Steadfast": dict(duration=1, reapply="refuse"),    # the new game's bundle (BUNDLES); Mot
+    "Venom":    dict(duration=1, reapply="refuse"),     # the new game's bundle (BUNDLES)
     "Disarmed": dict(duration=STATUS_DURATION, reapply="refuse", stats={"ATK": -1, "MAT": -1}),
     "Cursed":   dict(duration=STATUS_DURATION, reapply="refuse", pick=(["ATK", "MAT", "DEF", "MDF"], 2)),
     "Silenced": dict(duration=STATUS_DURATION, reapply="refuse", blocks_mp=True),
