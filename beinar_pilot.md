@@ -112,6 +112,20 @@ This replaces the counter and bundle timing in sections 2 and 3 (their names, tu
 
 **Considered and set aside:** one number carrying both size and time (the taper: Feeble 3, 2, 1), every stat flat (no build-up), a level with a refreshing timer (SMT V's way: two numbers on a tag), linear 20% steps (x0.2 at Feeble 4 makes a foe harmless).
 
+## 7b. The watertightness pass (Nov 22, Joseph): settled
+
+- **Ailments land in stacks, one round a stack; most moves give 1.** A move lists its stacks (Death Bite: Poison 1); each landing adds them (Drif hits, one each); the cap is 3; Mer and Jatte (2 and 3) exist but are rare. The per-tick size is the tuning knob (Poison: a share of max HP at each round's start). The card reads **"Death Bite | 0 HP | ~80 | Poison 1"** (name, cost, clean damage, effect); hovering Poison says what one round does and that the number is rounds left. Two Draugr biting one hero hold it at Poison 3: fair, and answered by Skolja or by killing one.
+- **No foe spams a move:** a brain rule ("not the same move twice in a row") for moves like Death Bite, rather than a new cooldown mechanic. An HP cost stays an option.
+- **"Refuse" reapply goes:** today Poisoned, Bleeding, Silenced, Stunned, Feared, Cursed and Disarmed bounce off a second landing; in the new game adding adds.
+- **Bespoke:** Scorched (the fading burn the wind stokes), Frozen, Stunned, Song.
+- **Late is one primitive, worn by several:** Reeling is Late alone; **Chilled** is Late and a second chill freezes; **Feared** is Late and DEF down a level a stack (it no longer pins). **Pinned is rooted only** (its hidden SPD -1 goes), so it stays the archers' setup for Fangskott. Late from two sources is still just Late. *(Claude's fill, to confirm: Steadfast, Feared's opposite, becomes DEF up a level a stack, and can't be made Late or shoved.)*
+- **Slowed and Quick are the SPD stat** (a level on the staircase): earlier or later within your group. Not ailments.
+- **Frenzy** (the Stordrattr's, was a second Allaukraft): Mighty 1 and Sundered 1 on its side. One name, one meaning.
+- **Aska loses its automatic Curse rider.** Aska (Natt's child: ash and decay) gets Curse-giving moves instead, through its designated rider (Lonn) and its own words; Natt and Aska are also the home for Ogn moves and for drains (the Seidar's vampiric sustain). The other automatic riders stay (Reyk blinds, Hrim chills, Blixt stuns, Gro poisons).
+- **Bosses are immune to what takes a turn away:** Bound, Stunned, Frozen (already), and Death.
+- **The one-sided pairs** (Keen; Waning, Hexed, Warded for heroes; Slowed for heroes; Quick in no kit) are lexicon and kit work, spread to the heroes who'd want them as the roster fills.
+- **Supports:** twelve classes want three or four supports as main roles to field different teams; the roles chart has three (Dagskald, Nalarbani, Lundar) and two more as second roles (Seidar, Hafrunar).
+
 ## 8. Open, for later
 
 - **What Skolja washes off:** bundles, ailments, lowered stages, and also an Ogn push on the affinity ladder? If not, a forced weakness ends only by waiting or by Mot.
