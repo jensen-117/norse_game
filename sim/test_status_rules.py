@@ -235,5 +235,13 @@ class ParentsHitChildrenTwist(unittest.TestCase):
         f = self.foes("Hrimande")[0]; Battle([hero("Vasara", "Krosh")], [f], random.Random(1), profile="legacy")
         self.assertIn("Hrim", [x["name"] for x in f.actions])
 
+class AWaveChillsAPunchFreezes(unittest.TestCase):
+    def test_an_all_chill_only_stacks(self):
+        u = hero("Ullar", "Skott"); e = dummy(); b = ng(u, e); wave = dict(kind="damage", all=True)
+        for _ in range(4): b.apply_status(u, e, "Chilled", 1.0, 1, "Base", wave)
+        self.assertNotIn("Frozen", e.status); self.assertEqual(e.status["Chilled"]["rounds"], STACK_CAP)
+        b.apply_status(u, e, "Chilled", 1.0, 1, "Base", dict(kind="damage", all=False))
+        self.assertIn("Frozen", e.status)
+
 if __name__ == "__main__":
     unittest.main()

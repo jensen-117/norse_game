@@ -861,7 +861,8 @@ class Battle:
         if not tgt.alive or self.rng.random() >= chance: return False
         if self.new_game:
             chain = STATUSES.get(status, {}).get("chain")
-            if chain and tgt.status.get(status, {}).get("rounds", 0) >= CHAIN_AT: status = chain   # Chilled 2: freezes...
+            area = bool(move and (move.get("all") or move.get("shape")))   # a wave chills; an ice punch freezes
+            if chain and not area and tgt.status.get(status, {}).get("rounds", 0) >= CHAIN_AT: status = chain   # Chilled 2
         if self.new_game and tgt.side == "enemy" and enemy_tier(tgt) == "Boss" and \
                 (STATUSES.get(status, {}).get("boss_immune") or status == "Death"):   # bosses keep their turns
             self.emit("immune", f"      {tgt.name} shrugs off {status}.", unit=tgt.name, status=status)
@@ -903,7 +904,7 @@ class Battle:
         el = ELEMENT[a["element"]]
         if result in ("graze", "whiff") or not tgt.alive: return
         if a["status"] and a.get("rider_sure"):      # a counter rider lands on every hit, a stack a tier (Brakrosh)
-            self.apply_status(att, tgt, a["status"], 1.0, STACKS_BY_TIER.get(a["tier"], 1), a["tier"])
+            self.apply_status(att, tgt, a["status"], 1.0, STACKS_BY_TIER.get(a["tier"], 1), a["tier"], a)
         elif a["status"]:    # martial skill with a status (Blot); the new game: certain on a clean hit (Nov 22)
             chance = 1.0 if self.new_game else STATUS_LINE_CHANCE[a["tier"]] * self.wil_ratio(att, tgt)
             self.apply_status(att, tgt, a["status"], chance, tier=a["tier"], move=a)
