@@ -427,6 +427,7 @@ BUNDLE_OPPOSITE = {"Feared": "Steadfast", "Steadfast": "Feared"}
 # the spell and the twist, certain on a clean hit (Allhrim becomes Allstynghrim). Blixt stays a parent's spike: its
 # stun is Stelblixt's (the designated rider), not the element's.
 CHILD_TWIST = {"Reyk": "Blinded", "Hrim": "Chilled", "Gro": "Poisoned", "Aska": "Cursed"}
+CHAIN_AT = 2   # Nov 22, after the gauntlet: a chill freezes only a target already Chilled 2 (the third chill), not the second
 NEW_GAME_STAT_NAMES = {"MAT": ("Waning", "Waxing"), "MDF": ("Hexed", "Warded")}   # named in the new game only
 NEW_GAME_STAT_SOURCES = {"Pinned": {}, "Chilled": {}}    # the new game's override of a status row's "stats"
 STACKS_BY_TIER = {"Halv": 1, "Base": 1, "Mer": 2, "Jatte": 3, "Ur": 3}   # a status move's stacks (Mer adds two)

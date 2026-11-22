@@ -861,7 +861,7 @@ class Battle:
         if not tgt.alive or self.rng.random() >= chance: return False
         if self.new_game:
             chain = STATUSES.get(status, {}).get("chain")
-            if chain and status in tgt.status: status = chain          # a second chill freezes...
+            if chain and tgt.status.get(status, {}).get("rounds", 0) >= CHAIN_AT: status = chain   # Chilled 2: freezes...
         if self.new_game and tgt.side == "enemy" and enemy_tier(tgt) == "Boss" and \
                 (STATUSES.get(status, {}).get("boss_immune") or status == "Death"):   # bosses keep their turns
             self.emit("immune", f"      {tgt.name} shrugs off {status}.", unit=tgt.name, status=status)

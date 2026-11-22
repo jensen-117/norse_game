@@ -141,15 +141,16 @@ class LateIsOneRule(unittest.TestCase):
         self.assertEqual(self.u.status["Reeling"]["rounds"], 2)
 
 class FrozenReplacesChilled(unittest.TestCase):
-    def test_a_second_chill_freezes_and_thaws_clean(self):
+    def test_the_third_chill_freezes_and_thaws_clean(self):     # Nov 22: Chilled 1, Chilled 2, then Frozen
         u = hero("Ullar", "Skott"); e = dummy(); b = ng(u, e)
-        b.apply_status(u, e, "Chilled", 1.0); self.assertIn("Chilled", e.status)
+        b.apply_status(u, e, "Chilled", 1.0); b.apply_status(u, e, "Chilled", 1.0)
+        self.assertEqual(e.status["Chilled"]["rounds"], 2); self.assertNotIn("Frozen", e.status)
         b.apply_status(u, e, "Chilled", 1.0)
         self.assertIn("Frozen", e.status); self.assertNotIn("Chilled", e.status)    # no freeze-lock after the thaw
 
     def test_a_boss_keeps_its_turns(self):
         u = hero("Ullar", "Skott"); e = dummy(); b = ng(u, e); e.rank = "Drott"   # a Boss by tier
-        b.apply_status(u, e, "Chilled", 1.0); b.apply_status(u, e, "Chilled", 1.0)
+        for _ in range(3): b.apply_status(u, e, "Chilled", 1.0)
         self.assertNotIn("Frozen", e.status); self.assertIn("Chilled", e.status)
         self.assertFalse(b.apply_status(u, e, "Stunned", 1.0)); self.assertFalse(b.apply_status(u, e, "Death", 1.0))
         self.assertTrue(b.apply_status(u, e, "Pinned", 1.0))                          # setup still works on bosses
@@ -199,7 +200,8 @@ class Bundles(unittest.TestCase):
         self.land("Steadfast"); self.land("Reeling")
         self.assertEqual(self.b.group_of(self.e, dict(kind="damage")), 0)
         self.assertTrue(self.b.unshoved(self.e))
-        self.land("Chilled"); self.land("Chilled"); self.assertIn("Frozen", self.e.status)
+        for _ in range(3): self.land("Chilled")
+        self.assertIn("Frozen", self.e.status)
 
     def test_the_old_game_keeps_its_curse(self):
         b = Battle([self.u], [self.e], random.Random(1), profile="legacy")
