@@ -167,8 +167,8 @@ class Bundles(unittest.TestCase):
 
     def test_stat_parts_are_as_big_as_the_number(self):
         self.land("Cursed", 2); self.assertEqual(self.e.stage("MDF"), -2); self.assertEqual(self.e.counter_name("MDF"), "Hexed 2")
-        self.land("Disarmed", 3); self.assertEqual(self.e.status["Disarmed"]["rounds"], 2)          # its own cap
-        self.assertEqual((self.e.stage("ATK"), self.e.stage("MAT")), (-2, -2))
+        self.land("Disarmed", 3); self.assertEqual(self.e.status["Disarmed"]["rounds"], 3)          # to 3, as all
+        self.assertEqual((self.e.stage("ATK"), self.e.stage("MAT")), (-3, -3))
 
     def test_it_steps_down_like_an_ailment(self):
         self.land("Cursed", 2); self.b.end_round(); self.assertEqual(self.e.status["Cursed"]["rounds"], 2)
@@ -205,6 +205,33 @@ class Bundles(unittest.TestCase):
         b = Battle([self.u], [self.e], random.Random(1), profile="legacy")
         b.apply_status(self.u, self.e, "Cursed", 1.0); self.assertIn("stats", self.e.status["Cursed"])    # the rolled pick
         self.assertIsNone(self.e.counter_name("MDF") if self.e.stage("MDF") == 0 else None)
+
+# ------------------------------------------------------------------ step 5: parents hit, children twist
+class ParentsHitChildrenTwist(unittest.TestCase):
+    def foes(self, *names):
+        from composer import catalog, spawn
+        return [u for e in catalog() for u in spawn([(0, 0, e)], ENEMY_LEVEL) if u.name in names]
+
+    def test_a_child_attack_becomes_its_styng_form(self):
+        f = self.foes("Hrimande")[0]; plain = {a["name"]: a for a in f.actions}
+        b = ng(hero("Vasara", "Krosh"), f)
+        a = next(x for x in f.actions if x["name"] == "Stynghrim")
+        self.assertEqual((a["status"], a["rider_sure"]), ("Chilled", True))
+        self.assertAlmostEqual(a["power"], plain["Hrim"]["power"] * STYNG_POWER)
+        self.assertIn("Vatn", [x["name"] for x in f.actions])              # the parent still just hits
+        b.new_game_enemy(f); self.assertEqual(sum(x["name"] == "Stynghrim" for x in f.actions), 1)   # idempotent
+
+    def test_no_automatic_riders_and_the_twist_is_certain(self):
+        f = self.foes("Hrimande")[0]; v = hero("Vasara", "Krosh"); b = ng(v, f); b.rng = Rng(0.5)
+        hrim = next(x for x in f.actions if x["name"] == "Stynghrim")
+        b.land(f, hrim, v, 1.0, v, False); self.assertIn("Chilled", v.status)              # a clean hit: certain
+        vatn = next(x for x in f.actions if x["name"] == "Vatn"); v2 = hero("Ullar", "Skott"); b2 = ng(v2, f); b2.rng = Rng(0.5)
+        blixt = dict(vatn, element="Blixt", name="Blixt")
+        b2.land(f, blixt, v2, 1.0, v2, False); self.assertNotIn("Stunned", v2.status)     # Blixt's stun is Stelblixt's
+
+    def test_the_old_game_keeps_its_spells(self):
+        f = self.foes("Hrimande")[0]; Battle([hero("Vasara", "Krosh")], [f], random.Random(1), profile="legacy")
+        self.assertIn("Hrim", [x["name"] for x in f.actions])
 
 if __name__ == "__main__":
     unittest.main()

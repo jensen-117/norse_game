@@ -419,9 +419,14 @@ BUNDLES = {
     "Steadfast": dict(stats={"DEF": 1}, blocks_late=True, unshoved=True),  # set feet: never Late, never shoved (Mot)
     "Cursed":    dict(stats={"MDF": -1}, ailments=("Poisoned",)),          # Hexed and Poisoned (Dokkn; the foes' Curse)
     "Venom":     dict(ailments=("Poisoned", "Bleeding")),                  # a weapon trait, or a move
-    "Disarmed":  dict(stats={"ATK": -1, "MAT": -1}, cap=2),                # Feeble and Waning (Disarm); 1 or 2 stacks
+    "Disarmed":  dict(stats={"ATK": -1, "MAT": -1}),                       # Feeble and Waning (Disarm); to 3, as all
 }
 BUNDLE_OPPOSITE = {"Feared": "Steadfast", "Steadfast": "Feared"}
+# Step 5 (Nov 22): parents hit, children twist. In the new game no element carries an automatic rider; a child
+# element's plain spell is its twist, and a foe's child-element attack becomes its Styng form: a hit at STYNG_POWER of
+# the spell and the twist, certain on a clean hit (Allhrim becomes Allstynghrim). Blixt stays a parent's spike: its
+# stun is Stelblixt's (the designated rider), not the element's.
+CHILD_TWIST = {"Reyk": "Blinded", "Hrim": "Chilled", "Gro": "Poisoned", "Aska": "Cursed"}
 NEW_GAME_STAT_NAMES = {"MAT": ("Waning", "Waxing"), "MDF": ("Hexed", "Warded")}   # named in the new game only
 NEW_GAME_STAT_SOURCES = {"Pinned": {}, "Chilled": {}}    # the new game's override of a status row's "stats"
 STACKS_BY_TIER = {"Halv": 1, "Base": 1, "Mer": 2, "Jatte": 3, "Ur": 3}   # a status move's stacks (Mer adds two)

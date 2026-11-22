@@ -518,6 +518,17 @@ class Battle:
         e.dmg_mult = ENEMY_DAMAGE
         e.maxhp = TIER_HP[tier]; e.hp = e.maxhp * hp_share
         e.actions_per_round = ENEMY_ACTIONS
+        e.actions = [self.twisted(a) for a in e.actions]   # parents hit, children twist (step 5)
+
+    def twisted(self, a):
+        """A foe's child-element attack in the new game: its Styng form (a hit at STYNG_POWER and the twist, certain
+        on a clean hit), named by the grammar (Allhrim: Allstynghrim). Idempotent: a re-formed Mogel keeps its own."""
+        tw = CHILD_TWIST.get(a.get("element"))
+        if a.get("kind") != "damage" or not tw or a.get("designated") or a.get("styng_form") or a.get("item"): return a
+        parts = ["Mark" if a.get("spot") else "All" if a.get("all") else None,
+                 None if a.get("tier") in (None, "Base") else a["tier"], "Styng", a["element"]]
+        return dict(a, power=a["power"] * STYNG_POWER, status=tw, rider_sure=True, styng_form=True,
+                    name=join_morphemes([p for p in parts if p]))
 
     def wants_front(self, u):
         """Front-liners: martial heroes, and enemies whose damage is mostly martial (Mogel, Draugr...)."""
@@ -896,7 +907,8 @@ class Battle:
         elif a["status"]:    # martial skill with a status (Blot); the new game: certain on a clean hit (Nov 22)
             chance = 1.0 if self.new_game else STATUS_LINE_CHANCE[a["tier"]] * self.wil_ratio(att, tgt)
             self.apply_status(att, tgt, a["status"], chance, tier=a["tier"], move=a)
-        if a.get("styng_hit") or a.get("designated"): return   # Styng's hit, and a class verb, whose riders are its own
+        if a.get("styng_hit") or a.get("designated") or getattr(self, "new_game", False): return   # Styng's hit, a class verb
+                                                                # (riders its own), and the new game: no automatic riders
                                                                 # (Blixt's Stun is Lonnblixt's, not the element's; Wave 4c)
         rider = el["rider"]
         if not rider or a["tier"] == "Halv": return
@@ -1746,8 +1758,8 @@ class Battle:
                             s = self.expected_damage(u, f, a) * self.reach_mult(u, a, f)
                         if f.affinity(a["element"]) == "weak": s *= 1.5     # tempo value
                         if s >= f.hp: s *= 1.3
-                        if a.get("rider_sure") and getattr(self, "new_game", False):    # Brakrosh: the Sundered it leaves
-                            s += self.counter_value(u, f, a["status"], STACKS_BY_TIER.get(a["tier"], 1))
+                        if a.get("rider_sure") and getattr(self, "new_game", False) and a["status"] in COUNTER_OF:
+                            s += self.counter_value(u, f, a["status"], STACKS_BY_TIER.get(a["tier"], 1))   # Brakrosh: Sundered
                         elif a["status"] and not self.capped(f, a["status"]): s += 0.4 * ref
                         s *= AI_MANNER_VALUE.get((a.get("parts") or {}).get("manner"), 1.0)
                         options.append((s - cost_pen, a, f))
