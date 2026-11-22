@@ -204,7 +204,7 @@ Family rules stay: the pile (a non-Crush kill stands again in 2 rounds at 50%), 
 |---|---|---|---|---|
 | Crush (Krosh) | Bash | Smash | Break | Great Break |
 | Pierce (Spett, the spear) | Poke | Thrust | Lunge | Great Lunge |
-| Slash (Skar) *(proposal)* | Cut | Hew | Carve | Great Carve |
+| Slash (Skar) | Cut | Hew | Carve | Great Carve |
 | Pierce flurry (Drifspett) | Spear Flurry | Spear Gale | Spear Storm | |
 | Bolts (the element's spell) | Fire Bolt | Hi-Fire Bolt | Great Fire Bolt | |
 | A status | Curse | Hi-Curse (2 stacks) | Great Curse (3) | |
@@ -386,4 +386,4 @@ Knot (the Skurmar's identity: fine) and Bound beyond the Drattr's net (rare by d
 
 The foes' register (above); Bash, Smash, Break; Poke, Thrust, Lunge; Calcify; Disarmed as Feeble and Waning a stack; the Beinseidr keeps five elements, bolts named plainly; Rise! (up to 75%; plain pile rules elsewhere); Pinning Shot as a Styng-type at Pinned 2, topped up by claim; Arrow Rain and Cleaver as row wind-ups; the names Beinlur, Tork, Skralla, Spettbein.
 
-**Still open:** the Slash ladder (Cut, Hew, Carve is a proposal); the pilot's size (the built four plus the Beinlur first, then Tork, Spettbein and Skralla).
+Also decided: the Slash ladder **Cut, Hew, Carve**; the pilot is **the built four plus the Beinlur**, then Tork, Spettbein and Skralla once the brains prove out.
