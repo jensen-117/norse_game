@@ -2604,8 +2604,7 @@ def oskorei_encounter(level, rng, tier=None):
 # ================================================================ the Mogel (slimes)
 def mogel_name(rank, element):
     p = dict(MOGEL_RANKS)[rank]["prefix"]
-    el = "" if element == "Jord" else element          # the plain olive Mogel is the Jord one
-    return join_morphemes([x for x in (p, el, "mogel") if x]).capitalize()
+    return join_morphemes([x for x in (p, element, "mogel") if x]).capitalize()   # Jordmogel too (Nov 21: Stormogel read as storm)
 
 def mogel_kit(rank, element):
     r = dict(MOGEL_RANKS)[rank]

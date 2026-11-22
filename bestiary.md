@@ -233,7 +233,7 @@ The physical half of a spirit pack. The Ande are casters who keep to the Rear; t
 
 ### Naming
 
-**[Rank] + Element + mogel**, using the usual seam rules: Halveldmogel, Litelvatnmogel, Storaskamogel, Hrimogel (the m's merge), Litelakmogel (the l's merge). **The plain olive slime is the Jord one,** because mould is earth: Halvmogel, Litelmogel, Mogel, Stormogel, Drottmogel.
+**[Rank] + Element + mogel**, using the usual seam rules: Halveldmogel, Litelvatnmogel, Storaskamogel, Hrimogel (the m's merge), Litelakmogel (the l's merge). **The olive slime is the Jord one,** because mould is earth, and since Nov 21 it says so like every other: Halvjordmogel, Liteljordmogel, Jordmogel, Storjordmogel, Drottjordmogel (Stormogel read as storm). Bare **Mogel** is the family's name.
 
 ### Affinities
 
