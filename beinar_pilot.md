@@ -105,6 +105,8 @@ Joseph's questions: should the range grow (to -5 to +5), what a stack means, and
 - **A few bespoke ones,** each one line: Frozen, Stunned, Song.
 - The board shows a stat as its level with timer pips ("MIG 2 ..."), an ailment as its rounds.
 
+**The staircase, the other way to run a stat's level (Joseph's walk-through, Nov 22; it's the rule built today):** no timer; a round nobody moved the stat, it steps one level back toward 0. One number on the tag, a gentle fade instead of a cliff. The real difference from the timer: a self-buff pays off once (Aukraft on yourself, then one boosted attack before it steps down), so build-up is a team play (a buffer keeping the Vasara at Mighty 2); with the timer a self-buff covers two or three attacks.
+
 Joseph's linear 20% steps reach x0.2 at Feeble 4: a foe made harmless. Today's curve slows as it goes, which is why it never bottoms out.
 
 Slowed and Reeling under it: both flat. Slowed puts you at the back of your group; Reeling drops you into Late. One reduction for N rounds, not five sizes of reduction: within a group there's only front and back, so there's nothing to scale.
