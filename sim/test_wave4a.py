@@ -48,9 +48,9 @@ class Pinning(unittest.TestCase):
             orders(b, {u.uid: (key(u, u.actions[1]["name"]), e.uid)}); return b, u, e
         return land_until(make, lambda b, u, e: "Pinned" in e.status)
 
-    def test_slowed_and_two_rounds(self):
+    def test_rooted_only_and_two_rounds(self):                 # Nov 22 (status rules step 3): Pinned no longer slows
         b, u, e = self.pinned()
-        self.assertEqual(e.counter_name("SPD"), "Slowed 1")             # a source on the SPD counter
+        self.assertIsNone(e.counter_name("SPD"))
         self.assertEqual(e.status["Pinned"]["rounds"], 1)                # cast in round 1: round 2 is its last
         orders(b, {}); self.assertNotIn("Pinned", e.status)
 

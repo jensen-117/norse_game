@@ -111,5 +111,52 @@ class TheRollIsTheOnlyGamble(unittest.TestCase):
         orders(b, {u.uid: (key(u, "Blotskott"), e.uid)})
         self.assertIn("Bleeding", e.status)
 
+# ------------------------------------------------------------------ step 3: Late, one primitive
+class LateIsOneRule(unittest.TestCase):
+    def setUp(self):
+        self.u = hero("Ullar", "Skott"); self.e = dummy(); self.b = ng(self.u, self.e)
+        self.skott = next(a for a in self.u.actions if a["name"] == "Skott")
+
+    def test_each_wearer_drops_a_move_to_late(self):
+        for s in ("Reeling", "Chilled", "Feared"):
+            self.u.status = {}
+            self.b.apply_status(self.e, self.u, s, 1.0)
+            self.assertEqual(self.b.group_of(self.u, self.skott), FEAR_GROUP, s)
+
+    def test_heavy_and_last_stay_and_guard_is_spared(self):
+        self.b.apply_status(self.e, self.u, "Reeling", 1.0)
+        self.assertEqual(self.b.group_of(self.u, dict(self.skott, group=-2)), -2)        # Heavy stays Heavy
+        self.assertEqual(self.b.group_of(self.u, dict(kind="defend")), PROTECT_GROUP)    # Guard still comes first
+
+    def test_late_from_two_sources_is_just_late(self):
+        self.b.apply_status(self.e, self.u, "Reeling", 1.0); self.b.apply_status(self.e, self.u, "Chilled", 1.0)
+        self.assertEqual(self.b.group_of(self.u, self.skott), FEAR_GROUP)
+
+    def test_pinned_and_chilled_no_longer_slow(self):
+        self.b.apply_status(self.e, self.u, "Pinned", 1.0); self.b.apply_status(self.e, self.u, "Chilled", 1.0)
+        self.assertEqual(self.u.stage("SPD"), 0)
+
+    def test_reeling_is_rounds(self):
+        self.b.apply_status(self.e, self.u, "Reeling", 1.0); self.b.apply_status(self.e, self.u, "Reeling", 1.0)
+        self.assertEqual(self.u.status["Reeling"]["rounds"], 2)
+
+class FrozenReplacesChilled(unittest.TestCase):
+    def test_a_second_chill_freezes_and_thaws_clean(self):
+        u = hero("Ullar", "Skott"); e = dummy(); b = ng(u, e)
+        b.apply_status(u, e, "Chilled", 1.0); self.assertIn("Chilled", e.status)
+        b.apply_status(u, e, "Chilled", 1.0)
+        self.assertIn("Frozen", e.status); self.assertNotIn("Chilled", e.status)    # no freeze-lock after the thaw
+
+    def test_a_boss_keeps_its_turns(self):
+        u = hero("Ullar", "Skott"); e = dummy(); b = ng(u, e); e.rank = "Drott"   # a Boss by tier
+        b.apply_status(u, e, "Chilled", 1.0); b.apply_status(u, e, "Chilled", 1.0)
+        self.assertNotIn("Frozen", e.status); self.assertIn("Chilled", e.status)
+        self.assertFalse(b.apply_status(u, e, "Stunned", 1.0)); self.assertFalse(b.apply_status(u, e, "Death", 1.0))
+        self.assertTrue(b.apply_status(u, e, "Pinned", 1.0))                          # setup still works on bosses
+
+    def test_the_old_game_still_slows(self):
+        u = hero("Ullar", "Skott"); e = dummy(); b = Battle([u], [e], random.Random(1), profile="legacy")
+        b.apply_status(e, u, "Pinned", 1.0); self.assertEqual(u.stage("SPD"), -1)
+
 if __name__ == "__main__":
     unittest.main()

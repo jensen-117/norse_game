@@ -281,11 +281,11 @@ class Unit:
                 self.hp, self.overpaid = 1, True                   # (Battle.resolve drops them once it is done)
 
 def status_stat(u, stat):
-    """What u's statuses do to one stat, in stages (Chilled: SPD -1; a Curse's rolled stats)."""
-    n = 0
+    """What u's statuses do to one stat, in stages (a Curse's rolled stats; in the old game Chilled and Pinned slow)."""
+    n, ng = 0, getattr(u, "new_game", False)
     for s, inst in u.status.items():
         row = STATUSES.get(s, {})
-        n += row.get("stats", {}).get(stat, 0)
+        n += (NEW_GAME_STAT_SOURCES[s] if ng and s in NEW_GAME_STAT_SOURCES else row.get("stats", {})).get(stat, 0)
         if "pick" in row: n -= inst.get("stats", []).count(stat)
     return n
 
@@ -501,6 +501,7 @@ class Battle:
         for u in list(party) + list(enemies): u.knots = 0   # knots are tied for this fight only (Nov 21, Joseph)
         self.new_game = self.profile == "new"
         for p in party: p.last_hp, p.overpaid = self.new_game, False   # the last-HP rule is the new game's (Nov 21)
+        for x in list(party) + list(enemies): x.new_game = self.new_game  # what a unit's statuses do reads it (step 3)
         if self.new_game:                            # the new game's tuning: enemy damage, and HP by tier
             for e in enemies: self.new_game_enemy(e)
         if USE_BOARD:
@@ -835,7 +836,16 @@ class Battle:
 
     def apply_status(self, src, tgt, status, chance, stacks=1, tier=None, move=None):
         if not tgt.alive or self.rng.random() >= chance: return False
-        if STATUSES.get(status, {}).get("boss_immune") and getattr(tgt, "rank", None) == "Drott":
+        if self.new_game:
+            chain = STATUSES.get(status, {}).get("chain")
+            if chain and status in tgt.status: status = chain          # a second chill freezes...
+        if self.new_game and tgt.side == "enemy" and enemy_tier(tgt) == "Boss" and \
+                (STATUSES.get(status, {}).get("boss_immune") or status == "Death"):   # bosses keep their turns
+            self.emit("immune", f"      {tgt.name} shrugs off {status}.", unit=tgt.name, status=status)
+            if status == "Frozen" and "Chilled" in tgt.status: tgt.status["Chilled"]["touched"] = True   # holds
+            return False
+        if self.new_game and status == "Frozen": tgt.status.pop("Chilled", None)   # ...and Frozen replaces it
+        if not self.new_game and STATUSES.get(status, {}).get("boss_immune") and getattr(tgt, "rank", None) == "Drott":
             self.emit("immune", f"      {tgt.name} shrugs off {status}.", unit=tgt.name, status=status); return False
         if status in COUNTER_OF:                        # a named counter: Blinded is ACC down
             stat, sign = COUNTER_OF[status]
@@ -2051,6 +2061,9 @@ class Battle:
     def group_of(self, u, a):
         """The speed group an action resolves in (combat_spec Part 3)."""
         g = a.get("group", SPEED_GROUP_BY_KIND.get(a["kind"], 0))
+        if g < PROTECT_GROUP and getattr(self, "new_game", False):   # Late, one primitive (Nov 22, step 3)
+            if any(s in u.status for s in LATE_STATUSES): g = min(g, FEAR_GROUP)
+            return g
         if g < PROTECT_GROUP:                       # Fear drops anything below protection
             for s in u.status:
                 fg = STATUSES.get(s, {}).get("group")

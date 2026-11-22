@@ -403,7 +403,13 @@ COUNTER_OF["AccDown"] = ("ACC", -1)            # the Reyk spirits' old rider: Bl
 # landing adds its stacks (one a stack), to STACK_CAP; a round nobody added to it, it drops by one (never the round it
 # lands). Reeling and Chilled join in step 3, the bundles in step 4; the bespoke ones (Scorched, Frozen, Stunned, Bound,
 # Song) keep their own rules.
-STACKED_AILMENTS = ("Poisoned", "Bleeding", "Pinned", "Silenced")
+STACKED_AILMENTS = ("Poisoned", "Bleeding", "Pinned", "Silenced", "Reeling", "Chilled")
+# Step 3 (Nov 22): Late is one primitive, worn by several. In the new game each of these drops a unit's moves into the
+# Late group (no earlier than Late; Heavy and Last stay; protection moves, Guard, Cover and Taunt, are spared, as Fear
+# always spared them): Reeling is Late alone; Chilled is Late, and a second chill freezes (Frozen replaces it); Feared
+# is Late (its DEF part comes with the bundles). Pinned only roots: neither it nor Chilled slows SPD any more.
+LATE_STATUSES = ("Reeling", "Chilled", "Feared")
+NEW_GAME_STAT_SOURCES = {"Pinned": {}, "Chilled": {}}    # the new game's override of a status row's "stats"
 STACKS_BY_TIER = {"Halv": 1, "Base": 1, "Mer": 2, "Jatte": 3, "Ur": 3}   # a status move's stacks (Mer adds two)
 FADE = (1.0, 0.5, 0.2)    # the fade shape: Frozen's chance to hold, action by action; Scorched's tick, round by round
 KVAD_CAP = 3              # Song (Kvad; Nov 20, Joseph): a counter on each ally, up to three; a stack a tier per singing
@@ -450,6 +456,7 @@ STATUSES = {
     "Bound":    dict(duration=None, reapply="refuse", breaks_bide=True, bide_pops=True, no_orders=True, boss_immune=True,
                      skip=dict(chance=1.0, used_up=True, line="{name} is caught in the net and loses the action!")),
     "Feared":   dict(duration=STATUS_DURATION, reapply="refuse", group=FEAR_GROUP),
+    "Reeling":  dict(duration=1, reapply="refuse"),     # the new game's: Late alone (Vingla, Besk's crash); rounds
     "Disarmed": dict(duration=STATUS_DURATION, reapply="refuse", stats={"ATK": -1, "MAT": -1}),
     "Cursed":   dict(duration=STATUS_DURATION, reapply="refuse", pick=(["ATK", "MAT", "DEF", "MDF"], 2)),
     "Silenced": dict(duration=STATUS_DURATION, reapply="refuse", blocks_mp=True),
