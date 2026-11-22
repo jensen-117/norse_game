@@ -97,6 +97,8 @@ Joseph's questions: should the range grow (to -5 to +5), what a stack means, and
 5. **Opposites net on the one number:** Keen 2 meets Blinded 3, Blinded 1.
 6. **Named exceptions, few:** fades by use (Song, Stunned), breaks when hit (Frozen), counts when you act (Bleeding).
 
+**Joseph's turn (Nov 22): make every stat flat.** Each side of a stat has one fixed effect (Feeble: ATK down by one fixed share; Mighty: up by one); the number is only how many rounds are left. The tier adds rounds, not size (Halv 1, Base 2, Mer 3); a Drif flurry adds a round a hit (Drifnedkraft landing three hits: Feeble 3); opposites shorten each other on the one number (Aukraft against Feeble). It's the accuracy rule already built ("stacks are duration, not strength", classes.md 7d) spread to every stat, so there's one kind of status, not two. What it gives up: building a stat up for a bigger effect (Setup keeps other tools: Marked crits, Sundered, wind-ups, Weak! and the Bonus Round). The size has to be felt: 10% of a foe's hit (about 1% of a hero) isn't; today's single stage is (Mighty and Fortified x1.33, Feeble and Sundered x0.75). Frozen's 20%-a-point would be the one scaling exception, or Frozen stays flat too.
+
 Slowed and Reeling under it: both flat. Slowed puts you at the back of your group; Reeling drops you into Late. One reduction for N rounds, not five sizes of reduction: within a group there's only front and back, so there's nothing to scale.
 
 The cap: -3 to +3 is already seven values; -5 to +5 is eleven. Five gains the tier ladder one point each and finer steps (each DEF point near 15% instead of 25%, the same top); the cost is retuning every per-point number and statuses that last up to five rounds, most of a fight.
