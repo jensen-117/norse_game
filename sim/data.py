@@ -585,7 +585,7 @@ KNOW_MP_KILLS = 40          # ...and its MP
 # Fields: kind; root (the damage type's word, for range and the board: Skott is a bow shot); element (damage type or
 # element); status / stat / up (what it inflicts); target ("self", "ally", "allies", "enemy", "all"); rider; weight
 # (cost steps built into the verb: the untie spells); knots (knot cost); free (costs nothing: Lya, Djupanda);
-# styng (Styng is legal); targets (the target parts it may carve: none unless listed, review C09); pays_on (a status the move pays off on: Banskott on the Pinned); hits; group.
+# riders (more designated riders, Lonn naming one by its word: Skott's Bann); styng (Styng is legal); targets (the target parts it may carve: none unless listed, review C09); pays_on (a status the move pays off on: Fallskott on the Pinned); hits; group.
 # pays (the multiplier a pays_on / pays_below move deals); answer (Hevn: stronger per hit taken); amount (Djupanda's MP);
 # halv (it has a Halv fork: damage verbs only, Nov 20, Joseph: a free attack is fine, a free heal, taunt or knot breaks
 # things); manner_power (this verb's own multiplier for a manner: Hevn's Bid doubles, the rest keep MANNERS').
@@ -601,10 +601,11 @@ VERBS = {
     "Aukseid":  dict(cost=3, cls="Brennumar", kind="stat", stat="MAT", up=True, target="self"),
     "Djupanda": dict(cls=None, kind="windfall", manners=("Bid",), free=True, target="self", amount=DJUPANDA_SHARE),   # any magical
     # Ullar (Bow; martial)
-    "Skott":    dict(cost=16, halv=True, targets=("Flok", "All"), cls="Ullar", kind="damage", root="Skott", element="Pierce", rider=("Bleeding", "Blot")),
+    "Skott":    dict(cost=16, halv=True, targets=("Flok", "All"), cls="Ullar", kind="damage", root="Skott", element="Pierce", rider=("Bleeding", "Blot"),
+                     riders=(("Silenced", "Bann"),)),   # Bannskott: a shot that Silences (Nov 21, Joseph)
     "Naglskott": dict(cost=8, targets=("Flok", "All"), cls="Ullar", kind="status", root="Skott", element="Pierce", status="Pinned", styng=True),
     "Peka":     dict(cost=8, targets=("Flok", "All"), cls="Ullar", kind="status", root="Skott", element="Pierce", status="Marked", rider=("Sundered", "Lonn"), styng=True),
-    "Banskott": dict(cost=16, targets=("Flok", "All"), cls="Ullar", kind="damage", root="Skott", element="Pierce", pays_on="Pinned", pays=1.5, halv=True),   # x1.5 on the Pinned
+    "Fallskott": dict(cost=16, targets=("Flok", "All"), cls="Ullar", kind="damage", root="Skott", element="Pierce", pays_on="Pinned", pays=1.5, halv=True),   # x1.5 on the Pinned
     "Avliva":   dict(cost=16, cls="Ullar", kind="damage", root="Skott", element="Pierce", pays_below=0.5, pays=2.0, halv=True),   # Swedish "to put down": x2 under half HP
     "Skrida":   dict(cost=8, cls="Ullar", kind="glide", stat="EVA", up=True, target="cell", group=1),   # aimed at a cell, like Move
     # Vasara (Hammer; martial)
@@ -696,7 +697,7 @@ KITS = {
                   3: [W("Krosh", lonn=True, manners=("Snar",)), W("Egga", lonn=True), W("Lya"), W("Hevn")]},
     "Ullar":     {1: [W("Skott"), W("Naglskott")],
                   2: [W("Skott", lonn=True), W("Naglskott"), W("Peka")],
-                  3: [W("Skott", lonn=True, tier="Mer"), W("Naglskott", styng=True), W("Peka", lonn=True), W("Banskott")]},
+                  3: [W("Skott", lonn=True, tier="Mer"), W("Naglskott", styng=True), W("Peka", lonn=True), W("Fallskott")]},
     "Brennumar": {1: [W("Eld"), W("Reyk")],
                   2: [W("Eld"), W("Reyk"), W("Sveda"), W("Eld", target="All")],
                   3: [W("Eld", tier="Mer"), W("Eld", target="All"), W("Sveda", lonn=True), W("Djupanda")]},
@@ -729,7 +730,7 @@ HEVN_PER_HIT = 0.25       # Hevn: +25% per hit she took since her last action...
 HEVN_CAP = 1.0            # ...up to +100%
 AI_DOT_VALUE = 0.8        # AI: x the HP a Scorch would burn (it lands over three rounds)
 AI_ALSO_VALUE = 0.4       # AI: x ref for a second status riding the first (Lonnsveda's Feeble, Lonnpeka's Sundered)
-AI_PAYOFF_VALUE = 0.5     # AI: x ref for a status someone on the side can cash in (Pinned, with a Banskott)
+AI_PAYOFF_VALUE = 0.5     # AI: x ref for a status someone on the side can cash in (Pinned, with a Fallskott)
 KNOT_CAP = 3              # Knots (Wave 4c; classes.md Part 7): a pool on the Skurmar, tied by Knyta (a knot a tier), spent by
 KNOT_BLAST = 1.25         # the untie spells, for this fight only (Nov 21, Joseph). Held: 1+ Blast hits harder (x this);
 KNOT_MP = 0.5             # 2+ Blixt can't graze; 3: each MP-recovering move of his (Meditate, Djupanda) restores this share

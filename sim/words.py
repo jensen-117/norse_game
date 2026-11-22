@@ -178,6 +178,10 @@ def normalize(verb, tier=None, target=None, manners=(), styng=False, lonn=False,
         if mn in v.get("manners", ()): raise ValueError(f"{verb} is already {mn}")
     if styng and not v.get("styng"): raise ValueError(f"{verb} takes no Styng")
     if lonn and not v.get("rider"): raise ValueError(f"{verb} has no designated rider")
+    rider = None
+    if lonn:                                           # True: the verb's own rider; a word: another of its designated riders
+        rider = v["rider"] if lonn is True else next((r for r in v.get("riders", ()) if r[1] == lonn), None)
+        if rider is None: raise ValueError(f"{verb} has no rider {lonn!r}")
     own = v.get("tier", "Base")
     if tier == "Halv":
         if own != "Base": raise ValueError(f"{verb} has no Halv fork (it is {own} already)")
@@ -192,13 +196,16 @@ def normalize(verb, tier=None, target=None, manners=(), styng=False, lonn=False,
         if eff is None or (eff == "Ur" and source != "gear"):              # only gear reaches Ur, even by promotion
             raise ValueError(f"{verb} + {tier} would be {eff or 'past Ur'}: Ur comes only from gear")
     return dict(verb=verb, tier=tier, eff=eff, own=own, target=target, manners=manners, styng=bool(styng),
-                lonn=bool(lonn), source=source)
+                lonn=bool(lonn), rider=rider, source=source)
 
 def verb_parts(n):
     """The upgrade parts carved onto a verb, as names: what the cap counts, capstones and bynames match, and the
     price counts. Canonical, so all four agree (review C10)."""
     p = [x for x in (None if n["tier"] == "Base" else n["tier"], n["target"]) if x] + list(n["manners"])
-    return p + (["Styng"] if n["styng"] else []) + (["Lonn"] if n["lonn"] else [])
+    # the verb's own rider counts as Lonn; another designated rider by its word (Bann), so a capstone made with
+    # Lonn (Tusensplitter: Blot) isn't matched by the other
+    lonn = [] if not n["lonn"] else ["Lonn"] if n["rider"] == VERBS[n["verb"]]["rider"] else [n["rider"][1]]
+    return p + (["Styng"] if n["styng"] else []) + lonn
 
 def compile_verb(verb, tier=None, target=None, manners=(), styng=False, lonn=False, source="carve"):
     """A class verb grown by parts (pillars Part 5c): its spoken name, its rules, and its cost as a share of the hero's
@@ -216,7 +223,7 @@ def compile_verb(verb, tier=None, target=None, manners=(), styng=False, lonn=Fal
         name = next((nm for nm, (vb, ps) in BYNAMES.items() if vb == verb and ps == frozenset(carved)), None)
     eff, own = n["eff"], n["own"]
     mkw, mpower, _ = merge_manners(tuple(v.get("manners", ())) + n["manners"], {**CLASS_MANNER_POWER, **v.get("manner_power", {})})
-    rider, part = (v["rider"] if n["lonn"] else (None, None))
+    rider, part = (n["rider"] if n["lonn"] else (None, None))
     # a root name (Daska, Genomskott) takes the parts it stands for; the rest attach to it (Merdaska)
     root, used = verb, frozenset()
     if name is None:
@@ -274,6 +281,7 @@ def compile_verb(verb, tier=None, target=None, manners=(), styng=False, lonn=Fal
     else: price = (HALV_COST[a["cost_type"]] if eff == "Halv" else v["cost"]) * 2 ** steps
     a["price"], a["cost"] = price, 0                                     # the ladder number at SHEET_LEVEL (engine.price_bars)
     a["parts"] = dict(verb=verb, tier=n["tier"], target=n["target"], manners=n["manners"], styng=n["styng"], lonn=n["lonn"],
+                      rider_word=part,
                       source=n["source"], capstone=name if len(carved) > UPGRADE_CAP else None,
                       byname=name if len(carved) <= UPGRADE_CAP else None)
     a["unresolved"] = unresolved(a)

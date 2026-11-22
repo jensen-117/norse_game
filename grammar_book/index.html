@@ -348,7 +348,7 @@ function bodyHTML(k, e) {
     const t = v.takes, all = ["Halv", "Mer", "Flok", "All", "Snar", "Tung", "Bid", "Jarf", "Drif", "Styng", "Lonn"];
     const has = new Set([...t.tiers, ...t.targets, ...t.manners, ...(t.styng ? ["Styng"] : []), ...(t.lonn ? ["Lonn"] : [])]);
     row("Takes", `<div class="chips">${all.map(p => `<button class="chip atom ${has.has(p) ? "on" : "off"}" ${has.has(p) ? `data-atom="${p}"` : "disabled"} title="${has.has(p) ? "" : "Not on " + esc(k)}">${p}</button>`).join("")}</div>`
-      + (v.rider ? `<div class="note" style="margin-top:4px">Its rider: ${esc(v.rider.gives)}${W[v.rider.word] ? `, said <button class="chip atom" data-atom="${esc(v.rider.word)}">${esc(v.rider.word)}</button>` : ""}</div>` : ""));
+      + [v.rider, ...(v.more_riders || [])].filter(Boolean).map((r, i) => `<div class="note" style="margin-top:4px">${i ? "Or" : "Its rider"}: ${esc(r.gives)}${W[r.word] ? `, said <button class="chip atom" data-atom="${esc(r.word)}">${esc(r.word)}</button>` : ""}</div>`).join(""));
     if (v.cls) row("Class", tilesHTML([v.cls]));
   }
   const tb = idx.takenBy[k];

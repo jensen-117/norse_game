@@ -737,7 +737,7 @@ class Battle:
         return status in t.status
 
     def payoff(self, att, dfn, a):
-        """What a move's condition adds (Wave 4a), read wherever damage is (so the AI sees it too): Banskott on the
+        """What a move's condition adds (Wave 4a), read wherever damage is (so the AI sees it too): Fallskott on the
         Pinned, Avliva on a foe under half HP, Hevn per hit she took, and Pierce through a lowered guard (new game)."""
         m = 1.0
         if a.get("pays_on") and self.carries(dfn, a["pays_on"]): m *= a["pays"]

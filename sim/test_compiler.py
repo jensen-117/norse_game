@@ -4,7 +4,7 @@ from engine import *
 
 SPELLED = {   # the kits as classes.md and the Nov 20 kit list spell them
     "Vasara":    {1: "Krosh Egga", 2: "Krosh Egga Brakrosh Lya", 3: "Snarbrakrosh Rodegga Lya Hevn"},
-    "Ullar":     {1: "Skott Naglskott", 2: "Blotskott Naglskott Peka", 3: "Merblotskott Genomskott Genomskoda Banskott"},
+    "Ullar":     {1: "Skott Naglskott", 2: "Blotskott Naglskott Peka", 3: "Merblotskott Genomskott Genomskoda Fallskott"},
     "Brennumar": {1: "Eld Reyk", 2: "Eld Reyk Sveda Alleld", 3: "Mereld Alleld Lamsveda Djupanda"},
     "Dagskald":  {1: "Lak Sol", 2: "Lak Sol Kvad", 3: "Gyllenlykt Sol Merkvad Allaukraft"},
     "Skurmar":   {1: "Blast Knyta", 2: "Blast Knyta Kuling Blixt", 3: "Blast Merknyta Storm Stelblixt"},   # names: Nov 21

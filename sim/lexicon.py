@@ -31,18 +31,21 @@ def share_of(a):
     return None
 
 def carves(verb):
-    """Every set of carved parts to try on a verb: tier x target x manners (one or two, in name order) x Styng x Lonn."""
+    """Every set of carved parts to try on a verb: tier x target x manners (one or two, in name order) x Styng x a
+    rider (none, its own, or another designated one by its word)."""
     mans = [()] + [(m,) for m in MANNER_ORDER] + list(itertools.combinations(MANNER_ORDER, 2))
+    lonns = [False, True] + [w for _, w in VERBS[verb].get("riders", ())]
     for tier in TIER_CHOICES:
         for target in (None, "Flok", "All"):
             for ms in mans:
                 for styng in (False, True):
-                    for lonn in (False, True):
+                    for lonn in lonns:
                         yield dict(tier=tier, target=target, manners=ms, styng=styng, lonn=lonn)
 
 def part_list(p):
+    lonn = None if not p["lonn"] else "Lonn" if p["lonn"] is True else p["lonn"]
     return [x for x in (None if p["tier"] == "Base" else p["tier"], p["target"], *p["manners"],
-                        "Styng" if p["styng"] else None, "Lonn" if p["lonn"] else None) if x]
+                        "Styng" if p["styng"] else None, lonn) if x]
 
 def kit_index():
     """(verb, parts) -> the class and legs whose kit holds it."""
@@ -61,16 +64,15 @@ def hero_words():
         for p in carves(verb):
             try: a = compile_verb(verb, **p)
             except (ValueError, OverCap): continue
-            key = (verb, p["tier"], p["target"], tuple(p["manners"]), p["styng"], p["lonn"])
+            key = (verb, p["tier"], p["target"], tuple(p["manners"]), p["styng"], p["lonn"] is True)
             pr = a["parts"]
-            rider = v.get("rider")
-            said = [verb] + part_list(p) + ([rider[1]] if rider and p["lonn"] else [])
+            said = [verb] + part_list(p) + ([pr["rider_word"]] if pr.get("rider_word") else [])
             said += [nm for nm, (vb, ps) in ROOT_NAMES.items() if vb == verb and ps <= frozenset(part_list(p))]
             said += [nm for nm in (pr.get("capstone"), pr.get("byname")) if nm]
             out.append(dict(
                 name=a["name"], verb=verb, cls=v.get("cls"), kind=a["kind"], parts=part_list(p),
                 atoms=expand([x for x in said if x in GLOSS]),
-                rider_word=rider[1] if rider and p["lonn"] else None,
+                rider_word=pr.get("rider_word"),
                 capstone=pr.get("capstone"), byname=pr.get("byname"),
                 price=a["price"], cost_type=a["cost_type"], keywords=a["keywords"], share=share_of(a),
                 element=a.get("element"), status=a.get("status"), also_status=a.get("also_status"),
@@ -99,7 +101,8 @@ def verb_table():
         out[verb] = dict(cls=v.get("cls"), kind=v["kind"], rung=v.get("cost"), weight=v.get("weight", 0),
                          knots=v.get("knots", 0), element=v.get("element"), takes=takes,
                          rider=None if not rider else dict(gives=rider[0] if isinstance(rider[0], str) else f"{rider[0][0]} {rider[0][1]:+d}",
-                                                           word=rider[1]))
+                                                           word=rider[1]),
+                         more_riders=[dict(gives=g, word=w) for g, w in v.get("riders", ())])
     return out
 
 def part_effects():
@@ -210,6 +213,7 @@ def code_atoms():
         add(r, "RIDERS")
     for v in VERBS.values():
         if v.get("rider"): add(v["rider"][1], "verb riders")
+        for _, w in v.get("riders", ()): add(w, "verb riders")
     for r in WEAPON: add(r, "WEAPON")
     for verb, v in VERBS.items():
         if v["kind"] != "damage" or verb not in ELEMENT: add(verb, "VERBS")
@@ -244,7 +248,8 @@ def rider_owners():
     """A rider word -> the verbs it may sit in front of: its own verb, and that verb's root names (Rod: Egga, Daska)."""
     out = {}
     for verb, v in VERBS.items():
-        if v.get("rider"): out.setdefault(v["rider"][1], {verb}).update(nm for nm, (vb, _) in ROOT_NAMES.items() if vb == verb)
+        for _, w in ([v["rider"]] if v.get("rider") else []) + list(v.get("riders", ())):
+            out.setdefault(w, set()).update({verb}, (nm for nm, (vb, _) in ROOT_NAMES.items() if vb == verb))
     return out
 
 def grammatical(parse):
