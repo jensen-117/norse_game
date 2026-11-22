@@ -243,5 +243,24 @@ class AWaveChillsAPunchFreezes(unittest.TestCase):
         b.apply_status(u, e, "Chilled", 1.0, 1, "Base", dict(kind="damage", all=False))
         self.assertIn("Frozen", e.status)
 
+# ------------------------------------------------------------------ step 6: Skolja washes ailments; Lonnskolja lifts stats too
+class Skolja(unittest.TestCase):
+    def wash(self, lonn):
+        d = hero("Dagskald", ("Skolja", dict(lonn=lonn))); v = hero("Vasara", "Krosh"); e = dummy(); b = fight([d, v], [e])
+        for s in ("Poisoned", "Bleeding", "Pinned", "Cursed", "Feared"): b.apply_status(e, v, s, 1.0)
+        v.status["Song"] = dict(rounds=UNTIL_USED, stacks=2, heal=10); v.stages["ATK"] = -2; v.stages["DEF"] = 1
+        orders(b, {d.uid: (key(d, compile_verb("Skolja", lonn=lonn)["name"]), v.uid), v.uid: ("guard", None)})
+        return v
+
+    def test_skolja_washes_ailments_and_bundles_not_stats(self):
+        v = self.wash(False)
+        self.assertEqual(set(v.status), {"Song"})                    # the helpful stays
+        self.assertEqual(v.stage("ATK"), -1)                         # Feeble 2 still there (it stepped down at the round's end)
+
+    def test_lonnskolja_also_lifts_lowered_stats(self):
+        v = self.wash(True)
+        self.assertEqual(set(v.status), {"Song"})
+        self.assertEqual(v.stages["ATK"], 0); self.assertGreaterEqual(v.stages["DEF"], 0)   # a raised stat is left alone
+
 if __name__ == "__main__":
     unittest.main()

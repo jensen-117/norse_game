@@ -257,6 +257,7 @@ def compile_verb(verb, tier=None, target=None, manners=(), styng=False, lonn=Fal
     if kind == "revive": a.update(VAKNA[eff])
     if rider is not None:                                                # what Lonn adds
         if isinstance(rider, tuple): a["also"] = [rider]                 # a second stat stage (Lonnaukraft: DEF up)
+        elif kind == "cleanse": a["lift"] = True                         # Lonnskolja: lowered stats lift to 0 too
         elif kind == "damage":
             a["status"] = rider                                          # Blotskott: may Bleed
             if rider in COUNTER_OF: a["rider_sure"] = True               # Brakrosh: a counter rider lands on every hit

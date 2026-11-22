@@ -1269,6 +1269,11 @@ class Battle:
             return
         if a["kind"] == "cleanse":
             for t in tgts:
+                if self.new_game:                       # step 6: ailments and bundles; Lonnskolja also lifts stats
+                    t.status = {s: v for s, v in t.status.items() if s in HELPFUL_STATUSES}
+                    if a.get("lift"):
+                        for s in t.stages: t.stages[s] = max(0, t.stages[s])
+                    continue
                 t.status = {}
                 for s in t.stages: t.stages[s] = max(0, t.stages[s])
             self.emit("cleanse", f"    {u.name} casts {a['name']}, washing {', '.join(t.name for t in tgts)} clean.{tag}", unit=u.name, move=a["name"], targets=[t.name for t in tgts])
@@ -1823,7 +1828,10 @@ class Battle:
                     if x.stage(a["stat"]) * a["direction"] >= STACK_CAP: continue   # already as far as it goes
                     options.append((0.8 * ref - cost_pen, a, x))
             elif a["kind"] == "cleanse":
-                def burden(x): return len(x.status) + sum(-v for v in x.stages.values() if v < 0)
+                ng = getattr(self, "new_game", False)
+                def burden(x):
+                    if not ng: return len(x.status) + sum(-v for v in x.stages.values() if v < 0)
+                    return sum(s not in HELPFUL_STATUSES for s in x.status) + (sum(-v for v in x.stages.values() if v < 0) if a.get("lift") else 0)
                 pool = [x for x in self.allies(u) if burden(x) > 0]
                 if a["all"] and pool:
                     options.append((0.5 * ref * sum(burden(x) for x in pool) - cost_pen, a, None))

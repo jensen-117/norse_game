@@ -422,6 +422,9 @@ BUNDLES = {
     "Disarmed":  dict(stats={"ATK": -1, "MAT": -1}),                       # Feeble and Waning (Disarm); to 3, as all
 }
 BUNDLE_OPPOSITE = {"Feared": "Steadfast", "Steadfast": "Feared"}
+# Step 6 (Nov 22): Skolja washes every harmful ailment and bundle to 0, the bespoke harmful ones too (Scorched, Frozen,
+# Stunned, Bound), but not stats; Lonnskolja, its designated rider, also lifts every lowered stat to 0. These stay:
+HELPFUL_STATUSES = ("Song", "Steadfast")
 # Step 5 (Nov 22): parents hit, children twist. In the new game no element carries an automatic rider; a child
 # element's plain spell is its twist, and a foe's child-element attack becomes its Styng form: a hit at STYNG_POWER of
 # the spell and the twist, certain on a clean hit (Allhrim becomes Allstynghrim). Blixt stays a parent's spike: its
@@ -654,7 +657,7 @@ VERBS = {
     "Lak":      dict(cost=8, targets=("Flok", "All"), cls="Dagskald", kind="heal", element="Lak", target="ally", rider=(("EVA", 3), "Sol")),   # Gyllenlykt: and Evasive 3 (Nov 21: the panic button)
     "Sol":      dict(cost=6, halv=True, targets=("Flok", "All"), cls="Dagskald", kind="damage", element="Sol", rider=("Blinded", "Blinda")),   # Blindasol
     "Kvad":     dict(cost=6, targets=("Flok", "All"), cls="Dagskald", kind="song", target="ally"),   # a Song stack a tier on one ally (Nov 20)
-    "Skolja":   dict(cost=6, targets=("All",), cls="Dagskald", kind="cleanse", target="ally"),
+    "Skolja":   dict(cost=6, targets=("All",), cls="Dagskald", kind="cleanse", target="ally", rider=("Lift", "Lonn")),   # Lonnskolja: also lifts lowered stats (Nov 22)
     "Vakna":    dict(cost=6, cls="Dagskald", kind="revive", target="fallen"),
     "Aukraft":  dict(cost=3, targets=("All",), cls="Dagskald", kind="stat", stat="ATK", up=True, target="ally", rider=(("DEF", 1), "Lonn")),
     # Skurmar (Blast school, child Blixt; magical)
