@@ -63,8 +63,14 @@ def hero_words():
             except (ValueError, OverCap): continue
             key = (verb, p["tier"], p["target"], tuple(p["manners"]), p["styng"], p["lonn"])
             pr = a["parts"]
+            rider = v.get("rider")
+            said = [verb] + part_list(p) + ([rider[1]] if rider and p["lonn"] else [])
+            said += [nm for nm, (vb, ps) in ROOT_NAMES.items() if vb == verb and ps <= frozenset(part_list(p))]
+            said += [nm for nm in (pr.get("capstone"), pr.get("byname")) if nm]
             out.append(dict(
                 name=a["name"], verb=verb, cls=v.get("cls"), kind=a["kind"], parts=part_list(p),
+                atoms=expand([x for x in said if x in GLOSS]),
+                rider_word=rider[1] if rider and p["lonn"] else None,
                 capstone=pr.get("capstone"), byname=pr.get("byname"),
                 price=a["price"], cost_type=a["cost_type"], keywords=a["keywords"], share=share_of(a),
                 element=a.get("element"), status=a.get("status"), also_status=a.get("also_status"),
@@ -95,6 +101,28 @@ def verb_table():
                          rider=None if not rider else dict(gives=rider[0] if isinstance(rider[0], str) else f"{rider[0][0]} {rider[0][1]:+d}",
                                                            word=rider[1]))
     return out
+
+def part_effects():
+    """What each part does to a hero's move, in words, with the numbers read from the constants (so it can't drift)."""
+    m, pct = MANNERS, lambda x: f"x{x:g}"
+    mp = lambda n: CLASS_MANNER_POWER.get(n, m[n].get("power", 1.0))
+    return {
+        "Halv": f"Half a base hit ({pct(CLASS_TIER['Halv'])}), at the Halv rung: {HALV_COST['HP']} HP or {HALV_COST['MP']} MP. Attacks only.",
+        "Mer": f"{pct(round(CLASS_TIER['Mer'], 2))} power; one step dearer (x2 the cost).",
+        "Jatte": "Two rungs up. Found, not carved.",
+        "Ur": "The top rung. Only on gear.",
+        "Flok": f"Hits a row. {TARGET_STEPS['Flok']} steps dearer (x{2 ** TARGET_STEPS['Flok']} the cost).",
+        "All": f"Hits everyone, each at {pct(ALL_SHARE)}. {TARGET_STEPS['All']} steps dearer (x{2 ** TARGET_STEPS['All']} the cost).",
+        "Mark": "Paints a spot: whoever stands there is hit. The foes' grammar.",
+        "Snar": f"Acts a group sooner (Swift), at {pct(mp('Snar'))} power for heroes. One step dearer.",
+        "Tung": f"Acts late (Heavy), at {pct(mp('Tung'))} power. One step dearer. Damage and heals.",
+        "Bid": f"Winds up a round, then lands at {pct(mp('Bid'))}; lost if the user is broken. One step dearer. Damage and heals.",
+        "Jarf": f"{pct(mp('Jarf'))} power, a {round(100 * (CRIT_BASE + m['Jarf']['crit_bonus']))}% crit that hits x{m['Jarf']['crit_mult']:g}. One step dearer. Damage only.",
+        "Drif": f"A flurry: hits of {pct(m['Drif']['flurry']['per'])} that keep coming on a coin flip, up to {m['Drif']['flurry']['max']}. One step dearer. Damage only.",
+        "Styng": f"Adds a hit of {pct(STYNG_POWER)} the class's base hit to a move that deals none. One step dearer.",
+        "Lonn": f"Adds the move's own rider (a status, or a stage); a hit with a rider lands at {pct(RIDER_SHARE)}. One step dearer.",
+        "Auk": "Raises the stat its word names.", "Ned": "Lowers the stat its word names.",
+    }
 
 # ---------------------------------------------------------------- the seam rules, run backwards
 def atoms():
@@ -129,6 +157,15 @@ def parses(word, table=None):
         else: best[i] = []
     return best[0]
 
+def expand(atoms_, table=None):
+    """The atoms, plus the atoms inside any that are themselves compounds (Aukskold: Auk + Skold), each once."""
+    table = table or atoms(); out = []
+    for a in atoms_:
+        out.append(a)
+        inner = parses(a, {sp: k for sp, k in table.items() if k != a})
+        if len(inner) == 1 and len(inner[0]) > 1: out += inner[0]
+    return [x for i, x in enumerate(out) if x not in out[:i]]
+
 def decompose(word, table=None):
     """The first fewest-part reading, or None."""
     p = parses(word, table)
@@ -140,12 +177,14 @@ def enemy_words():
     moves, units, table = {}, {}, atoms()
     for e in catalog():
         for u in spawn([(0, 0, e)], ENEMY_LEVEL):
+            parts = decompose(u.name, table)
             units.setdefault(u.name, dict(name=u.name, family=e["family"], rank=e["rank"], element=e.get("element"),
-                                          parts=decompose(u.name, table)))
+                                          parts=parts, atoms=expand(parts or [], table)))
             for a in u.actions:
                 m = moves.setdefault(a["name"], dict(name=a["name"], kind=a["kind"], families=set(), users=set(),
                                                      english=" " in a["name"] or decompose(a["name"], table) is None,
                                                      parts=decompose(a["name"], table), text=engine.plain(a),
+                                                     atoms=expand(decompose(a["name"], table) or [], table),
                                                      element=a.get("element"), status=a.get("status")))
                 m["families"].add(e["family"]); m["users"].add(u.name)
     for m in moves.values():
@@ -212,17 +251,9 @@ def export(path=OUT):
     hero = hero_words(); moves, units = enemy_words(); use = code_atoms()
     speakers = {}
     for h in hero:
-        rider = VERBS[h["verb"]].get("rider")
-        said = [h["verb"]] + h["parts"] + ([rider[1]] if rider and "Lonn" in h["parts"] else [])
-        said += [nm for nm in ROOT_NAMES if h["name"].endswith(nm.lower()) or h["name"] == nm]
-        said += [nm for nm in (h["capstone"], h["byname"]) if nm]
-        vp = parses(h["verb"])
-        if len(vp) == 1 and len(vp[0]) > 1: said += vp[0]              # a compound verb: Aukskold is Auk + Skold
-        for p in said: speakers.setdefault(p, set()).add("heroes")
-    for m in moves:
-        for p in m["parts"] or []: speakers.setdefault(p, set()).add("foes")
-    for u in units:
-        for p in u["parts"] or []: speakers.setdefault(p, set()).add("foes")
+        for p in h["atoms"]: speakers.setdefault(p, set()).add("heroes")
+    for m in moves + units:
+        for p in m["atoms"]: speakers.setdefault(p, set()).add("foes")
     entries = {}
     for k, e in GLOSS.items():
         entries[k] = dict(e, speakers=sorted(speakers.get(k, ())), in_code=sorted(use.get(k, ())))
@@ -230,6 +261,9 @@ def export(path=OUT):
                hero_words=hero, enemy_moves=moves, enemy_units=units, two_readings=two_readings(hero, moves, units),
                kits={c: {str(l): [compile_verb(v, **p)["name"] for v, p in kit] for l, kit in legs.items()}
                      for c, legs in KITS.items()},
+               part_effects=part_effects(),
+               names={nm: vb for nm, (vb, _) in {**ROOT_NAMES, **BYNAMES, **CAPSTONES}.items()},
+               classes=list(CLASSES), elements=list(ELEMENT),
                rules=dict(order="Target + Tier + Styng + Manner + Rider + Root", cap=UPGRADE_CAP,
                           ladder=COST_LADDER, halv_cost=HALV_COST, target_steps=TARGET_STEPS,
                           seams=["Identical letters at a seam merge: Brak + Krosh = Brakrosh.",

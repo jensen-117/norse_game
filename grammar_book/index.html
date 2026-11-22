@@ -1,0 +1,435 @@
+<title>The Grammar Library</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400;0,500;0,700;1,400;1,500&family=Alegreya+SC:wght@500;700&family=Alegreya+Sans:wght@400;500;700&display=swap">
+<style>
+/* Layout: one open dictionary page on a desk, a thumb index cut into its right edge; running heads, folios, paging. */
+:root {
+  --desk: #d6dbd2;      /* the desk around the page */
+  --paper: #f1f3ee;     /* the page: cool bone, not cream */
+  --ink: #23251f;       /* iron-gall ink */
+  --muted: #676a60;
+  --rule: #cdd1c6;
+  --accent: #2c7366;    /* verdigris: bronze gone green */
+  --accent-soft: #dbe9e4;
+  --foe: #8f3a30;       /* rust: the foes' words */
+  --foe-soft: #f0dfdb;
+  --plan: #9a6a1f;      /* planned: amber ink */
+  --plan-soft: #f1e6d2;
+  --pocket: #5d6676;
+  --shadow: 0 1px 0 rgba(0,0,0,.04), 0 12px 32px -18px rgba(30,40,30,.35);
+  --f-head: "Alegreya SC", "Alegreya", Georgia, serif;
+  --f-text: "Alegreya", Georgia, "Times New Roman", serif;
+  --f-ui: "Alegreya Sans", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --desk: #0f1211; --paper: #1a1e1c; --ink: #e2e4dc; --muted: #9b9e94; --rule: #313833;
+  --accent: #74c4b2; --accent-soft: #20352f; --foe: #e48a7d; --foe-soft: #3a2320;
+  --plan: #dcae62; --plan-soft: #3a2f1c; --pocket: #a3abba;
+  --shadow: 0 1px 0 rgba(0,0,0,.3), 0 16px 40px -20px rgba(0,0,0,.8); color-scheme: dark } }
+:root[data-theme="dark"] {
+  --desk: #0f1211; --paper: #1a1e1c; --ink: #e2e4dc; --muted: #9b9e94; --rule: #313833;
+  --accent: #74c4b2; --accent-soft: #20352f; --foe: #e48a7d; --foe-soft: #3a2320;
+  --plan: #dcae62; --plan-soft: #3a2f1c; --pocket: #a3abba;
+  --shadow: 0 1px 0 rgba(0,0,0,.3), 0 16px 40px -20px rgba(0,0,0,.8); color-scheme: dark }
+
+* { box-sizing: border-box }
+body { background: var(--desk); color: var(--ink); font: 17px/1.5 var(--f-text);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 48px }
+button, input { font: inherit; color: inherit }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+
+.top { max-width: 860px; margin: 0 auto 14px; display: grid; gap: 10px }
+.brand { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px }
+.brand h1 { font: 700 30px/1.1 var(--f-head); margin: 0; letter-spacing: .02em; text-wrap: balance }
+.brand .stamp { font: 13px var(--f-ui); color: var(--muted); font-variant-numeric: tabular-nums }
+.tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center }
+.search { flex: 1 1 220px; min-width: 0; position: relative }
+.search input { width: 100%; padding: 8px 12px 8px 34px; border: 1px solid var(--rule); border-radius: 6px; background: var(--paper); font-family: var(--f-ui); font-size: 15px }
+.search svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; stroke: var(--muted); fill: none; stroke-width: 2 }
+.views { display: flex; flex-wrap: wrap; gap: 2px; font-family: var(--f-ui); font-size: 14px }
+.views button { border: 0; background: none; padding: 6px 10px; border-radius: 5px; cursor: pointer; color: var(--muted) }
+.views button:hover { color: var(--ink) }
+.views button[aria-current="true"] { background: var(--paper); color: var(--ink); box-shadow: inset 0 -2px 0 var(--accent) }
+
+.book { max-width: 860px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start }
+.page { background: var(--paper); box-shadow: var(--shadow); border-radius: 3px 0 0 3px; padding: 22px clamp(18px, 5vw, 48px) 18px; min-height: 70vh; display: flex; flex-direction: column; min-width: 0 }
+.runhead { display: flex; justify-content: space-between; gap: 12px; font: 700 13px var(--f-head); letter-spacing: .08em; color: var(--muted); border-bottom: 1px solid var(--rule); padding-bottom: 6px; margin-bottom: 14px }
+.runhead span:last-child { text-align: right }
+.entries { flex: 1; display: grid; gap: 2px; align-content: start }
+.folio { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-top: 1px solid var(--rule); margin-top: 18px; padding-top: 10px; font: 14px var(--f-ui); color: var(--muted); font-variant-numeric: tabular-nums }
+.folio button { border: 1px solid var(--rule); background: none; border-radius: 5px; padding: 4px 12px; cursor: pointer }
+.folio button:disabled { opacity: .35; cursor: default }
+
+.thumbs { display: flex; flex-direction: column; gap: 2px; padding-top: 52px; position: sticky; top: env(safe-area-inset-top, 0px); max-height: 100vh; overflow-y: auto; scrollbar-width: none }
+.thumbs button { border: 0; cursor: pointer; text-align: left; background: var(--accent-soft); color: var(--accent); font: 700 12px/1 var(--f-ui); letter-spacing: .04em; padding: 6px 9px 6px 7px; border-radius: 0 4px 4px 0; white-space: nowrap; min-width: 30px }
+.thumbs button:hover, .thumbs button[aria-current="true"] { background: var(--accent); color: var(--paper) }
+
+.sect { font: 700 15px var(--f-head); letter-spacing: .1em; color: var(--accent); margin: 18px 0 6px; padding-bottom: 4px; border-bottom: 1px dashed var(--rule) }
+.sect:first-child { margin-top: 0 }
+.sect small { display: block; font: italic 400 14px var(--f-text); letter-spacing: 0; color: var(--muted); margin-top: 2px }
+
+.e { border-radius: 4px }
+.e > .hw { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; width: 100%; text-align: left; background: none; border: 0; padding: 6px 8px; cursor: pointer; border-radius: 4px }
+.e > .hw:hover { background: color-mix(in srgb, var(--accent-soft) 55%, transparent) }
+.e.open { background: color-mix(in srgb, var(--accent-soft) 40%, transparent) }
+.hw .w { font: 700 19px var(--f-head); letter-spacing: .02em }
+.hw .say { font: italic 400 15px var(--f-text); color: var(--muted); margin-left: 6px }
+.hw .k { font: italic 14px var(--f-text); color: var(--muted); margin-left: 6px }
+.hw .means { grid-column: 1 / -1; font-size: 16px; color: var(--ink) }
+.hw .badges { display: flex; gap: 4px; align-items: start }
+.badge { font: 700 11px/1 var(--f-ui); letter-spacing: .06em; text-transform: uppercase; padding: 4px 6px; border-radius: 3px; white-space: nowrap }
+.badge.planned { color: var(--plan); background: var(--plan-soft) }
+.badge.pocket { color: var(--pocket); border: 1px solid currentColor; padding: 3px 5px }
+.badge.heroes { color: var(--accent); background: var(--accent-soft) }
+.badge.foes { color: var(--foe); background: var(--foe-soft) }
+
+.body { padding: 2px 8px 12px 8px; display: grid; gap: 8px; font-size: 16px }
+.row { display: grid; grid-template-columns: 86px minmax(0, 1fr); gap: 10px }
+.row > b { font: 500 13px/1.9 var(--f-ui); letter-spacing: .06em; text-transform: uppercase; color: var(--muted) }
+.row > div { min-width: 0 }
+.chips { display: flex; flex-wrap: wrap; gap: 4px }
+.chip { font: 500 14px/1 var(--f-ui); border: 1px solid var(--rule); background: var(--paper); border-radius: 999px; padding: 5px 9px; cursor: pointer; white-space: nowrap }
+.chip:hover { border-color: var(--accent); color: var(--accent) }
+.chip.foe { border-style: dashed }
+.chip.atom { border-radius: 4px; font-family: var(--f-head); font-weight: 700; letter-spacing: .03em }
+.chip.more { border: 0; color: var(--muted); background: none; cursor: pointer }
+.chip.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent) }
+.chip.off { opacity: .4; text-decoration: line-through; cursor: default }
+.goto { justify-self: start; font: 500 14px var(--f-ui); border: 1px dashed var(--rule); background: none; color: var(--muted); border-radius: 5px; padding: 5px 10px; cursor: not-allowed }
+.note { font-style: italic; color: var(--muted) }
+.empty { color: var(--muted); font-style: italic; padding: 24px 8px }
+
+.front p, .front li { max-width: 62ch }
+.front h2 { font: 700 17px var(--f-head); letter-spacing: .08em; color: var(--accent); margin: 18px 0 6px }
+.front ol, .front ul { padding-left: 22px; margin: 6px 0 }
+.order { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font: 700 14px var(--f-ui) }
+.order span { padding: 5px 9px; border: 1px solid var(--rule); border-radius: 4px; background: var(--paper) }
+.order i { color: var(--muted); font-style: normal }
+
+.foes-list .fm { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0 10px; padding: 6px 8px; border-bottom: 1px solid var(--rule) }
+.fm .n { font: 700 18px var(--f-text) }
+.fm .t { grid-column: 1 / -1; color: var(--muted); font-size: 15px }
+.fm .who { font: 13px var(--f-ui); color: var(--foe); text-align: right }
+
+dialog { border: 0; padding: 0; background: var(--paper); color: var(--ink); border-radius: 8px; box-shadow: var(--shadow); width: min(520px, calc(100vw - 32px)); max-height: calc(100vh - 48px) }
+dialog::backdrop { background: rgba(10, 14, 12, .45) }
+.card { padding: 20px 22px; display: grid; gap: 12px }
+.card h3 { margin: 0; font: 700 26px/1.1 var(--f-head); letter-spacing: .02em; display: flex; justify-content: space-between; gap: 12px; align-items: baseline }
+.card h3 button { font: 500 14px var(--f-ui); border: 1px solid var(--rule); background: none; border-radius: 5px; padding: 4px 10px; cursor: pointer }
+.card .text { font-size: 17px }
+.card .side { font: 700 12px var(--f-ui); letter-spacing: .08em; text-transform: uppercase }
+.card .side.hero { color: var(--accent) } .card .side.foe { color: var(--foe) }
+.facts { display: flex; flex-wrap: wrap; gap: 6px 16px; font: 14px var(--f-ui); color: var(--muted); font-variant-numeric: tabular-nums }
+.facts b { color: var(--ink); font-weight: 700 }
+.card hr { border: 0; border-top: 1px solid var(--rule); margin: 4px 0 }
+.tiles { display: flex; flex-wrap: wrap; align-items: center; gap: 4px }
+.tiles .plus { color: var(--muted); font: 14px var(--f-ui) }
+
+@media (max-width: 720px) {
+  body { font-size: 16px; padding-block: 12px 32px }
+  .book { grid-template-columns: minmax(0, 1fr) }
+  .thumbs { flex-direction: row; padding: 0 0 6px; position: static; overflow-x: auto; order: -1; max-height: none }
+  .thumbs button { border-radius: 4px 4px 0 0; flex-shrink: 0 }
+  .page { border-radius: 3px; padding: 16px 14px }
+  .row { grid-template-columns: minmax(0, 1fr); gap: 2px }
+  .row > b { line-height: 1.4 }
+}
+@media (prefers-reduced-motion: no-preference) { .e.open .body { animation: drop .14s ease-out } @keyframes drop { from { opacity: 0; transform: translateY(-3px) } } }
+</style>
+
+<header class="top">
+  <div class="brand"><h1>The Grammar Library</h1><span class="stamp" id="stamp">Opening the book…</span></div>
+  <div class="tools">
+    <label class="search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+      <input id="q" type="search" placeholder="Find a word or part: Brak, Mereld, fear…" autocomplete="off" aria-label="Find a word"></label>
+    <nav class="views" id="views" aria-label="How the book is sorted"></nav>
+  </div>
+</header>
+<main class="book">
+  <section class="page" aria-live="polite">
+    <div class="runhead"><span id="rh-l"></span><span id="rh-r"></span></div>
+    <div class="entries" id="entries"><p class="empty">Opening the book…</p></div>
+    <div class="folio"><button id="prev" type="button">‹ Back</button><span id="folio"></span><button id="next" type="button">On ›</button></div>
+  </section>
+  <nav class="thumbs" id="thumbs" aria-label="Thumb index"></nav>
+</main>
+<dialog id="card"><div class="card" id="cardbody"></div></dialog>
+
+<script>
+const VIEWS = [
+  ["front", "How to read"], ["az", "A to Z"], ["kind", "By kind"], ["class", "By class"],
+  ["element", "By element"], ["foes", "Foes' moves"], ["two", "Read two ways"]];
+const PER_PAGE = 12;
+const KIND_SHORT = { element: "el.", tier: "tier", target: "reach", manner: "manner", upgrade: "upgrade", direction: "dir.",
+  stat: "stat", status_root: "status word", rider: "rider word", weapon: "weapon", verb: "verb", name: "name",
+  name_part: "name part", class: "class", family: "family", rank: "rank", status: "status", counter: "counter",
+  keyword: "keyword", affinity: "affinity", action: "action", item: "item", myth: "myth" };
+const SHARED_KINDS = ["tier", "target", "manner", "upgrade", "direction", "stat"];
+let L, view = "az", page = 0, openKey = null, query = "", blocks = [], idx = {};
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const sortKey = w => w.toLowerCase().replace(/[^a-z]/g, "");
+const byAZ = (a, b) => sortKey(a).localeCompare(sortKey(b));
+
+fetch("lexicon.json").then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }).then(d => { L = d; build(); start(); })
+  .catch(err => { $("#entries").innerHTML = `<p class="empty">The book's data didn't load (${esc(err.message)}). Reload the page to try again.</p>`; $("#stamp").textContent = ""; });
+
+function build() {
+  const W = L.words;
+  idx.found = {}; idx.takenBy = {}; idx.hero = {}; idx.foeMove = {}; idx.foeUnit = {};
+  const put = (k, v) => (idx.found[k] ||= []).push(v);
+  for (const h of L.hero_words) { (idx.hero[h.name] ||= []).push(h); for (const a of h.atoms) put(a, { name: h.name, side: "hero" }); }
+  for (const m of L.enemy_moves) { idx.foeMove[m.name] = m; for (const a of m.atoms) put(a, { name: m.name, side: "foe" }); }
+  for (const u of L.enemy_units) { idx.foeUnit[u.name] = u; for (const a of u.atoms) put(a, { name: u.name, side: "foe" }); }
+  for (const k in idx.found) { const seen = new Set(); idx.found[k] = idx.found[k].filter(x => !seen.has(x.name) && seen.add(x.name)); }
+  for (const [v, t] of Object.entries(L.verbs)) {
+    for (const p of [...t.takes.tiers.filter(x => x !== "Base"), ...t.takes.targets, ...t.takes.manners, ...(t.takes.styng ? ["Styng"] : []), ...(t.takes.lonn ? ["Lonn"] : [])])
+      (idx.takenBy[p] ||= []).push(v);
+  }
+  idx.keys = Object.keys(W).sort(byAZ);
+  const n = L.hero_words.length, f = L.enemy_moves.length;
+  $("#stamp").textContent = `${idx.keys.length} entries · ${n} hero words · ${f} foe moves · engine ${L.engine}`;
+  $("#views").innerHTML = VIEWS.map(([k, t]) => `<button type="button" data-v="${k}">${t}</button>`).join("");
+  $("#views").onclick = e => { const b = e.target.closest("button"); if (b) go(b.dataset.v); };
+}
+
+function start() {
+  const h = location.hash.slice(1);
+  go(VIEWS.some(v => v[0] === h) ? h : "az", true);
+  addEventListener("hashchange", () => { const h = location.hash.slice(1); if (VIEWS.some(v => v[0] === h) && h !== view) go(h, true); });
+}
+
+function go(v, fromHash) {
+  view = v; page = 0; openKey = null; query = ""; $("#q").value = "";
+  if (!fromHash) try { history.replaceState(null, "", "#" + v); } catch (e) { location.hash = v; }
+  for (const b of document.querySelectorAll("#views button")) b.setAttribute("aria-current", b.dataset.v === v);
+  layout(); render();
+}
+
+// ---------------------------------------------------------------- the views, as a list of blocks: sections and entries
+function section(title, sub, keys, thumb) { return [{ sect: title, sub, thumb: thumb ?? title }, ...keys.map(k => ({ key: k }))]; }
+
+function layout() {
+  const W = L.words, K = idx.keys;
+  if (query) { blocks = searchBlocks(query); return; }
+  if (view === "az") {
+    blocks = []; let letter = null;
+    for (const k of K) { const c = sortKey(k)[0].toUpperCase(); if (c !== letter) { letter = c; blocks.push({ thumbOnly: c }); } blocks.push({ key: k }); }
+  } else if (view === "kind") {
+    blocks = Object.entries(L.kinds).flatMap(([kind, title]) => { const ks = K.filter(k => W[k].kind === kind); return ks.length ? section(title, null, ks, title.split(/[ :(]/)[0]) : []; });
+  } else if (view === "class") {
+    const owned = {}, used = new Set();
+    const own = (c, k) => { if (!W[k] || used.has(k)) return; (owned[c] ||= []).push(k); used.add(k); };
+    for (const c of L.classes) own(c, c);
+    for (const [v, t] of Object.entries(L.verbs)) if (t.cls) { own(t.cls, v); if (t.rider && W[t.rider.word]) own(t.cls, t.rider.word); }
+    for (const [nm, v] of Object.entries(L.names)) if (L.verbs[v]?.cls) own(L.verbs[v].cls, nm);
+    for (const k of K) if (W[k].owner) own(W[k].owner, k);
+    blocks = [];
+    for (const c of L.classes) if ((owned[c] || []).length > 1) blocks.push(...section(c, W[c]?.means, owned[c]));
+    const shared = K.filter(k => SHARED_KINDS.includes(W[k].kind) && !used.has(k)); shared.forEach(k => used.add(k));
+    blocks.push(...section("Every hero", "Parts any class can carve onto its verbs", shared, "Shared"));
+    const foe = K.filter(k => !used.has(k) && ((W[k].speakers.length === 1 && W[k].speakers[0] === "foes") || ["family", "rank"].includes(W[k].kind)));
+    foe.forEach(k => used.add(k));
+    blocks.push(...section("The foes", "Words only the foes say today", foe, "Foes"));
+    const quiet = K.filter(k => !used.has(k) && ["class"].includes(W[k].kind)); quiet.forEach(k => used.add(k));
+    if (quiet.length) blocks.push(...section("Classes still to design", null, quiet, "Unbuilt"));
+    blocks.push(...section("Everything else", "Statuses, counters, keywords, items: the plain-English register", K.filter(k => !used.has(k)), "Else"));
+  } else if (view === "element") {
+    blocks = []; const used = new Set();
+    for (const el of L.elements) {
+      if (!W[el]) continue;
+      const ks = [el, ...Object.entries(L.verbs).filter(([v, t]) => t.element === el && v !== el && W[v]).map(([v]) => v),
+                  ...Object.entries(L.names).filter(([, v]) => L.verbs[v]?.element === el).map(([n]) => n).filter(n => W[n])];
+      ks.forEach(k => used.add(k));
+      const units = L.enemy_units.filter(u => u.element === el).map(u => u.name);
+      blocks.push({ sect: el, sub: W[el].means, thumb: el }, ...ks.map(k => ({ key: k })), ...(units.length ? [{ words: units, label: "Foes of this element" }] : []));
+    }
+    blocks.push(...section("No element", "Words that belong to no element", K.filter(k => !used.has(k)), "None"));
+  } else if (view === "foes") {
+    const eng = L.enemy_moves.filter(m => m.english);
+    const fams = [...new Set(eng.flatMap(m => m.families))].sort();
+    blocks = fams.flatMap(f => [{ sect: f, sub: L.words[f]?.means, thumb: f }, ...eng.filter(m => m.families.includes(f)).map(m => ({ foeMove: m.name }))]);
+  } else if (view === "two") {
+    blocks = [{ sect: "Read two ways", sub: "The seam rules let a reader take these apart two ways. Each needs a call: keep it, or rename one side.", thumb: "Two" },
+              ...Object.entries(L.two_readings).map(([n, ps]) => ({ two: n, parses: ps }))];
+  } else if (view === "front") { blocks = [{ front: true }]; }
+}
+
+function searchBlocks(q) {
+  const s = q.toLowerCase().trim(), W = L.words;
+  const score = k => { const w = k.toLowerCase(), e = W[k];
+    if (w === s) return 0; if (w.startsWith(s)) return 1; if (w.includes(s)) return 2;
+    if ((e.means || "").toLowerCase().includes(s)) return 3; if ((e.origin || "").toLowerCase().includes(s) || (e.was || "").toLowerCase().includes(s)) return 4; return 9; };
+  const hits = idx.keys.map(k => [k, score(k)]).filter(x => x[1] < 9).sort((a, b) => a[1] - b[1] || byAZ(a[0], b[0])).map(x => x[0]);
+  const names = [...new Set([...Object.keys(idx.hero), ...Object.keys(idx.foeMove), ...Object.keys(idx.foeUnit)])]
+    .filter(n => n.toLowerCase().includes(s) && !W[n]).sort((a, b) => (a.toLowerCase().startsWith(s) ? 0 : 1) - (b.toLowerCase().startsWith(s) ? 0 : 1) || a.length - b.length || byAZ(a, b));
+  const out = [{ sect: `Found: “${q}”`, sub: `${hits.length} ${hits.length === 1 ? "entry" : "entries"}, ${names.length} built ${names.length === 1 ? "word" : "words"}`, thumb: "Found" }];
+  if (names.length) out.push({ words: names.slice(0, 60), label: "Built words", more: names.length - 60 });
+  out.push(...hits.map(k => ({ key: k })));
+  if (!hits.length && !names.length) out.push({ none: true });
+  return out;
+}
+
+// ---------------------------------------------------------------- pages: entries per page, sections ride along
+function pages() {
+  const ps = [[]]; let n = 0;
+  for (const b of blocks) {
+    const counts = b.key || b.foeMove || b.two || b.front || b.words;
+    if (counts && n >= PER_PAGE) { ps.push([]); n = 0; }
+    if ((b.sect || b.thumbOnly) && n >= PER_PAGE - 2 && ps.at(-1).length) { ps.push([]); n = 0; }
+    ps.at(-1).push(b); if (counts) n += b.words ? 2 : 1;
+  }
+  return ps;
+}
+
+function render() {
+  const ps = pages(); page = Math.max(0, Math.min(page, ps.length - 1));
+  const here = ps[page];
+  $("#entries").innerHTML = here.map(blockHTML).join("") || `<p class="empty">Nothing here.</p>`;
+  const heads = here.filter(b => b.key || b.foeMove || b.two).map(b => b.key || b.foeMove || b.two);
+  const sec = [...ps.slice(0, page + 1).flat()].reverse().find(b => b.sect);
+  $("#rh-l").textContent = heads.length ? (heads.length > 1 ? `${heads[0]} — ${heads.at(-1)}` : heads[0]) : (view === "front" ? "How to read this book" : "");
+  $("#rh-r").textContent = sec ? sec.sect : (VIEWS.find(v => v[0] === view) || [])[1] || "";
+  $("#folio").textContent = `page ${page + 1} of ${ps.length}`;
+  $("#prev").disabled = page === 0; $("#next").disabled = page === ps.length - 1;
+  // the thumb index: a tab for each letter or section, jumping to its page
+  const tabs = []; ps.forEach((p, i) => p.forEach(b => { const t = b.thumbOnly || b.thumb; if (t && !tabs.some(x => x.t === t)) tabs.push({ t, i }); }));
+  $("#thumbs").innerHTML = tabs.length > 1 ? tabs.map(x => `<button type="button" data-p="${x.i}" aria-current="${x.i === page}" title="Go to ${esc(x.t)}">${esc(x.t)}</button>`).join("") : "";
+  const cur = [...$("#thumbs").querySelectorAll("button")].filter(b => +b.dataset.p <= page).at(-1);
+  $("#thumbs").querySelectorAll("button").forEach(b => b.setAttribute("aria-current", b === cur));
+}
+
+function blockHTML(b) {
+  if (b.thumbOnly) return `<div class="sect">${esc(b.thumbOnly)}</div>`;
+  if (b.sect) return `<div class="sect">${esc(b.sect)}${b.sub ? `<small>${esc(b.sub)}</small>` : ""}</div>`;
+  if (b.key) return entryHTML(b.key);
+  if (b.words) return `<div class="body"><div class="row"><b>${esc(b.label)}</b><div class="chips">${b.words.map(wordChip).join("")}${b.more > 0 ? `<span class="chip more">+${b.more} more: narrow the search</span>` : ""}</div></div></div>`;
+  if (b.foeMove) { const m = idx.foeMove[b.foeMove];
+    return `<div class="fm"><button class="chip" data-word="${esc(m.name)}" style="justify-self:start;font-size:16px">${esc(m.name)}</button><span class="who">${m.users} ${m.users === 1 ? "foe" : "foes"}</span><span class="t">${esc(m.text)}</span></div>`; }
+  if (b.two) return `<div class="e open"><div class="body"><div class="hw" style="padding:0"><span><span class="w">${esc(b.two)}</span></span></div>${b.parses.map((p, i) => `<div class="row"><b>Reading ${i + 1}</b><div class="tiles">${tilesHTML(p)}</div></div>`).join("")}<div class="row"><b>Said by</b><div class="chips">${wordChip(b.two)}</div></div></div></div>`;
+  if (b.front) return frontHTML();
+  if (b.none) return `<p class="empty">No entry or word matches. Try a part of the word (“krosh”), or its meaning (“fire”).</p>`;
+  return "";
+}
+
+const tilesHTML = parts => parts.map(a => `<button class="chip atom" data-atom="${esc(a)}">${esc(a)}</button>`).join(`<span class="plus">+</span>`);
+function wordChip(n) {
+  const foe = !idx.hero[n] && (idx.foeMove[n] || idx.foeUnit[n]);
+  return `<button class="chip${foe ? " foe" : ""}" data-word="${esc(n)}" title="${foe ? "A foe's word" : "A hero's word"}">${esc(n)}</button>`;
+}
+
+function entryHTML(k) {
+  const e = L.words[k], open = openKey === k;
+  const badges = [e.state !== "built" ? `<span class="badge ${e.state}">${e.state}</span>` : "",
+                  ...e.speakers.map(s => `<span class="badge ${s}">${s}</span>`)].join("");
+  let h = `<article class="e${open ? " open" : ""}" id="e-${esc(sortKey(k))}"><button class="hw" type="button" data-key="${esc(k)}" aria-expanded="${open}">
+    <span><span class="w">${esc(k)}</span>${e.say ? `<span class="say">/${esc(e.say)}/</span>` : ""}<span class="k">${esc(KIND_SHORT[e.kind] || e.kind)}</span></span>
+    <span class="badges">${badges}</span><span class="means">${esc(e.means)}</span></button>`;
+  if (open) h += `<div class="body">${bodyHTML(k, e)}</div>`;
+  return h + `</article>`;
+}
+
+function bodyHTML(k, e) {
+  const rows = [], row = (t, html) => html && rows.push(`<div class="row"><b>${t}</b><div>${html}</div></div>`);
+  const W = L.words, v = L.verbs[k];
+  // what it does: a verb's plain form, or a part's rule
+  if (v) {
+    const plain = (idx.hero[k] || []).find(h => h.verb === k && !h.parts.length);
+    row("Does", plain ? `${esc(plain.text)} <span class="note">${plain.price ? `${plain.price} ${plain.cost_type}` : "free"}${plain.share ? ` · ${shareText(plain)}` : ""}</span>` : "");
+  } else if (L.part_effects[k]) row("Does", esc(L.part_effects[k]));
+  if (L.names[k]) row("Stands for", tilesHTML([L.names[k]]) );
+  row("From", e.origin ? esc(e.origin) : (e.kind === "status" || e.kind === "counter" || e.kind === "keyword" || e.kind === "item" || e.kind === "affinity" || e.kind === "action" ? `<span class="note">Plain English</span>` : ""));
+  row("Note", e.note ? esc(e.note) : "");
+  row("Was", e.was ? esc(e.was) : "");
+  if (e.owner) row("Meant for", tilesHTML([e.owner]));
+  if (v) {
+    const t = v.takes, all = ["Halv", "Mer", "Flok", "All", "Snar", "Tung", "Bid", "Jarf", "Drif", "Styng", "Lonn"];
+    const has = new Set([...t.tiers, ...t.targets, ...t.manners, ...(t.styng ? ["Styng"] : []), ...(t.lonn ? ["Lonn"] : [])]);
+    row("Takes", `<div class="chips">${all.map(p => `<button class="chip atom ${has.has(p) ? "on" : "off"}" ${has.has(p) ? `data-atom="${p}"` : "disabled"} title="${has.has(p) ? "" : "Not on " + esc(k)}">${p}</button>`).join("")}</div>`
+      + (v.rider ? `<div class="note" style="margin-top:4px">Its rider: ${esc(v.rider.gives)}${W[v.rider.word] ? `, said <button class="chip atom" data-atom="${esc(v.rider.word)}">${esc(v.rider.word)}</button>` : ""}</div>` : ""));
+    if (v.cls) row("Class", tilesHTML([v.cls]));
+  }
+  const tb = idx.takenBy[k];
+  if (tb) row("Taken by", `<div class="chips">${tb.sort(byAZ).map(x => `<button class="chip atom" data-atom="${esc(x)}">${esc(x)}</button>`).join("")}</div>`);
+  const found = idx.found[k] || [];
+  if (found.length) {
+    const show = found.slice(0, 24);
+    row(`In ${found.length} ${found.length === 1 ? "word" : "words"}`, `<div class="chips">${show.map(x => wordChip(x.name)).join("")}${found.length > 24 ? `<button class="chip more" data-search="${esc(k)}">all ${found.length} ›</button>` : ""}</div>`);
+  }
+  rows.push(`<button class="goto" type="button" disabled title="The workbench is the library's next step">Go To workbench · coming next</button>`);
+  return rows.join("");
+}
+
+function shareText(h) { return h.share == null ? "" : `${h.share.toFixed(2).replace(/0$/, "")} × ${h.kind === "heal" ? "a Lak" : "a Krosh"}`; }
+
+function frontHTML() {
+  const r = L.rules;
+  return `<div class="front">
+  <p>Every word in the game is built from parts, in one order. Learn the parts and you can read any name, hero's or foe's: <b>Snarbrakrosh</b> is Snar (swift) + Brak (it cracks armour) + Krosh (the hammer's blow).</p>
+  <h2>The order</h2><div class="order">${r.order.split(" + ").map(p => `<span>${esc(p)}</span>`).join("<i>+</i>")}</div>
+  <p class="note">A move carries at most ${r.cap} carved parts. Past that it needs a name of its own, a capstone (Pilskur, Tusensplitter).</p>
+  <h2>The seams</h2><ul>${r.seams.map(s => `<li>${esc(s)}</li>`).join("")}</ul>
+  <h2>How the game says them</h2><ul>${L.reading_key.map(s => `<li>${esc(s)}</li>`).join("")}</ul>
+  <p class="note">The readings are a first draft. Each word's origin note gives the source word as its own language says it; the game's reading wins.</p>
+  <h2>The price ladder</h2><p>A move's price is its verb's rung on one ladder, times two for each step a part adds: <b>${r.ladder.join(" · ")}</b>. A Halv costs ${r.halv_cost.HP} HP or ${r.halv_cost.MP} MP. Past ${r.ladder.at(-1)} a move becomes an item.</p>
+  <h2>The marks in this book</h2><div class="chips" style="gap:8px"><span class="badge heroes">heroes</span> a hero says it <span class="badge foes">foes</span> a foe says it <span class="badge planned">planned</span> agreed, not built <span class="badge pocket">pocket</span> held for later</div>
+  <p class="note">Statuses, counters and items are in plain English on purpose: the old language names what you do, English names what you wear.</p>
+  </div>`;
+}
+
+// ---------------------------------------------------------------- the word card
+function showWord(n) {
+  const hs = idx.hero[n] || [], fm = idx.foeMove[n], fu = idx.foeUnit[n];
+  let h = `<h3>${esc(n)}<button type="button" data-close>Close</button></h3>`;
+  for (const x of hs) {
+    const tiles = [...x.parts.filter(p => p !== "Lonn"), ...(x.rider_word ? [x.rider_word] : x.parts.includes("Lonn") ? ["Lonn"] : []), x.verb];
+    h += `<div class="side hero">A hero's word · ${esc(x.cls || "")}</div><div class="tiles">${tilesHTML(tiles)}</div>
+      <div class="text">${esc(x.text)}</div>
+      <div class="facts"><span><b>${x.price ? `${x.price} ${x.cost_type}` : "free"}</b> at level 50</span>${x.share ? `<span><b>${shareText(x)}</b></span>` : ""}${x.keywords.length ? `<span><b>${x.keywords.join(", ")}</b></span>` : ""}<span>${{ one: "one target", row: "a row", all: "everyone" }[x.wide] || x.wide}</span>
+      ${x.kit_legs.length ? `<span>in the ${esc(x.cls)}'s leg ${x.kit_legs.join(" and ")} kit</span>` : ""}${x.capstone ? `<span>a capstone</span>` : ""}${x.byname ? `<span>a byname</span>` : ""}${x.past_the_ladder ? `<span style="color:var(--foe)">past the ladder: an item</span>` : ""}</div>`;
+    if (hs.length > 1) h += `<hr>`;
+  }
+  if (fm) h += `${hs.length ? "<hr>" : ""}<div class="side foe">A foe's move</div>${fm.parts ? `<div class="tiles">${tilesHTML(fm.parts)}</div>` : `<div class="note">Plain English: no parts.</div>`}
+    <div class="text">${esc(fm.text)}</div><div class="facts"><span>said by <b>${fm.users}</b> ${fm.users === 1 ? "foe" : "foes"}</span><span>${fm.families.map(esc).join(", ")}</span></div>`;
+  if (fu) h += `${hs.length || fm ? "<hr>" : ""}<div class="side foe">A foe</div>${fu.parts ? `<div class="tiles">${tilesHTML(fu.parts)}</div>` : ""}
+    <div class="facts"><span>family <b>${esc(fu.family)}</b></span>${fu.element ? `<span>element <b>${esc(fu.element)}</b></span>` : ""}</div>`;
+  if (L.two_readings[n]) h += `<div class="note">This name reads two ways: ${L.two_readings[n].map(p => p.join(" + ")).join(", or ")}.</div>`;
+  h += `<button class="goto" type="button" disabled title="The workbench is the library's next step">Go To workbench · coming next</button>`;
+  $("#cardbody").innerHTML = h;
+  const d = $("#card"); if (!d.open) d.showModal();
+}
+
+// ---------------------------------------------------------------- moving about
+function openEntry(k) {
+  $("#card").open && $("#card").close();
+  let ps = pages(), at = ps.findIndex(p => p.some(b => b.key === k));
+  if (at < 0) { view = "az"; query = ""; $("#q").value = ""; for (const b of document.querySelectorAll("#views button")) b.setAttribute("aria-current", b.dataset.v === "az");
+    try { history.replaceState(null, "", "#az"); } catch (e) {} layout(); ps = pages(); at = ps.findIndex(p => p.some(b => b.key === k)); }
+  page = at; openKey = k; render();
+  document.getElementById("e-" + sortKey(k))?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+}
+
+document.addEventListener("click", e => {
+  const t = e.target.closest("[data-key],[data-atom],[data-word],[data-p],[data-close],[data-search]");
+  if (!t) { if (e.target === $("#card")) $("#card").close(); return; }
+  if (t.dataset.close !== undefined) return $("#card").close();
+  if (t.dataset.p) { page = +t.dataset.p; render(); return scrollTo({ top: 0 }); }
+  if (t.dataset.search) { $("#card").open && $("#card").close(); $("#q").value = t.dataset.search; return search(t.dataset.search); }
+  if (t.dataset.word) return showWord(t.dataset.word);
+  const k = t.dataset.key || t.dataset.atom;
+  if (t.dataset.key) { openKey = openKey === k ? null : k; return render(); }
+  if (L.words[k]) openEntry(k);
+});
+$("#prev").onclick = () => { page--; render(); };
+$("#next").onclick = () => { page++; render(); };
+let timer; const search = q => { query = q.trim(); page = 0; openKey = null; layout(); render(); };
+$("#q").addEventListener("input", e => { clearTimeout(timer); timer = setTimeout(() => search(e.target.value), 120); });
+document.addEventListener("keydown", e => {
+  if (e.target.matches("input") || $("#card").open) return;
+  if (e.key === "ArrowRight" && !$("#next").disabled) { page++; render(); }
+  else if (e.key === "ArrowLeft" && !$("#prev").disabled) { page--; render(); }
+  else if (e.key === "/") { e.preventDefault(); $("#q").focus(); }
+});
+</script>

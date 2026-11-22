@@ -19,6 +19,7 @@ Fields
   state   built (in the code), planned (agreed, not built), pocket (held for later)
   note    anything a reader needs: renames, collisions, which verb owns a rider word
   was     earlier names, so old docs and fight records still read
+  owner   for a planned word with no verb yet: the class it is meant for (roles.md)
 """
 
 READING_KEY = [
@@ -56,8 +57,8 @@ KINDS = {   # the book's sections, in the order the book shows them
     "myth":      "Myth",
 }
 
-def g(kind, means, origin=None, say=None, state="built", note=None, was=None):
-    return dict(kind=kind, means=means, origin=origin, say=say, state=state, note=note, was=was)
+def g(kind, means, origin=None, say=None, state="built", note=None, was=None, owner=None):
+    return dict(kind=kind, means=means, origin=origin, say=say, state=state, note=note, was=was, owner=owner)
 
 GLOSS = {
     # ------------------------------------------------------------------ elements (spellbook Part 1; Swedish friends checked them)
@@ -138,7 +139,7 @@ GLOSS = {
     "Mot":   g("status_root", "against: makes Steadfast; pushes a foe toward resist on an element", "Old Norse mót, Swedish mot, against", "MOHT", state="planned",
                note="No n: Motnjord's 'tnj' is hard in English."),
     "Vingla": g("status_root", "to totter: leaves the target Reeling", "Swedish vingla, to totter", "VING-lah", state="planned",
-                note="Not Ving: -ving reads as an English -ing (Snarving, starving)."),
+                note="Not Ving: -ving reads as an English -ing (Snarving, starving).", owner="Berserker"),
 
     # ------------------------------------------------------------------ rider words (a rider's word belongs to its verb)
     "Blot":  g("rider", "blood: Bleeding (on Skott)", "?", "BLOHT",
@@ -157,7 +158,7 @@ GLOSS = {
     "Skott": g("weapon", "a shot: the bow; reaches anywhere", "Swedish skott, a shot", "SKOHT", note="Also the Ullar's verb."),
     "Hugg":  g("weapon", "a chop", "Old Norse hǫgg, a blow", "HOOG", state="pocket", note="Takes Skar's place if Skar doesn't land with players."),
     "Udd":   g("weapon", "a blade's point: pierces through the Front", "Swedish udd, Old Norse oddr, a point", "OOD", state="pocket"),
-    "Stikk": g("weapon", "a stab: the Nalarbani's needle", "Swedish sticka, to stab", "STIK", state="planned"),
+    "Stikk": g("weapon", "a stab: the Nalarbani's needle", "Swedish sticka, to stab", "STIK", state="planned", owner="Nalarbani"),
 
     # ------------------------------------------------------------------ class verbs (classes.md Part 7)
     "Naglskott": g("verb", "a pinning shot: Pinned", "Old Norse nagl, a nail, + skott", "NAHG-ul-skoht"),
@@ -193,16 +194,16 @@ GLOSS = {
     "Tusensplitter": g("name", "a thousand splinters: a bleeding flurry (Mer, Drif, Blot, Skott)", "Swedish tusen, thousand, + splitter, splinters", "TOO-sen-split-er"),
     "Pilskur": g("name", "an arrow-shower: bleeding arrows on everyone (All, Mer, Blot, Skott)", "Swedish pil, arrow, + skur, a shower", "PEEL-skoor"),
     "Skogsbrand": g("name", "a forest fire (All, Mer, Styng, Lonn Sveda)", "Swedish skogsbrand, forest fire", "SKOOGS-brahnd"),
-    "Skoldborg": g("name", "shield-fort: DEF up on a row (Flok Aukskold)", "Swedish sköld, shield, + borg, fort", "SKOHLD-borg", state="planned"),
+    "Skoldborg": g("name", "shield-fort: DEF up on a row (Flok Aukskold)", "Swedish sköld, shield, + borg, fort", "SKOHLD-borg", state="planned", owner="Dagskald"),
     "Bannenlykt": g("name", "the Banishing Lantern: Marks a foe", "? + Swedish lykta, lantern; Kajasken's lantern", "BAHN-en-likt", state="planned",
-                    note="See Bann."),
-    "Stynglykt": g("name", "the stinging lantern: a hit and the Mark", "Styng + lykt", "STING-likt", state="planned"),
-    "Korplykt": g("name", "the Raven Lantern: Marks a row", "Swedish korp, raven, + lykt", "KORP-likt", state="planned"),
+                    note="See Bann.", owner="Dagskald"),
+    "Stynglykt": g("name", "the stinging lantern: a hit and the Mark", "Styng + lykt", "STING-likt", state="planned", owner="Dagskald"),
+    "Korplykt": g("name", "the Raven Lantern: Marks a row", "Swedish korp, raven, + lykt", "KORP-likt", state="planned", owner="Dagskald"),
     "Allsyn": g("name", "all-sight: Marks everyone", "All + Swedish syn, sight", "AHL-seen", state="planned",
-                note="Reads as 'all sin' in English; a short name is needed either way (Allbannenlykt is too long)."),
-    "Sava":  g("name", "to save, to sew: Mending 3 on an ally", "?", "SAH-vah", state="planned", note="Joseph floated Hava."),
-    "Besk":  g("name", "the bitter tonic: Evasive 3, then the crash", "Swedish besk, bitter; bäsk, herbal bitters", "BESK", state="planned"),
-    "Hasin": g("name", "the hamstring: a heavy pinning, bleeding shot", "Old Norse hásin, the hock-sinew", "HAH-sin", state="planned"),
+                note="Reads as 'all sin' in English; a short name is needed either way (Allbannenlykt is too long).", owner="Dagskald"),
+    "Sava":  g("name", "to save, to sew: Mending 3 on an ally", "?", "SAH-vah", state="planned", note="Joseph floated Hava.", owner="Nalarbani"),
+    "Besk":  g("name", "the bitter tonic: Evasive 3, then the crash", "Swedish besk, bitter; bäsk, herbal bitters", "BESK", state="planned", owner="Nalarbani"),
+    "Hasin": g("name", "the hamstring: a heavy pinning, bleeding shot", "Old Norse hásin, the hock-sinew", "HAH-sin", state="planned", owner="Ullar"),
 
     # ------------------------------------------------------------------ parts of names (the soft families)
     "Genom": g("name_part", "through", "Swedish genom, through", "YEH-nom", note="A soft family: a later spear class might get Genomspett."),
