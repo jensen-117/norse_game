@@ -11,7 +11,7 @@ import itertools, json, os, sys
 from data import *
 import words
 from words import compile_verb, OverCap, STATUS_ROOT, STAT_ROOT, WEAPON, MANNERS, TARGETS, RIDERS, VOWELS
-from gloss import GLOSS, KINDS, READING_KEY
+from gloss import GLOSS, KINDS, READING_KEY, INTENT
 import engine
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -54,7 +54,7 @@ def kit_index():
         for leg, kit in legs.items():
             for verb, parts in kit:
                 n = words.normalize(verb, **parts)
-                key = (verb, n["tier"], n["target"], n["manners"], n["styng"], n["lonn"])
+                key = (verb, n["tier"], n["target"], n["manners"], n["styng"], n["rider"][1] if n["lonn"] else None)
                 out.setdefault(key, []).append(leg)
     return out
 
@@ -64,15 +64,15 @@ def hero_words():
         for p in carves(verb):
             try: a = compile_verb(verb, **p)
             except (ValueError, OverCap): continue
-            key = (verb, p["tier"], p["target"], tuple(p["manners"]), p["styng"], p["lonn"] is True)
             pr = a["parts"]
+            key = (verb, p["tier"], p["target"], tuple(p["manners"]), p["styng"], pr.get("rider_word"))
             said = [verb] + part_list(p) + ([pr["rider_word"]] if pr.get("rider_word") else [])
             said += [nm for nm, (vb, ps) in ROOT_NAMES.items() if vb == verb and ps <= frozenset(part_list(p))]
             said += [nm for nm in (pr.get("capstone"), pr.get("byname")) if nm]
             out.append(dict(
                 name=a["name"], verb=verb, cls=v.get("cls"), kind=a["kind"], parts=part_list(p),
                 atoms=expand([x for x in said if x in GLOSS]),
-                rider_word=pr.get("rider_word"),
+                rider_word=pr.get("rider_word"), carve=dict(p, manners=list(p["manners"])),
                 capstone=pr.get("capstone"), byname=pr.get("byname"),
                 price=a["price"], cost_type=a["cost_type"], keywords=a["keywords"], share=share_of(a),
                 element=a.get("element"), status=a.get("status"), also_status=a.get("also_status"),
@@ -284,7 +284,7 @@ def export(path=OUT):
         for p in m["atoms"]: speakers.setdefault(p, set()).add("foes")
     entries = {}
     for k, e in GLOSS.items():
-        entries[k] = dict(e, speakers=sorted(speakers.get(k, ())), in_code=sorted(use.get(k, ())))
+        entries[k] = dict(e, speakers=sorted(speakers.get(k, ())), in_code=sorted(use.get(k, ())), intent=INTENT.get(k))
     doc = dict(engine=lab.ENGINE, reading_key=READING_KEY, kinds=KINDS, words=entries, verbs=verb_table(),
                hero_words=hero, enemy_moves=moves, enemy_units=units, two_readings=two_readings(hero, moves, units),
                kits={c: {str(l): [compile_verb(v, **p)["name"] for v, p in kit] for l, kit in legs.items()}

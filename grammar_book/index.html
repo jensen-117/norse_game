@@ -159,7 +159,7 @@ dialog::backdrop { background: rgba(10, 14, 12, .45) }
 <script>
 const VIEWS = [
   ["front", "How to read"], ["az", "A to Z"], ["kind", "By kind"], ["class", "By class"],
-  ["element", "By element"], ["foes", "Foes' moves"], ["two", "Read two ways"]];
+  ["element", "By element"], ["foes", "Foes' moves"], ["two", "Read two ways"], ["audit", "Audit"]];
 const PER_PAGE = 12;
 const KIND_SHORT = { element: "el.", tier: "tier", target: "reach", manner: "manner", upgrade: "upgrade", direction: "dir.",
   stat: "stat", status_root: "status word", rider: "rider word", weapon: "weapon", verb: "verb", name: "name",
@@ -173,7 +173,9 @@ const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "
 const sortKey = w => w.toLowerCase().replace(/[^a-z]/g, "");
 const byAZ = (a, b) => sortKey(a).localeCompare(sortKey(b));
 
-fetch("lexicon.json").then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }).then(d => { L = d; build(); start(); })
+let A = null;
+Promise.all(["lexicon.json", "audit.json"].map(f => fetch(f).then(r => { if (!r.ok) throw new Error(`${f}: ${r.status}`); return r.json(); })))
+  .then(([d, a]) => { L = d; A = a; build(); start(); })
   .catch(err => { $("#entries").innerHTML = `<p class="empty">The book's data didn't load (${esc(err.message)}). Reload the page to try again.</p>`; $("#stamp").textContent = ""; });
 
 function build() {
@@ -254,7 +256,19 @@ function layout() {
   } else if (view === "two") {
     blocks = [{ sect: "Read two ways", sub: "The seam rules let an eye take these apart two ways. The grammar builds only one; the other is a misreading it can't make.", thumb: "Two" },
               ...Object.entries(L.two_readings).map(([n, ps]) => ({ two: n, parses: ps }))];
-  } else if (view === "front") { blocks = [{ front: true }]; }
+  } else if (view === "front") { blocks = [{ front: true }];
+  } else if (view === "audit") {
+    const E = A.effects, names = Object.keys(E);
+    const gapped = names.filter(e => E[e].missing.length), whole = names.filter(e => !E[e].missing.length);
+    blocks = [{ sect: "The audit", sub: "What the language can build, what it can't yet say, and where it says one thing twice. Read from what each move does.", thumb: "Audit" }, { auditSummary: true },
+      { sect: "The quarry", sub: "Primers: what a missing word would be trying to say. Start the search for a source word here.", thumb: "Quarry" }, ...A.quarry.map(q => ({ primer: q })),
+      { sect: "Effects with gaps", sub: "Who gives each one, what ends it, what reads it, and what's missing", thumb: "Gaps" }, ...gapped.map(e => ({ effect: e })),
+      { sect: "Effects the language covers", sub: "Given by heroes and foes, ended and read", thumb: "Covered" }, ...whole.map(e => ({ effect: e })),
+      { sect: "Verbs with no rider", sub: "Lonn has nothing to add to these yet. Some by design.", thumb: "Riders" }, ...A.riderless.map(r => ({ riderless: r })),
+      { sect: "One effect, several words", sub: "Where the language says one thing more than once. Usually by design: a rider's word belongs to its verb.", thumb: "Twice" }, ...Object.entries(A.same_job).map(([e, vs]) => ({ twice: e, verbs: vs })),
+      { sect: "Byname jobs", sub: `Reachable names past 15 letters: each needs a short name, or the carve shouldn't be legal`, thumb: "Names" }, { words: A.byname_jobs, label: `${A.byname_jobs.length} names` },
+      { sect: "Past the ladder", sub: "Legal carves dearer than 128: by our rule each is an item or isn't legal", thumb: "Ladder" }, { words: A.past_ladder.map(x => x[0]), label: `${A.past_ladder.length} carves` }];
+  }
 }
 
 function searchBlocks(q) {
@@ -276,10 +290,10 @@ function searchBlocks(q) {
 function pages() {
   const ps = [[]]; let n = 0;
   for (const b of blocks) {
-    const counts = b.key || b.foeMove || b.two || b.front || b.words;
+    const counts = b.key || b.foeMove || b.two || b.front || b.words || b.effect || b.primer || b.riderless || b.twice || b.auditSummary;
     if (counts && n >= PER_PAGE) { ps.push([]); n = 0; }
     if ((b.sect || b.thumbOnly) && n >= PER_PAGE - 2 && ps.at(-1).length) { ps.push([]); n = 0; }
-    ps.at(-1).push(b); if (counts) n += b.words ? 2 : 1;
+    ps.at(-1).push(b); if (counts) n += b.words ? 2 : b.effect ? 3 : 1;
   }
   return ps;
 }
@@ -288,7 +302,8 @@ function render() {
   const ps = pages(); page = Math.max(0, Math.min(page, ps.length - 1));
   const here = ps[page];
   $("#entries").innerHTML = here.map(blockHTML).join("") || `<p class="empty">Nothing here.</p>`;
-  const heads = here.filter(b => b.key || b.foeMove || b.two).map(b => b.key || b.foeMove || b.two);
+  const hd = b => b.key || b.foeMove || b.two || b.effect || b.primer?.effect || b.riderless?.verb || b.twice;
+  const heads = here.filter(hd).map(hd);
   const sec = [...ps.slice(0, page + 1).flat()].reverse().find(b => b.sect);
   $("#rh-l").textContent = heads.length ? (heads.length > 1 ? `${heads[0]} — ${heads.at(-1)}` : heads[0]) : (view === "front" ? "How to read this book" : "");
   $("#rh-r").textContent = sec ? sec.sect : (VIEWS.find(v => v[0] === view) || [])[1] || "";
@@ -310,6 +325,12 @@ function blockHTML(b) {
     return `<div class="fm"><button class="chip" data-word="${esc(m.name)}" style="justify-self:start;font-size:16px">${esc(m.name)}</button><span class="who">${m.users} ${m.users === 1 ? "foe" : "foes"}</span><span class="t">${esc(m.text)}</span></div>`; }
   if (b.two) return `<div class="e open"><div class="body"><div class="hw" style="padding:0"><span><span class="w">${esc(b.two)}</span></span></div>${b.parses.map(p => `<div class="row"><b>${p.broken ? "The eye" : "The grammar"}</b><div><div class="tiles">${tilesHTML(p.parts)}</div>${p.broken ? `<div class="note">Can't be built: ${esc(p.broken)}.</div>` : ""}</div></div>`).join("")}<div class="row"><b>Said by</b><div class="chips">${wordChip(b.two)}</div></div></div></div>`;
   if (b.front) return frontHTML();
+  if (b.auditSummary) { const E = A.effects, n = Object.keys(E).length, g = Object.values(E).filter(r => r.missing.length).length;
+    return `<div class="facts" style="padding:4px 8px 8px"><span><b>${n}</b> effects</span><span><b>${g}</b> with a gap</span><span><b>${A.quarry.length}</b> primers</span><span><b>${A.riderless.length}</b> verbs with no rider</span><span><b>${A.byname_jobs.length}</b> byname jobs</span><span><b>${A.past_ladder.length}</b> past the ladder</span></div>`; }
+  if (b.primer) return `<div class="fm"><span class="n">${atomOr(b.primer.effect)}</span><span></span><span class="t" style="color:var(--ink)">${esc(b.primer.primer)}</span></div>`;
+  if (b.riderless) return `<div class="fm"><span class="n">${atomOr(b.riderless.verb)}</span><span class="who">${esc(L.verbs[b.riderless.verb]?.cls || "")}</span><span class="t">${esc(b.riderless.intent || "")}${b.riderless.primer ? `<br><b style="color:var(--plan)">Quarry:</b> <span style="color:var(--ink)">${esc(b.riderless.primer)}</span>` : ""}</span></div>`;
+  if (b.twice) return `<div class="fm"><span class="n">${atomOr(b.twice)}</span><span></span><span class="t"><span class="tiles">${b.verbs.map(v => atomOr(v, true)).join("")}</span></span></div>`;
+  if (b.effect) return effectHTML(b.effect);
   if (b.none) return `<p class="empty">No entry or word matches. Try a part of the word (“krosh”), or its meaning (“fire”).</p>`;
   return "";
 }
@@ -341,6 +362,7 @@ function bodyHTML(k, e) {
   } else if (L.part_effects[k]) row("Does", esc(L.part_effects[k]));
   if (L.names[k]) row("Stands for", tilesHTML([L.names[k]]) );
   row("From", e.origin ? esc(e.origin) : (e.kind === "status" || e.kind === "counter" || e.kind === "keyword" || e.kind === "item" || e.kind === "affinity" || e.kind === "action" ? `<span class="note">Plain English</span>` : ""));
+  row("Trying to say", e.intent ? `<b>${esc(e.intent)}</b>` : "");
   row("Note", e.note ? esc(e.note) : "");
   row("Was", e.was ? esc(e.was) : "");
   if (e.owner) row("Meant for", tilesHTML([e.owner]));
@@ -363,6 +385,29 @@ function bodyHTML(k, e) {
 }
 
 function shareText(h) { return h.share == null ? "" : `${h.share.toFixed(2).replace(/0$/, "")} × ${h.kind === "heal" ? "a Lak" : "a Krosh"}`; }
+
+function atomOr(w, chip) { return L.words[w] ? `<button class="chip atom" data-atom="${esc(w)}">${esc(w)}</button>` : (chip ? `<span class="chip atom" style="cursor:default">${esc(w)}</span>` : esc(w)); }
+
+function effectHTML(e) {
+  const r = A.effects[e], s = r.sources, open = openKey === "fx:" + e;
+  const list = (names, cap) => { if (!names || !names.length) return `<span class="note">none</span>`;
+    const show = names.slice(0, cap); return `<div class="chips">${show.map(n => idx.hero[n] || idx.foeMove[n] || idx.foeUnit[n] ? wordChip(n) : `<span class="chip" style="cursor:default">${esc(n)}</span>`).join("")}${names.length > cap ? `<span class="chip more">+${names.length - cap} more</span>` : ""}</div>`; };
+  const miss = r.missing.map(m => `<span class="badge foes">${esc(m)}</span>`).join("");
+  let h = `<article class="e${open ? " open" : ""}"><button class="hw" type="button" data-fx="${esc(e)}" aria-expanded="${open}">
+    <span><span class="w">${esc(e)}</span><span class="k">${s.heroes ? s.heroes.length : 0} hero · ${s.foes ? s.foes.length : 0} foe</span></span>
+    <span class="badges" style="flex-wrap:wrap;justify-content:flex-end">${miss || `<span class="badge heroes">covered</span>`}</span>
+    <span class="means">${esc(r.intent || "")}</span></button>`;
+  if (open) {
+    const rows = [], row = (t, html) => rows.push(`<div class="row"><b>${t}</b><div>${html}</div></div>`);
+    if (r.primer) row("Quarry", `<span style="color:var(--plan)">${esc(r.primer)}</span>`);
+    row("In kits", list(s.kits, 16)); row("Heroes", list(s.heroes, 16)); row("Foes", list(s.foes, 16));
+    if (s.items) row("Items", list(s.items, 8));
+    row("Ends by", r.removed.length ? esc(r.removed.join("; ")) : `<span class="note">nothing in the rules</span>`);
+    row("Read by", r.paid.length ? esc(r.paid.join("; ")) : `<span class="note">nothing in the rules</span>`);
+    h += `<div class="body">${rows.join("")}</div>`;
+  }
+  return h + `</article>`;
+}
 
 function frontHTML() {
   const r = L.rules;
@@ -412,12 +457,13 @@ function openEntry(k) {
 }
 
 document.addEventListener("click", e => {
-  const t = e.target.closest("[data-key],[data-atom],[data-word],[data-p],[data-close],[data-search]");
+  const t = e.target.closest("[data-key],[data-atom],[data-word],[data-p],[data-close],[data-search],[data-fx]");
   if (!t) { if (e.target === $("#card")) $("#card").close(); return; }
   if (t.dataset.close !== undefined) return $("#card").close();
   if (t.dataset.p) { page = +t.dataset.p; render(); return scrollTo({ top: 0 }); }
   if (t.dataset.search) { $("#card").open && $("#card").close(); $("#q").value = t.dataset.search; return search(t.dataset.search); }
   if (t.dataset.word) return showWord(t.dataset.word);
+  if (t.dataset.fx) { const k = "fx:" + t.dataset.fx; openKey = openKey === k ? null : k; return render(); }
   const k = t.dataset.key || t.dataset.atom;
   if (t.dataset.key) { openKey = openKey === k ? null : k; return render(); }
   if (L.words[k]) openEntry(k);

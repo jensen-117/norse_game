@@ -67,5 +67,30 @@ class TheLexiconReadsTheCode(unittest.TestCase):
         self.assertIn("Halv", t["Krosh"]["takes"]["tiers"]); self.assertNotIn("Halv", t["Lak"]["takes"]["tiers"])
         self.assertTrue(t["Naglskott"]["takes"]["styng"]); self.assertFalse(t["Eld"]["takes"]["styng"])
 
+class TheAudit(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        import audit; cls.audit = audit; cls.doc = audit.build()
+
+    def test_effects_are_read_from_what_moves_do(self):
+        from words import compile_verb
+        self.assertIn("Sundered", self.audit.effects(compile_verb("Krosh", lonn=True), designated=True))
+        self.assertIn("Mighty", self.audit.effects(compile_verb("Aukraft")))            # a stat move, by its worn name
+        self.assertIn("Fortified", self.audit.effects(compile_verb("Aukraft", lonn=True)))
+
+    def test_the_known_gaps(self):
+        e = self.doc["effects"]
+        self.assertIn("no hero gives it", e["Keen"]["missing"])
+        self.assertEqual(e["Silenced"]["sources"].get("kits"), None)                      # Bannskott is in no kit
+        self.assertTrue(e["Frozen"]["sources"]["foes"])                                     # reached by chilling twice
+        self.assertIn("Guard (everyone)", e["Guard"]["sources"]["heroes"])
+
+    def test_every_primer_names_a_gap_or_a_riderless_verb(self):
+        from gloss import PRIMERS
+        riderless = {r["verb"] for r in self.doc["riderless"]}
+        for k in PRIMERS:
+            if k.endswith(" rider"): self.assertIn(k[:-6], riderless, k)
+            else: self.assertIn(k, self.doc["effects"], k)
+
 if __name__ == "__main__":
     unittest.main()
