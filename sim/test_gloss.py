@@ -92,5 +92,41 @@ class TheAudit(unittest.TestCase):
             if k.endswith(" rider"): self.assertIn(k[:-6], riderless, k)
             else: self.assertIn(k, self.doc["effects"], k)
 
+class TheBenchAgreesWithTheCompiler(unittest.TestCase):
+    """bench_rules.js (the workbench's judge) against words.compile_verb on every carve: legal or not, and the name."""
+    def test_every_carve(self):
+        import itertools, json, os, shutil, subprocess, tempfile
+        from words import OverCap
+        node = shutil.which("node")
+        if not node: self.skipTest("node isn't installed")
+        lex = lexicon.export(os.path.join(tempfile.mkdtemp(), "lexicon.json"))
+        M = lexicon.MANNER_ORDER
+        mans = [()] + [(m,) for m in M] + list(itertools.combinations(M, 2))
+        combos, want = [], []
+        for verb, v in VERBS.items():
+            own = v["rider"][1] if v.get("rider") else None
+            riders = {None, "Lonn", own, "Bann", "Brak"} | {w for _, w in v.get("riders", ())}
+            for tier in ("Halv", "Base", "Mer"):
+                for target in (None, "Flok", "All"):
+                    for ms in mans:
+                        for styng in (False, True):
+                            for r in riders:
+                                c = dict(verb=verb, tier=tier, target=target, manners=list(ms), styng=styng, rider=r)
+                                try:
+                                    name = compile_verb(verb, tier=tier, target=target, manners=ms, styng=styng,
+                                                        lonn=True if r == "Lonn" else (r or False))["name"]
+                                except (ValueError, OverCap): name = None
+                                combos.append(c); want.append(name)
+        tmp = tempfile.mkdtemp()
+        json.dump(dict(lex=lex, combos=combos), open(os.path.join(tmp, "in.json"), "w"), default=list)
+        js = os.path.join(os.path.dirname(os.path.abspath(lexicon.__file__)), "..", "grammar_book", "bench_rules.js")
+        script = ("const R=require(process.argv[1]);const d=JSON.parse(require('fs').readFileSync(process.argv[2]));"
+                  "console.log(JSON.stringify(d.combos.map(c=>{const j=R.judge(d.lex,c);return j.word?j.word.name:null})))")
+        got = json.loads(subprocess.run([node, "-e", script, os.path.abspath(js), os.path.join(tmp, "in.json")],
+                                        capture_output=True, text=True, check=True).stdout)
+        bad = [(c, w, g) for c, w, g in zip(combos, want, got) if w != g]
+        self.assertEqual(bad[:5], [], f"{len(bad)} of {len(combos)} carves disagree")
+        self.assertGreater(sum(1 for w in want if w), 600)
+
 if __name__ == "__main__":
     unittest.main()

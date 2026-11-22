@@ -179,9 +179,10 @@ def normalize(verb, tier=None, target=None, manners=(), styng=False, lonn=False,
     if styng and not v.get("styng"): raise ValueError(f"{verb} takes no Styng")
     if lonn and not v.get("rider"): raise ValueError(f"{verb} has no designated rider")
     rider = None
-    if lonn:                                           # True: the verb's own rider; a word: another of its designated riders
-        rider = v["rider"] if lonn is True else next((r for r in v.get("riders", ()) if r[1] == lonn), None)
-        if rider is None: raise ValueError(f"{verb} has no rider {lonn!r}")
+    if lonn:                                           # True: the verb's own rider; a word: any of its designated riders
+        mine = [v["rider"]] + list(v.get("riders", ()))
+        rider = v["rider"] if lonn is True else next((r for r in mine if r[1] == lonn), None)
+        if rider is None: raise ValueError(f"{lonn} isn't one of {verb}'s riders ({', '.join(r[1] for r in mine)})")
     own = v.get("tier", "Base")
     if tier == "Halv":
         if own != "Base": raise ValueError(f"{verb} has no Halv fork (it is {own} already)")

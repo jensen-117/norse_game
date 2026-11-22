@@ -136,7 +136,32 @@ dialog::backdrop { background: rgba(10, 14, 12, .45) }
   .row > b { line-height: 1.4 }
 }
 @media (prefers-reduced-motion: no-preference) { .e.open .body { animation: drop .14s ease-out } @keyframes drop { from { opacity: 0; transform: translateY(-3px) } } }
+.bench { display: grid; gap: 16px }
+.hint { font: 14px var(--f-ui); color: var(--muted); background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; display: flex; justify-content: space-between; gap: 10px; align-items: center }
+.hint button { border: 0; background: none; color: var(--accent); font: 700 13px var(--f-ui); cursor: pointer }
+.stage { text-align: center; padding: 18px 8px 8px; border: 2px dashed var(--rule); border-radius: 10px; display: grid; gap: 14px; transition: border-color .12s }
+.stage.over { border-color: var(--accent) }
+.stage .word { font: 700 clamp(28px, 7vw, 44px)/1.1 var(--f-head); letter-spacing: .02em; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 8px; overflow-wrap: anywhere }
+.stage .word.bad { color: var(--foe); text-decoration-style: wavy; text-decoration-thickness: 1px }
+.stage .word.empty { color: var(--muted); text-decoration: none; font-weight: 500 }
+.slots { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px }
+.slot { min-width: 64px; display: grid; gap: 3px; justify-items: center }
+.slot small { font: 500 11px var(--f-ui); letter-spacing: .08em; text-transform: uppercase; color: var(--muted) }
+.slot .tile, .slot .ph { font: 700 15px var(--f-head); padding: 6px 10px; border-radius: 5px; min-width: 60px; text-align: center }
+.slot .ph { border: 1px dashed var(--rule); color: var(--rule); font-weight: 500 }
+.slot .tile { border: 1px solid var(--accent); background: var(--accent-soft); color: var(--accent); cursor: pointer }
+.slot .tile.bad { border-color: var(--foe); background: var(--foe-soft); color: var(--foe) }
+.slot .tile:hover { text-decoration: line-through }
+.verdict { display: grid; gap: 8px; text-align: left; padding: 0 6px 4px }
+.verdict .no { color: var(--foe); font-size: 16px }
+.palette { display: grid; gap: 10px }
+.palette h4 { margin: 0; font: 700 13px var(--f-head); letter-spacing: .1em; color: var(--accent) }
+.tray { display: flex; flex-wrap: wrap; gap: 4px }
+.tray .chip[draggable="true"] { cursor: grab }
+.clear { justify-self: center; font: 500 13px var(--f-ui); border: 1px solid var(--rule); background: none; border-radius: 5px; padding: 4px 12px; cursor: pointer }
+.goto:not(:disabled) { cursor: pointer; color: var(--accent); border-color: var(--accent); border-style: solid }
 </style>
+<script src="bench_rules.js"></script>
 
 <header class="top">
   <div class="brand"><h1>The Grammar Library</h1><span class="stamp" id="stamp">Opening the book…</span></div>
@@ -158,7 +183,7 @@ dialog::backdrop { background: rgba(10, 14, 12, .45) }
 
 <script>
 const VIEWS = [
-  ["front", "How to read"], ["az", "A to Z"], ["kind", "By kind"], ["class", "By class"],
+  ["front", "How to read"], ["az", "A to Z"], ["bench", "Workbench"], ["kind", "By kind"], ["class", "By class"],
   ["element", "By element"], ["foes", "Foes' moves"], ["two", "Read two ways"], ["audit", "Audit"]];
 const PER_PAGE = 12;
 const KIND_SHORT = { element: "el.", tier: "tier", target: "reach", manner: "manner", upgrade: "upgrade", direction: "dir.",
@@ -256,6 +281,7 @@ function layout() {
   } else if (view === "two") {
     blocks = [{ sect: "Read two ways", sub: "The seam rules let an eye take these apart two ways. The grammar builds only one; the other is a misreading it can't make.", thumb: "Two" },
               ...Object.entries(L.two_readings).map(([n, ps]) => ({ two: n, parses: ps }))];
+  } else if (view === "bench") { blocks = [{ bench: true }];
   } else if (view === "front") { blocks = [{ front: true }];
   } else if (view === "audit") {
     const E = A.effects, names = Object.keys(E);
@@ -290,7 +316,7 @@ function searchBlocks(q) {
 function pages() {
   const ps = [[]]; let n = 0;
   for (const b of blocks) {
-    const counts = b.key || b.foeMove || b.two || b.front || b.words || b.effect || b.primer || b.riderless || b.twice || b.auditSummary;
+    const counts = b.key || b.foeMove || b.two || b.front || b.bench || b.words || b.effect || b.primer || b.riderless || b.twice || b.auditSummary;
     if (counts && n >= PER_PAGE) { ps.push([]); n = 0; }
     if ((b.sect || b.thumbOnly) && n >= PER_PAGE - 2 && ps.at(-1).length) { ps.push([]); n = 0; }
     ps.at(-1).push(b); if (counts) n += b.words ? 2 : b.effect ? 3 : 1;
@@ -325,6 +351,7 @@ function blockHTML(b) {
     return `<div class="fm"><button class="chip" data-word="${esc(m.name)}" style="justify-self:start;font-size:16px">${esc(m.name)}</button><span class="who">${m.users} ${m.users === 1 ? "foe" : "foes"}</span><span class="t">${esc(m.text)}</span></div>`; }
   if (b.two) return `<div class="e open"><div class="body"><div class="hw" style="padding:0"><span><span class="w">${esc(b.two)}</span></span></div>${b.parses.map(p => `<div class="row"><b>${p.broken ? "The eye" : "The grammar"}</b><div><div class="tiles">${tilesHTML(p.parts)}</div>${p.broken ? `<div class="note">Can't be built: ${esc(p.broken)}.</div>` : ""}</div></div>`).join("")}<div class="row"><b>Said by</b><div class="chips">${wordChip(b.two)}</div></div></div></div>`;
   if (b.front) return frontHTML();
+  if (b.bench) return benchHTML();
   if (b.auditSummary) { const E = A.effects, n = Object.keys(E).length, g = Object.values(E).filter(r => r.missing.length).length;
     return `<div class="facts" style="padding:4px 8px 8px"><span><b>${n}</b> effects</span><span><b>${g}</b> with a gap</span><span><b>${A.quarry.length}</b> primers</span><span><b>${A.riderless.length}</b> verbs with no rider</span><span><b>${A.byname_jobs.length}</b> byname jobs</span><span><b>${A.past_ladder.length}</b> past the ladder</span></div>`; }
   if (b.primer) return `<div class="fm"><span class="n">${atomOr(b.primer.effect)}</span><span></span><span class="t" style="color:var(--ink)">${esc(b.primer.primer)}</span></div>`;
@@ -380,7 +407,7 @@ function bodyHTML(k, e) {
     const show = found.slice(0, 24);
     row(`In ${found.length} ${found.length === 1 ? "word" : "words"}`, `<div class="chips">${show.map(x => wordChip(x.name)).join("")}${found.length > 24 ? `<button class="chip more" data-search="${esc(k)}">all ${found.length} ›</button>` : ""}</div>`);
   }
-  rows.push(`<button class="goto" type="button" disabled title="The workbench is the library's next step">Go To workbench · coming next</button>`);
+  rows.push(gotoButton(k));
   return rows.join("");
 }
 
@@ -408,6 +435,92 @@ function effectHTML(e) {
   }
   return h + `</article>`;
 }
+
+// ---------------------------------------------------------------- the workbench (L3)
+const blank = () => ({ verb: null, tier: "Base", target: null, manners: [], styng: false, rider: null });
+let B = blank(), benchQ = "", hintSeen = false;
+try { hintSeen = !!localStorage.getItem("bench-hint"); } catch (_) {}
+const TIERS_ = ["Halv", "Mer"], REACH = ["Flok", "All"], MANNERS_ = ["Snar", "Tung", "Bid", "Jarf", "Drif"];
+function slotOf(p) {
+  if (TIERS_.includes(p)) return "tier"; if (REACH.includes(p)) return "target"; if (MANNERS_.includes(p)) return "manners";
+  if (p === "Styng") return "styng"; if (p === "Lonn" || L.bench.rider_words.includes(p) && !L.verbs[p]) return "rider";
+  if (L.verbs[p]) return "root"; return null;
+}
+function place(p, asRider) {
+  const s = asRider ? "rider" : slotOf(p);
+  if (s === "tier") B.tier = B.tier === p ? "Base" : p;
+  else if (s === "target") B.target = B.target === p ? null : p;
+  else if (s === "manners") B.manners = B.manners.includes(p) ? B.manners.filter(m => m !== p) : [...B.manners.slice(-1), p];
+  else if (s === "styng") B.styng = !B.styng;
+  else if (s === "rider") B.rider = B.rider === p ? null : p;
+  else if (s === "root") B.verb = p;
+}
+function unslot(s) { if (s === "tier") B.tier = "Base"; else if (s === "styng") B.styng = false; else if (s.startsWith("m:")) B.manners = B.manners.filter(m => m !== s.slice(2)); else B[s] = s === "manners" ? [] : null; }
+function benchLoad(c, verb) {
+  B = { verb, tier: c.tier, target: c.target, manners: [...c.manners], styng: c.styng, rider: c.lonn === true ? "Lonn" : (c.lonn || null) };
+  $("#card").open && $("#card").close(); if (view !== "bench") go("bench"); else render();
+}
+function gotoButton(k) {
+  if (slotOf(k)) return `<button class="goto" type="button" data-bench-atom="${esc(k)}">Go To workbench</button>`;
+  return `<button class="goto" type="button" disabled title="Only verbs and their parts go on the bench">Go To workbench · not a part</button>`;
+}
+function benchHTML() {
+  const j = BenchRules.judge(L, B), w = j.word, bad = j.reasons.length > 0;
+  const refuse = (B.verb && L.bench.refuse[B.verb]) || {};
+  const tile = (txt, slot) => `<button class="tile${refuse[txt] ? " bad" : ""}" type="button" data-unslot="${esc(slot)}" title="Take ${esc(txt)} off">${esc(txt)}</button>`;
+  const slot = (label, inner) => `<div class="slot">${inner}<small>${label}</small></div>`;
+  const ph = t => `<span class="ph">${t}</span>`;
+  const riderShown = B.rider === "Lonn" && B.verb && L.bench.own_rider[B.verb] && L.bench.own_rider[B.verb] !== "Lonn" ? `Lonn · ${L.bench.own_rider[B.verb]}` : B.rider;
+  const slots = [
+    slot("reach", B.target ? tile(B.target, "target") : ph("one")),
+    slot("tier", B.tier !== "Base" ? tile(B.tier, "tier") : ph("base")),
+    slot("Styng", B.styng ? tile("Styng", "styng") : ph("—")),
+    slot("manner", B.manners[0] ? tile(B.manners[0], "m:" + B.manners[0]) : ph("—")),
+    slot("manner", B.manners[1] ? tile(B.manners[1], "m:" + B.manners[1]) : ph("—")),
+    slot("rider", B.rider ? tile(riderShown, "rider") : ph("—")),
+    slot("root", B.verb ? tile(B.verb, "verb") : ph("verb")),
+  ].join("");
+  const name = w ? w.name : B.verb ? guessName() : "Pick a verb";
+  let verdict = "";
+  if (w) {
+    const foeToo = idx.foeMove[w.name] ? `<span class="badge foes">foes say this too</span>` : "";
+    verdict = `<div class="side hero" style="font:700 12px var(--f-ui);letter-spacing:.08em;text-transform:uppercase;color:var(--accent)">A hero's word · ${esc(w.cls || "")} ${foeToo}</div>
+      <div class="text" style="font-size:17px">${esc(w.text)}</div>
+      <div class="facts"><span><b>${w.price ? `${w.price} ${w.cost_type}` : "free"}</b> at level 50</span>${w.share ? `<span><b>${shareText(w)}</b></span>` : ""}<span><b>${w.keywords.length ? w.keywords.join(", ") : "Normal speed"}</b></span><span>${{ one: "one target", row: "a row", all: "everyone" }[w.wide] || w.wide}</span>
+      ${w.kit_legs.length ? `<span>in the ${esc(w.cls)}'s leg ${w.kit_legs.join(" and ")} kit</span>` : ""}${w.capstone ? `<span><b>a capstone</b></span>` : ""}${w.byname ? `<span><b>a byname</b></span>` : ""}
+      ${w.past_the_ladder ? `<span style="color:var(--foe)">past the ladder (${L.rules.ladder.at(-1)}): by our rule, an item</span>` : ""}${w.name.length > 15 && !w.byname && !w.capstone ? `<span style="color:var(--plan)">over 15 letters: needs a byname</span>` : ""}</div>`;
+  } else if (B.verb) verdict = j.reasons.map(r => `<div class="no">✕ ${esc(r)}</div>`).join("");
+  const hint = hintSeen ? "" : `<div class="hint"><span>Tiles snap to their place: reach, tier, Styng, manners, rider, root. Click a placed tile to take it off.</span><button type="button" data-hint-close>Got it</button></div>`;
+  return `<div class="bench">${hint}
+    <div class="stage" id="stage"><div class="word${!B.verb ? " empty" : bad ? " bad" : ""}">${esc(name)}</div><div class="slots">${slots}</div>
+      <div class="verdict">${verdict}</div>${B.verb || B.manners.length || B.target || B.styng || B.rider || B.tier !== "Base" ? `<button class="clear" type="button" data-bench-clear>Clear the bench</button>` : ""}</div>
+    ${paletteHTML()}</div>`;
+}
+function guessName() {   // what an illegal carve would be called, by the order and the seams, to show what's being refused
+  const own = L.bench.own_rider[B.verb], r = B.rider === "Lonn" ? (own || "Lonn") : B.rider;
+  const ps = [B.target, B.tier !== "Base" ? B.tier : null, B.styng ? "Styng" : null, ...B.manners, r, B.verb].filter(Boolean).map(x => x.toLowerCase());
+  let w = ps[0]; for (const p of ps.slice(1)) { if (w.at(-1) === p[0]) w += p.slice(1); else if ("aeiouy".includes(w.at(-1)) && "aeiouy".includes(p[0])) w = w.slice(0, -1) + p; else w += p; }
+  return w[0].toUpperCase() + w.slice(1);
+}
+function paletteHTML() {
+  const q = benchQ.toLowerCase(), m = t => !q || t.toLowerCase().includes(q);
+  const refuse = (B.verb && L.bench.refuse[B.verb]) || {};
+  const chip = (t, title, rider, root) => { const no = !root && refuse[t]; return `<button class="chip atom${no ? " off" : ""}" style="${no ? "text-decoration:none" : ""}" draggable="true" data-bench-atom="${esc(t)}"${rider ? ` data-as-rider="1"` : ""} title="${esc(no || title || "")}">${esc(t)}</button>`; };
+  const group = (h, ts, rider, root) => { const f = ts.filter(([t]) => m(t)); return f.length ? `<div><h4>${h}</h4><div class="tray">${f.map(([t, ti]) => chip(t, ti, rider, root)).join("")}</div></div>` : ""; };
+  const byClass = {}; for (const [v, t] of Object.entries(L.verbs)) (byClass[t.cls || "Anyone"] ||= []).push([v, L.words[v]?.means || ""]);
+  return `<div class="palette"><label class="search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+      <input id="bq" type="search" placeholder="Find a tile" value="${esc(benchQ)}" autocomplete="off" aria-label="Find a tile"></label>
+    ${group("Reach", REACH.map(t => [t, L.part_effects[t]]))}${group("Tier", TIERS_.map(t => [t, L.part_effects[t]]))}
+    ${group("Manners", MANNERS_.map(t => [t, L.part_effects[t]]))}${group("Upgrades", [["Styng", L.part_effects.Styng], ["Lonn", L.part_effects.Lonn]])}
+    ${group("Rider words", L.bench.rider_words.map(t => [t, L.words[t]?.means]), true)}
+    ${Object.entries(byClass).map(([c, vs]) => group(c === "Anyone" ? "Any caster" : c, vs, false, true)).join("")}
+    <p class="note" style="margin:0">Greyed tiles are refused on the verb at the root; hover for the reason. The foes' grammar (Jatte, Mark, the status words) isn't on the bench yet.</p></div>`;
+}
+document.addEventListener("input", e => { if (e.target.id === "bq") { benchQ = e.target.value; const pos = e.target.selectionStart; render(); const i = $("#bq"); if (i) { i.focus(); i.setSelectionRange(pos, pos); } } });
+document.addEventListener("dragstart", e => { const t = e.target.closest?.("[data-bench-atom]"); if (t) { e.dataTransfer.setData("text/plain", t.dataset.benchAtom + (t.dataset.asRider ? "|r" : "")); } });
+document.addEventListener("dragover", e => { const st = e.target.closest?.("#stage"); if (st) { e.preventDefault(); st.classList.add("over"); } });
+document.addEventListener("dragleave", e => { e.target.closest?.("#stage")?.classList.remove("over"); });
+document.addEventListener("drop", e => { const st = e.target.closest?.("#stage"); if (!st) return; e.preventDefault(); const [p, r] = e.dataTransfer.getData("text/plain").split("|"); if (p) { place(p, r === "r"); render(); } });
 
 function frontHTML() {
   const r = L.rules;
@@ -441,7 +554,7 @@ function showWord(n) {
   if (fu) h += `${hs.length || fm ? "<hr>" : ""}<div class="side foe">A foe</div>${fu.parts ? `<div class="tiles">${tilesHTML(fu.parts)}</div>` : ""}
     <div class="facts"><span>family <b>${esc(fu.family)}</b></span>${fu.element ? `<span>element <b>${esc(fu.element)}</b></span>` : ""}</div>`;
   if (L.two_readings[n]) h += `<div class="note">Built as ${L.two_readings[n].filter(p => !p.broken).map(p => p.parts.join(" + ")).join(", or ")}; an eye may read ${L.two_readings[n].filter(p => p.broken).map(p => p.parts.join(" + ")).join(", or ")}.</div>`;
-  h += `<button class="goto" type="button" disabled title="The workbench is the library's next step">Go To workbench · coming next</button>`;
+  h += hs.length ? `<button class="goto" type="button" data-bench-word="${esc(n)}">Go To workbench</button>` : `<button class="goto" type="button" disabled title="Foes' words aren't carved on the bench yet">Go To workbench · heroes' words only</button>`;
   $("#cardbody").innerHTML = h;
   const d = $("#card"); if (!d.open) d.showModal();
 }
@@ -457,12 +570,17 @@ function openEntry(k) {
 }
 
 document.addEventListener("click", e => {
-  const t = e.target.closest("[data-key],[data-atom],[data-word],[data-p],[data-close],[data-search],[data-fx]");
+  const t = e.target.closest("[data-key],[data-atom],[data-word],[data-p],[data-close],[data-search],[data-fx],[data-bench-word],[data-bench-atom],[data-unslot],[data-bench-clear],[data-hint-close]");
   if (!t) { if (e.target === $("#card")) $("#card").close(); return; }
   if (t.dataset.close !== undefined) return $("#card").close();
   if (t.dataset.p) { page = +t.dataset.p; render(); return scrollTo({ top: 0 }); }
   if (t.dataset.search) { $("#card").open && $("#card").close(); $("#q").value = t.dataset.search; return search(t.dataset.search); }
   if (t.dataset.word) return showWord(t.dataset.word);
+  if (t.dataset.benchWord) { const h = idx.hero[t.dataset.benchWord][0]; benchLoad(h.carve, h.verb); return; }
+  if (t.dataset.benchAtom) { place(t.dataset.benchAtom, !!t.dataset.asRider); if (view !== "bench") { $("#card").open && $("#card").close(); go("bench"); } else render(); return; }
+  if (t.dataset.unslot) { unslot(t.dataset.unslot); return render(); }
+  if (t.dataset.benchClear !== undefined) { B = blank(); return render(); }
+  if (t.dataset.hintClose !== undefined) { try { localStorage.setItem("bench-hint", "1"); } catch (_) {} hintSeen = true; return render(); }
   if (t.dataset.fx) { const k = "fx:" + t.dataset.fx; openKey = openKey === k ? null : k; return render(); }
   const k = t.dataset.key || t.dataset.atom;
   if (t.dataset.key) { openKey = openKey === k ? null : k; return render(); }

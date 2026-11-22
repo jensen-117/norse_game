@@ -73,12 +73,46 @@ def hero_words():
                 name=a["name"], verb=verb, cls=v.get("cls"), kind=a["kind"], parts=part_list(p),
                 atoms=expand([x for x in said if x in GLOSS]),
                 rider_word=pr.get("rider_word"), carve=dict(p, manners=list(p["manners"])),
+                key=bench_key(verb, p["tier"], p["target"], p["manners"], p["styng"], pr.get("rider_word")),
                 capstone=pr.get("capstone"), byname=pr.get("byname"),
                 price=a["price"], cost_type=a["cost_type"], keywords=a["keywords"], share=share_of(a),
                 element=a.get("element"), status=a.get("status"), also_status=a.get("also_status"),
                 wide="all" if a["all"] else a.get("shape", "one"), text=engine.plain(a),
                 past_the_ladder=a["price"] > COST_LADDER[-1], kit_legs=sorted(kits.get(key, []))))
     return out
+
+BENCH_PARTS = ("Halv", "Mer", "Flok", "All", "Snar", "Tung", "Bid", "Jarf", "Drif", "Styng", "Lonn")
+
+def rider_words():
+    """Every rider word a verb owns, across the verbs (Brak, Blot, Bann, Rod...)."""
+    out = []
+    for v in VERBS.values():
+        for _, w in ([v["rider"]] if v.get("rider") else []) + list(v.get("riders", ())):
+            if w not in out and w != "Lonn": out.append(w)
+    return out
+
+def bench_key(verb, tier, target, manners, styng, rider_word):
+    """One carve as one string: the workbench looks a legal word up by it (bench_rules.js builds the same)."""
+    return "|".join([verb, tier or "Base", target or "", "+".join(manners), "S" if styng else "", rider_word or ""])
+
+def single(verb, part):
+    """The compiler's own words for refusing one part on one verb, or None if the part alone is fine."""
+    kw = {"Halv": dict(tier="Halv"), "Mer": dict(tier="Mer"), "Flok": dict(target="Flok"), "All": dict(target="All"),
+          "Styng": dict(styng=True), "Lonn": dict(lonn=True)}.get(part)
+    if kw is None: kw = dict(manners=(part,)) if part in MANNER_ORDER else dict(lonn=part)
+    try: words.normalize(verb, **kw); return None
+    except ValueError as e: return str(e)
+
+def bench():
+    """What the workbench needs to judge a carve without the compiler: each verb's refusals part by part (the
+    compiler's own words), the cap, the capstones, and the rider words. bench_rules.js applies them; test_gloss
+    checks it against compile_verb on every carve."""
+    refuse = {v: {p: r for p in BENCH_PARTS + tuple(rider_words()) for r in [single(v, p)] if r} for v in VERBS}
+    own = {v: (row["rider"][1] if row.get("rider") else None) for v, row in VERBS.items()}
+    return dict(parts=list(BENCH_PARTS), rider_words=rider_words(), refuse=refuse, own_rider=own, cap=UPGRADE_CAP,
+                capstones={nm: dict(verb=vb, parts=sorted(ps)) for nm, (vb, ps) in CAPSTONES.items()},
+                speed_manners=sorted(SPEED_MANNERS), manner_order=MANNER_ORDER,
+                slots=["target", "tier", "styng", "manners", "rider", "root"])
 
 def verb_table():
     """Per verb: what it is and which parts it takes (the workbench's legal tiles)."""
@@ -291,7 +325,7 @@ def export(path=OUT):
                      for c, legs in KITS.items()},
                part_effects=part_effects(),
                names={nm: vb for nm, (vb, _) in {**ROOT_NAMES, **BYNAMES, **CAPSTONES}.items()},
-               classes=list(CLASSES), elements=list(ELEMENT),
+               classes=list(CLASSES), elements=list(ELEMENT), bench=bench(),
                rules=dict(order="Target + Tier + Styng + Manner + Rider + Root", cap=UPGRADE_CAP,
                           ladder=COST_LADDER, halv_cost=HALV_COST, target_steps=TARGET_STEPS,
                           seams=["Identical letters at a seam merge: Brak + Krosh = Brakrosh.",
