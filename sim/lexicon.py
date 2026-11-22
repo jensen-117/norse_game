@@ -64,6 +64,8 @@ def hero_words():
         for p in carves(verb):
             try: a = compile_verb(verb, **p)
             except (ValueError, OverCap): continue
+            w = CLASSES.get(v.get("cls"), {}).get("weapon")     # a martial root's range in this class's weapon, as
+            if a.get("root") and w: a["reach"] = RANGES[engine.root_range(a["root"], w)]   # build_hero sets it
             pr = a["parts"]
             key = (verb, p["tier"], p["target"], tuple(p["manners"]), p["styng"], pr.get("rider_word"))
             said = [verb] + part_list(p) + ([pr["rider_word"]] if pr.get("rider_word") else [])

@@ -152,5 +152,31 @@ class TakingWordsApart(unittest.TestCase):
                 if got["back"][h["name"]] != h["key"] or got["back"][h["rule_name"]] != h["key"]]
         self.assertEqual(lost[:5], [], f"{len(lost)} hero words don't rebuild from their names")
 
+class WhatsLegalHere(unittest.TestCase):
+    """L5: from every kit word, each option the bench offers compiles in Python to the name it shows, and each
+    refusal is one the compiler makes too."""
+    def test_options_match_the_compiler(self):
+        import json, os, shutil, subprocess, tempfile
+        from words import OverCap
+        node = shutil.which("node")
+        if not node: self.skipTest("node isn't installed")
+        tmp = tempfile.mkdtemp(); lex = lexicon.export(os.path.join(tmp, "lexicon.json"))
+        js = os.path.join(os.path.dirname(os.path.abspath(lexicon.__file__)), "..", "grammar_book", "bench_rules.js")
+        script = ("const R=require(process.argv[1]);const L=JSON.parse(require('fs').readFileSync(process.argv[2]));"
+                  "const out=[];for(const h of L.hero_words.filter(h=>h.kit_legs.length)){const c=h.carve;"
+                  "const carve={verb:h.verb,tier:c.tier,target:c.target,manners:c.manners,styng:c.styng,rider:c.lonn===true?'Lonn':(c.lonn||null)};"
+                  "const w=R.whatsLegal(L,carve);for(const o of [...w.add,...w.remove,...w.verbs])out.push([o.carve,o.legal?o.name:null])}"
+                  "console.log(JSON.stringify(out))")
+        got = json.loads(subprocess.run([node, "-e", script, os.path.abspath(js), os.path.join(tmp, "lexicon.json")],
+                                        capture_output=True, text=True, check=True).stdout)
+        bad = []
+        for c, name in got:
+            try: want = compile_verb(c["verb"], tier=c["tier"], target=c["target"], manners=tuple(c["manners"]), styng=c["styng"],
+                                     lonn=True if c["rider"] == "Lonn" else (c["rider"] or False))["name"]
+            except (ValueError, OverCap): want = None
+            if want != name: bad.append((c, name, want))
+        self.assertGreater(len(got), 500)
+        self.assertEqual(bad[:5], [], f"{len(bad)} of {len(got)} options disagree")
+
 if __name__ == "__main__":
     unittest.main()

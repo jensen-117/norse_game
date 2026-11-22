@@ -131,6 +131,56 @@
     return out;
   }
 
-  const api = { judge, key, parses, broken, carveOf, takeApart, coin, dist };
+  // ---------------------------------------------------------------- L5: what's legal here (the evolution view)
+  const TIER = ["Halv", "Mer"], REACH = ["Flok", "All"];
+  function slotOf(lex, p, asRider) {
+    const B = lex.bench;
+    if (asRider) return "rider";
+    if (TIER.includes(p)) return "tier"; if (REACH.includes(p)) return "target"; if (B.manner_order.includes(p)) return "manners";
+    if (p === "Styng") return "styng"; if (p === "Lonn" || (B.rider_words.includes(p) && !lex.verbs[p])) return "rider";
+    if (lex.verbs[p]) return "root"; return null;
+  }
+  function placed(lex, c, p, asRider) {   // the carve with one tile toggled into its slot (the bench's snap)
+    const n = { ...c, manners: [...c.manners] }, s = slotOf(lex, p, asRider);
+    if (s === "tier") n.tier = n.tier === p ? "Base" : p;
+    else if (s === "target") n.target = n.target === p ? null : p;
+    else if (s === "manners") n.manners = n.manners.includes(p) ? n.manners.filter(m => m !== p) : [...n.manners.slice(-1), p];
+    else if (s === "styng") n.styng = !n.styng;
+    else if (s === "rider") n.rider = n.rider === p ? null : p;
+    else if (s === "root") n.verb = p;
+    return n;
+  }
+  function holds(c, p) {
+    return c.tier === p || c.target === p || c.manners.includes(p) || (p === "Styng" && c.styng) || c.rider === p;
+  }
+  function option(lex, from, c, part, change) {
+    const j = judge(lex, c), w = j.word;
+    return { part, change, carve: c, legal: !!w, name: w ? w.name : null, price: w ? w.price : null,
+             cost_type: w ? w.cost_type : null, past: !!(w && w.past_the_ladder), reason: w ? null : j.reasons[0] };
+  }
+  function whatsLegal(lex, c) {
+    // From the carve on the bench: every part it could add or swap in, every part it could lose, and the same
+    // parts on other verbs; each with what the word becomes and its price, or the reason it's refused.
+    const B = lex.bench, out = { add: [], remove: [], verbs: [] };
+    if (!c.verb) return out;
+    const own = B.own_rider[c.verb], riders = [...new Set([...(own && own !== "Lonn" ? [own] : ["Lonn"]),
+      ...((lex.verbs[c.verb].more_riders || []).map(r => r.word))])].filter(w => own || w !== "Lonn");
+    for (const p of [...TIER, ...REACH, ...B.manner_order, "Styng", ...riders]) {
+      if (holds(c, p) || (p === own && c.rider === "Lonn")) continue;
+      const rider = riders.includes(p);
+      out.add.push(option(lex, c, placed(lex, c, rider && p === own ? "Lonn" : p, rider), p,
+                          (slotOf(lex, p, rider) === "tier" && c.tier !== "Base") || (rider && c.rider) || (slotOf(lex, p) === "target" && c.target) ? "swap" : "add"));
+    }
+    for (const p of [c.tier !== "Base" ? c.tier : null, c.target, ...c.manners, c.styng ? "Styng" : null, c.rider].filter(Boolean))
+      out.remove.push(option(lex, c, placed(lex, c, p, p === c.rider), p, "remove"));
+    for (const v of Object.keys(lex.verbs)) {
+      if (v === c.verb) continue;
+      const o = option(lex, c, { ...c, verb: v, manners: [...c.manners] }, v, "root");
+      if (o.legal) out.verbs.push(o);
+    }
+    return out;
+  }
+
+  const api = { judge, key, parses, broken, carveOf, takeApart, coin, dist, placed, whatsLegal, slotOf };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.BenchRules = api;
 })(typeof window !== "undefined" ? window : this);
