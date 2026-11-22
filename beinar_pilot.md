@@ -38,6 +38,7 @@ Two parts. **Part 1** is the status rules for the whole new game: what every mov
 | **Steadfast** | DEF +1 | Can't be Pinned or shoved | Mot |
 | **Cursed** | Hexed 1, Poisoned 1 | | Dokkn (was Nid) |
 | **Venom** | Poisoned 1, Bleeding 1 | | a weapon trait, or a move |
+| **Disarmed** (Nov 22) | Feeble 1, Waning 1 | | Disarm (the Spettbein); 1 or 2 stacks. The old game keeps its own Disarmed |
 
 - A bundle stacks 1 to 3 and builds and fades like a counter: one stack per untouched round.
 - Effects with a size scale with the stacks (Venom 3: Poison 3 and Bleed 3; fading to 2, both are 2). On/off effects hold while any stack remains.
@@ -61,7 +62,7 @@ Two parts. **Part 1** is the status rules for the whole new game: what every mov
 | Weak! | x1.5 | yes |
 | Super! | x2 | yes |
 
-- Each element is a counter on the unit, moving along the ladder from the creature's base. **Ogn** pushes toward weak (one step; Mer two); **Mot** pushes back. Steps add up across casts within the ladder; casting at the cap only holds it.
+- Each element is a counter on the unit, moving along the ladder from the creature's base. **The damage types (Slash, Pierce, Crush) ride the same ladder** (Nov 22, for the boss Beinbryn's Calcify: one step toward resist on Crush, on itself). **Ogn** pushes toward weak (one step; Mer two); **Mot** pushes back. Steps add up across casts within the ladder; casting at the cap only holds it.
 - An untouched round slides it one step back toward the base. **Immune and Absorb never move**: they stay a creature's hard identity.
 - The board shows where it sits now: "ELD WEK", "VTN RST".
 - The play it allows (Joseph's): hero one's Ogneld takes a foe from Ineffective to Resist; enemies act; hero two's Merogneld takes it to Weak!; the Late Tungeld lands on Weak! for x1.5 and a Bonus Round.
@@ -80,7 +81,7 @@ Two parts. **Part 1** is the status rules for the whole new game: what every mov
 | **Vingla** | Reeling | |
 
 - Variants are reward-card material from one grammar: **Mer** (two steps), **Flok** (a row), **Styng** (a hit of that element first, then the step), **Lonn** (the step plus the element's own rider: Eld gives Burn 1, Reyk gives Blinded; the rest when designed).
-- Names: Ognjord is OG-nyord (the j is the Norse y, learned from Jord). Mot without an n (Motnjord's "tnj" is hard in English).
+- Names: the game reads Ogn as OH-gun, so Ognjord is OH-gun-yord (the j is the Norse y, learned from Jord); OG-n is the source's own reading, kept in its origin note. Mot without an n (Motnjord's "tnj" is hard in English).
 
 ---
 
