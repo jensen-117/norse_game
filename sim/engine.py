@@ -1183,7 +1183,7 @@ class Battle:
             self.emit("heal", f"    {u.name} casts {a['name']}, healing {', '.join(t.name for t in tgts)}.{tag}",
                       unit=u.name, move=a["name"], element=a["element"], targets=healed)
             for st, d in a.get("also") or []:              # Gyllenlykt: the light makes them harder to hit
-                n = STACKS_BY_TIER.get(a["tier"], 1)
+                n = 1 if self.new_game else STACKS_BY_TIER.get(a["tier"], 1)   # new game: a printed size wins (Nov 22)
                 for t in tgts:
                     self.push(t, st, d * n)
                     self.emit("status", f"      {t.name} is {t.counter_name(st) or st}!", unit=t.name,
@@ -1208,9 +1208,10 @@ class Battle:
             return
         if a["kind"] == "stat":
             n = STACKS_BY_TIER.get(a["tier"], 1)
-            changes = [(a["stat"], a["direction"])] + list(a.get("also") or [])
+            # the move's own stat moves by its tier; in the new game a rider's printed size wins (Nov 22, Joseph)
+            changes = [(a["stat"], a["direction"] * n)] + [(st, d if self.new_game else d * n) for st, d in a.get("also") or []]
             for t in tgts:
-                for st, d in changes: self.push(t, st, d * n)
+                for st, d in changes: self.push(t, st, d)
             self.emit("stat", f"    {u.name} casts {self.shown(u, a)} on {', '.join(t.name for t in tgts)}.{tag}", unit=u.name, move=a["name"], shown=self.shown(u, a), stat=a["stat"], direction=a["direction"], also=[list(c) for c in changes[1:]] or None, targets=[t.name for t in tgts])
             return
         if a["kind"] == "cleanse":

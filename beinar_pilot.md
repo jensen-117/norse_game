@@ -96,6 +96,9 @@ This replaces the counter and bundle timing in sections 2 and 3 (their names, tu
 - Keen and Marked keep their built effect (on by sign, classes.md 7d); their level is how hard they are to cancel.
 - Worked (Joseph's): R1 the buffer's Aukraft on the Vasara, she hits x1.33. R2 again: Mighty 2, x1.67, no step down. R3 the buffer turns to the Huskarl: she hits x1.67, then steps to Mighty 1. R4 x1.33, then 0.
 
+- **A printed size wins, otherwise the tier decides** (Nov 22): a move's own stat moves by its tier; a rider's printed size lands as printed (Gyllenlykt: Evasive 3, whatever its tier). A bigger version (a Mergyllenlykt) is where the cap would stretch to 5.
+- **Built (step 1, Nov 22):** the curve, the staircase and the tier sizes were already the engine's; the printed-size rule is new (new game only). `test_status_rules.py` pins Joseph's worked example.
+
 **Ailments: flat, the number is rounds.**
 - Poisoned, Bleeding, Pinned, Silenced, Slowed, Reeling...: the same flat effect whatever the number; **the number is how many full rounds after this one it lasts.** Deepening an ailment extends its life, never its strength.
 - Worked (Joseph's): Poison 1 in R1: it ticks at the start of R2, and R2's end takes it to 0. Another Poison in R2 makes it 2, with no drop that round; then it ticks, drops, ticks, drops, and is cured.
