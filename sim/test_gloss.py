@@ -128,5 +128,29 @@ class TheBenchAgreesWithTheCompiler(unittest.TestCase):
         self.assertEqual(bad[:5], [], f"{len(bad)} of {len(combos)} carves disagree")
         self.assertGreater(sum(1 for w in want if w), 600)
 
+class TakingWordsApart(unittest.TestCase):
+    """L4: bench_rules.js takes a word apart like lexicon.parses, and every hero word rebuilds from its own name."""
+    def test_parses_and_round_trips(self):
+        import json, os, shutil, subprocess, tempfile
+        node = shutil.which("node")
+        if not node: self.skipTest("node isn't installed")
+        tmp = tempfile.mkdtemp(); lex = lexicon.export(os.path.join(tmp, "lexicon.json"))
+        names = sorted({h["name"] for h in lex["hero_words"]} | {m["name"] for m in lex["enemy_moves"] if not m["english"]}
+                       | {u["name"] for u in lex["enemy_units"]} | {h["rule_name"] for h in lex["hero_words"]})
+        js = os.path.join(os.path.dirname(os.path.abspath(lexicon.__file__)), "..", "grammar_book", "bench_rules.js")
+        script = ("const R=require(process.argv[1]);const L=JSON.parse(require('fs').readFileSync(process.argv[2]));"
+                  "const names=JSON.parse(require('fs').readFileSync(process.argv[3]));"
+                  "console.log(JSON.stringify({parses:Object.fromEntries(names.map(n=>[n,R.parses(L,n)])),"
+                  "back:Object.fromEntries(L.hero_words.flatMap(h=>[h.name,h.rule_name]).map(n=>{const t=R.takeApart(L,n);"
+                  "return [n,t.best&&t.best.judged&&t.best.judged.word?t.best.judged.word.key:null]}))}))")
+        json.dump(names, open(os.path.join(tmp, "names.json"), "w"))
+        got = json.loads(subprocess.run([node, "-e", script, os.path.abspath(js), os.path.join(tmp, "lexicon.json"),
+                                         os.path.join(tmp, "names.json")], capture_output=True, text=True, check=True).stdout)
+        bad = [n for n in names if got["parses"][n] != lexicon.parses(n)]
+        self.assertEqual(bad[:5], [], f"{len(bad)} names parse differently")
+        lost = [(h["name"], h["rule_name"]) for h in lex["hero_words"]
+                if got["back"][h["name"]] != h["key"] or got["back"][h["rule_name"]] != h["key"]]
+        self.assertEqual(lost[:5], [], f"{len(lost)} hero words don't rebuild from their names")
+
 if __name__ == "__main__":
     unittest.main()

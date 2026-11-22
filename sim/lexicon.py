@@ -74,6 +74,9 @@ def hero_words():
                 atoms=expand([x for x in said if x in GLOSS]),
                 rider_word=pr.get("rider_word"), carve=dict(p, manners=list(p["manners"])),
                 key=bench_key(verb, p["tier"], p["target"], p["manners"], p["styng"], pr.get("rider_word")),
+                rule_name=words.join_morphemes([x for x in (p["target"], None if p["tier"] == "Base" else p["tier"],
+                                                            "Styng" if p["styng"] else None, *p["manners"],
+                                                            pr.get("rider_word"), verb) if x]),
                 capstone=pr.get("capstone"), byname=pr.get("byname"),
                 price=a["price"], cost_type=a["cost_type"], keywords=a["keywords"], share=share_of(a),
                 element=a.get("element"), status=a.get("status"), also_status=a.get("also_status"),
@@ -112,6 +115,9 @@ def bench():
     return dict(parts=list(BENCH_PARTS), rider_words=rider_words(), refuse=refuse, own_rider=own, cap=UPGRADE_CAP,
                 capstones={nm: dict(verb=vb, parts=sorted(ps)) for nm, (vb, ps) in CAPSTONES.items()},
                 speed_manners=sorted(SPEED_MANNERS), manner_order=MANNER_ORDER,
+                rider_owners={w: sorted(vs) for w, vs in rider_owners().items()},
+                name_parts={nm: dict(verb=vb, parts=sorted(ps)) for nm, (vb, ps) in {**ROOT_NAMES, **BYNAMES, **CAPSTONES}.items()},
+                vowels="".join(sorted(VOWELS)),
                 slots=["target", "tier", "styng", "manners", "rider", "root"])
 
 def verb_table():

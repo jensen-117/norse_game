@@ -183,7 +183,7 @@ dialog::backdrop { background: rgba(10, 14, 12, .45) }
 
 <script>
 const VIEWS = [
-  ["front", "How to read"], ["az", "A to Z"], ["bench", "Workbench"], ["kind", "By kind"], ["class", "By class"],
+  ["front", "How to read"], ["az", "A to Z"], ["bench", "Workbench"], ["apart", "Take apart"], ["kind", "By kind"], ["class", "By class"],
   ["element", "By element"], ["foes", "Foes' moves"], ["two", "Read two ways"], ["audit", "Audit"]];
 const PER_PAGE = 12;
 const KIND_SHORT = { element: "el.", tier: "tier", target: "reach", manner: "manner", upgrade: "upgrade", direction: "dir.",
@@ -282,6 +282,7 @@ function layout() {
     blocks = [{ sect: "Read two ways", sub: "The seam rules let an eye take these apart two ways. The grammar builds only one; the other is a misreading it can't make.", thumb: "Two" },
               ...Object.entries(L.two_readings).map(([n, ps]) => ({ two: n, parses: ps }))];
   } else if (view === "bench") { blocks = [{ bench: true }];
+  } else if (view === "apart") { blocks = [{ apart: true }];
   } else if (view === "front") { blocks = [{ front: true }];
   } else if (view === "audit") {
     const E = A.effects, names = Object.keys(E);
@@ -316,7 +317,7 @@ function searchBlocks(q) {
 function pages() {
   const ps = [[]]; let n = 0;
   for (const b of blocks) {
-    const counts = b.key || b.foeMove || b.two || b.front || b.bench || b.words || b.effect || b.primer || b.riderless || b.twice || b.auditSummary;
+    const counts = b.key || b.foeMove || b.two || b.front || b.bench || b.apart || b.words || b.effect || b.primer || b.riderless || b.twice || b.auditSummary;
     if (counts && n >= PER_PAGE) { ps.push([]); n = 0; }
     if ((b.sect || b.thumbOnly) && n >= PER_PAGE - 2 && ps.at(-1).length) { ps.push([]); n = 0; }
     ps.at(-1).push(b); if (counts) n += b.words ? 2 : b.effect ? 3 : 1;
@@ -352,6 +353,7 @@ function blockHTML(b) {
   if (b.two) return `<div class="e open"><div class="body"><div class="hw" style="padding:0"><span><span class="w">${esc(b.two)}</span></span></div>${b.parses.map(p => `<div class="row"><b>${p.broken ? "The eye" : "The grammar"}</b><div><div class="tiles">${tilesHTML(p.parts)}</div>${p.broken ? `<div class="note">Can't be built: ${esc(p.broken)}.</div>` : ""}</div></div>`).join("")}<div class="row"><b>Said by</b><div class="chips">${wordChip(b.two)}</div></div></div></div>`;
   if (b.front) return frontHTML();
   if (b.bench) return benchHTML();
+  if (b.apart) return apartHTML();
   if (b.auditSummary) { const E = A.effects, n = Object.keys(E).length, g = Object.values(E).filter(r => r.missing.length).length;
     return `<div class="facts" style="padding:4px 8px 8px"><span><b>${n}</b> effects</span><span><b>${g}</b> with a gap</span><span><b>${A.quarry.length}</b> primers</span><span><b>${A.riderless.length}</b> verbs with no rider</span><span><b>${A.byname_jobs.length}</b> byname jobs</span><span><b>${A.past_ladder.length}</b> past the ladder</span></div>`; }
   if (b.primer) return `<div class="fm"><span class="n">${atomOr(b.primer.effect)}</span><span></span><span class="t" style="color:var(--ink)">${esc(b.primer.primer)}</span></div>`;
@@ -516,11 +518,47 @@ function paletteHTML() {
     ${Object.entries(byClass).map(([c, vs]) => group(c === "Anyone" ? "Any caster" : c, vs, false, true)).join("")}
     <p class="note" style="margin:0">Greyed tiles are refused on the verb at the root; hover for the reason. The foes' grammar (Jatte, Mark, the status words) isn't on the bench yet.</p></div>`;
 }
-document.addEventListener("input", e => { if (e.target.id === "bq") { benchQ = e.target.value; const pos = e.target.selectionStart; render(); const i = $("#bq"); if (i) { i.focus(); i.setSelectionRange(pos, pos); } } });
+document.addEventListener("input", e => { if (e.target.id === "aq") { apartQ = e.target.value; const pos = e.target.selectionStart; render(); const i = $("#aq"); if (i) { i.focus(); i.setSelectionRange(pos, pos); } return; }
+  if (e.target.id === "bq") { benchQ = e.target.value; const pos = e.target.selectionStart; render(); const i = $("#bq"); if (i) { i.focus(); i.setSelectionRange(pos, pos); } } });
 document.addEventListener("dragstart", e => { const t = e.target.closest?.("[data-bench-atom]"); if (t) { e.dataTransfer.setData("text/plain", t.dataset.benchAtom + (t.dataset.asRider ? "|r" : "")); } });
 document.addEventListener("dragover", e => { const st = e.target.closest?.("#stage"); if (st) { e.preventDefault(); st.classList.add("over"); } });
 document.addEventListener("dragleave", e => { e.target.closest?.("#stage")?.classList.remove("over"); });
 document.addEventListener("drop", e => { const st = e.target.closest?.("#stage"); if (!st) return; e.preventDefault(); const [p, r] = e.dataTransfer.getData("text/plain").split("|"); if (p) { place(p, r === "r"); render(); } });
+
+// ---------------------------------------------------------------- L4: take apart, and coin
+let apartQ = "Mergenomskott";
+function apartHTML() {
+  const q = apartQ.trim();
+  let h = `<div class="bench"><label class="search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+    <input id="aq" type="search" placeholder="Type a word to take apart, or one you'd like to coin" value="${esc(apartQ)}" autocomplete="off" aria-label="A word to take apart"></label>
+    <div class="chips"><span class="note">Try:</span>${["Mergenomskott", "Lonnkrosh", "Rodaska", "Bannskott", "Nedskold", "Storeykande", "Tyst", "Allskott"].map(x => `<button class="chip" type="button" data-try="${x}">${x}</button>`).join("")}</div>`;
+  if (!q) return h + `</div>`;
+  const t = BenchRules.takeApart(L, q), c = BenchRules.coin(L, q);
+  const foe = idx.foeMove[c.exists] || idx.foeUnit[c.exists];
+  h += `<div class="sect">Taken apart</div>`;
+  if (!t.readings.length) h += `<p class="note">“${esc(q)}” doesn't come apart into words the book knows. As a whole, it's new: see below.</p>`;
+  for (const r of t.readings) {
+    const w = r.judged && r.judged.word;
+    h += `<div class="e open" style="padding:8px 10px;display:grid;gap:8px">
+      <div class="tiles">${tilesHTML(r.atoms)}</div>
+      ${r.broken ? `<div class="note">The eye's reading only: ${esc(r.broken)}.</div>` : ""}
+      ${(r.why || []).map(x => `<div class="no" style="color:var(--plan)">${esc(x)}</div>`).join("")}
+      ${r.judged && !w ? r.judged.reasons.map(x => `<div class="no">✕ ${esc(x)}</div>`).join("") : ""}
+      ${w ? `<div><b>${esc(w.name)}</b>${w.name.toLowerCase() !== q.toLowerCase() ? ` <span class="note">: the game says it <b>${esc(w.name)}</b>${w.capstone ? " (a capstone)" : w.byname ? " (a byname)" : " (a name of its own)"}</span>` : ""} · ${esc(w.cls || "")} · ${w.price ? `${w.price} ${w.cost_type}` : "free"}${w.share ? ` · ${shareText(w)}` : ""}<div class="text">${esc(w.text)}</div>
+        <div class="chips" style="margin-top:6px"><button class="goto" type="button" data-bench-word="${esc(w.name)}">Go To workbench</button></div></div>` : ""}
+      ${r.carve && !w ? `<div class="chips"><button class="goto" type="button" data-bench-carve='${esc(JSON.stringify(r.carve))}'>Put it on the workbench</button></div>` : ""}
+    </div>`;
+  }
+  if (foe) h += `<div class="note">“${esc(c.exists)}” is a foe's ${idx.foeMove[c.exists] ? "move" : "name"}. ${wordChip(c.exists)}</div>`;
+  h += `<div class="sect">As a coinage<small>${c.exists || (t.best && t.best.judged && t.best.judged.word) ? "Already a word: what it could be mistaken for" : "What a new word would collide with, before it's adopted"}</small></div><div class="body" style="padding:0">`;
+  const row = (t_, x) => `<div class="row"><b>${t_}</b><div>${x}</div></div>`;
+  h += row("In the book", c.exists ? `<b>${esc(c.exists)}</b> already exists` : `<span class="note">new</span>`);
+  if (c.readsAs.length) h += row("Reads as", c.readsAs.map(p => `<div class="tiles">${tilesHTML(p)}</div>`).join(""));
+  h += row("Looks like", c.near.length ? `<div class="chips">${c.near.map(n => `<button class="chip" type="button" data-try="${esc(n.name)}" title="${n.dist} letter${n.dist > 1 ? "s" : ""} away">${esc(n.name)} <span class="note">${n.dist}</span></button>`).join("")}</div>` : `<span class="note">nothing within ${q.length <= 4 ? "one letter" : "two letters"}</span>`);
+  const known = c.exists || (t.best && t.best.judged && t.best.judged.word);
+  if (!known) h += row("With parts", `<div style="display:grid;gap:3px">${c.seams.map(sm => `<div>${esc(sm.name)} ${sm.clean ? `<span class="note">reads cleanly</span>` : `<span style="color:var(--foe)">reads as ${sm.readings.map(r => r.join(" + ")).join(", or ") || "nothing"}</span>`}</div>`).join("")}</div>`);
+  return h + `</div></div>`;
+}
 
 function frontHTML() {
   const r = L.rules;
@@ -570,12 +608,14 @@ function openEntry(k) {
 }
 
 document.addEventListener("click", e => {
-  const t = e.target.closest("[data-key],[data-atom],[data-word],[data-p],[data-close],[data-search],[data-fx],[data-bench-word],[data-bench-atom],[data-unslot],[data-bench-clear],[data-hint-close]");
+  const t = e.target.closest("[data-key],[data-atom],[data-word],[data-p],[data-close],[data-search],[data-fx],[data-bench-word],[data-bench-atom],[data-unslot],[data-bench-clear],[data-hint-close],[data-bench-carve],[data-try]");
   if (!t) { if (e.target === $("#card")) $("#card").close(); return; }
   if (t.dataset.close !== undefined) return $("#card").close();
   if (t.dataset.p) { page = +t.dataset.p; render(); return scrollTo({ top: 0 }); }
   if (t.dataset.search) { $("#card").open && $("#card").close(); $("#q").value = t.dataset.search; return search(t.dataset.search); }
   if (t.dataset.word) return showWord(t.dataset.word);
+  if (t.dataset.benchCarve) { const c = JSON.parse(t.dataset.benchCarve); B = c; if (view !== "bench") go("bench"); else render(); return; }
+  if (t.dataset.try) { apartQ = t.dataset.try; render(); return; }
   if (t.dataset.benchWord) { const h = idx.hero[t.dataset.benchWord][0]; benchLoad(h.carve, h.verb); return; }
   if (t.dataset.benchAtom) { place(t.dataset.benchAtom, !!t.dataset.asRider); if (view !== "bench") { $("#card").open && $("#card").close(); go("bench"); } else render(); return; }
   if (t.dataset.unslot) { unslot(t.dataset.unslot); return render(); }
