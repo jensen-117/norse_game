@@ -83,35 +83,34 @@ Two parts. **Part 1** is the status rules for the whole new game: what every mov
 - Variants are reward-card material from one grammar: **Mer** (two steps), **Flok** (a row), **Styng** (a hit of that element first, then the step), **Lonn** (the step plus the element's own rider: Eld gives Burn 1, Reyk gives Blinded; the rest when designed).
 - Names: the game reads Ogn as OH-gun, so Ognjord is OH-gun-yord (the j is the Norse y, learned from Jord); OG-n is the source's own reading, kept in its origin note. Mot without an n (Motnjord's "tnj" is hard in English).
 
-## 7. Under discussion (Nov 22): one number per status
+## 7. Settled (Nov 22, Joseph): stats and ailments are different things
 
-Joseph's questions: should the range grow (to -5 to +5), what a stack means, and whether Slowed is a minor Reeling. Claude's draft of the simpler system hiding in today's rules (most of it is already true, just unstated):
+This replaces the counter and bundle timing in sections 2 and 3 (their names, tug-of-war and bundle lists stand). The new game only; old fights keep the old rules.
 
-1. **Every status is one number** (1 to the cap; opposites share one number, minus to plus).
-2. **It counts down one at the start of every round, after doing its round-start job** (Poison ticks; the round's order reads Slowed and Reeling), so a status added this round is felt in full for the rest of it. Adding to it adds (to the cap). No "untouched round" bookkeeping; topping up has to out-pace the count, and costs the topper its turn.
-   - Worked example: Nedkraft (Base, adds 2) in round 1: Feeble 2 for the rest of round 1; round 2 starts, Feeble 1; round 3 starts, gone. Cast again in round 2 instead: 1 + 2, Feeble 3. Cast every round and it climbs toward the cap; at the cap, any cast holds it. Halvnedkraft (adds 1) lasts only the rest of the round it lands: the Halv is the weak one.
-3. **The tier says how much a move adds:** Halv 1, Base 2, Mer 3, Jatte 4, Ur 5. (This is the case for a cap of 5: one point per tier.)
-4. **Each status says what one point does, and is one of two kinds:**
-   - **scaling**, the effect times the number: Poisoned (damage a point), Fortified (DEF a point), Frozen (20% a point to lose the turn: Frozen 5 is certain, then 80, 60, 40, 20);
-   - **flat**, on while the number lasts, which is then only how long: Keen, Marked, Pinned, Silenced, Slowed, Reeling.
-5. **Opposites net on the one number:** Keen 2 meets Blinded 3, Blinded 1.
-6. **Named exceptions, few:** fades by use (Song, Stunned), breaks when hit (Frozen), counts when you act (Bleeding).
+**One rule for time:** at the end of each round (after any Bonus Round), **every stat, ailment and bundle that nobody moved this round drops by one.** "Moved" is any change: adding, an opposite pulling it back, topping it up. A status is never counted down in the round it lands.
 
-**Joseph's turn (Nov 22): make every stat flat.** Each side of a stat has one fixed effect (Feeble: ATK down by one fixed share; Mighty: up by one); the number is only how many rounds are left. The tier adds rounds, not size (Halv 1, Base 2, Mer 3); a Drif flurry adds a round a hit (Drifnedkraft landing three hits: Feeble 3); opposites shorten each other on the one number (Aukraft against Feeble). It's the accuracy rule already built ("stacks are duration, not strength", classes.md 7d) spread to every stat, so there's one kind of status, not two. What it gives up: building a stat up for a bigger effect (Setup keeps other tools: Marked crits, Sundered, wind-ups, Weak! and the Bonus Round). The size has to be felt: 10% of a foe's hit (about 1% of a hero) isn't; today's single stage is (Mighty and Fortified x1.33, Feeble and Sundered x0.75). Frozen's 20%-a-point would be the one scaling exception, or Frozen stays flat too.
+**Stats: a level.**
+- Each stat runs **-3 to +3** on the curve **x0.5, x0.6, x0.75, x1, x1.33, x1.67, x2** (true mirrors: one step up and one down land back on x1; it never reaches zero).
+- **Base moves a stat 1 level, Mer 2, Jatte 3.** A Halv carries no stat move of its own; a Halv with a rider adds 1, like Base (a Halv's weakness is its damage, not its rider).
+- Opposites pull on the same level (Mighty 2 hit by Feeble 1: Mighty 1). The staircase: left alone, it steps back one a round. Build-up is team play: a buffer keeping the Vasara at Mighty 2 holds it for one cast a round; a self-buff pays off about once. Mighty 3 and Feeble 3 (double, half) are earned, not free.
+- Keen and Marked keep their built effect (on by sign, classes.md 7d); their level is how hard they are to cancel.
+- Worked (Joseph's): R1 the buffer's Aukraft on the Vasara, she hits x1.33. R2 again: Mighty 2, x1.67, no step down. R3 the buffer turns to the Huskarl: she hits x1.67, then steps to Mighty 1. R4 x1.33, then 0.
 
-**Claude's read (Nov 22): one number can't carry both "how much" and "how long".** Coupled (the taper: Feeble 3, 2, 1) gives build-up but every round sheds a level; flat gives clean reading but no build-up. The way out is to let the two kinds of thing be two kinds of thing, as SMT V does with its -kaja and -nda spells:
-- **Stats: a level and a timer.** The level runs -3 to +3 on today's curve (up x1.33, x1.67, x2; down x0.75, x0.6, x0.5: true mirrors that never reach zero); Base adds 1, Mer 2, Jatte 3 (no Halv on stats). **One timer per stat, three rounds, refreshed whenever anything moves that stat;** when it runs out, the level returns to 0 at once. Opposites subtract levels. Keen and Marked keep their built effect (on by sign); their level is only how hard they are to cancel. Build-up is back, and holding it is a turn every few rounds.
-- **Ailments and bundles: flat, the number is rounds left** (Poisoned, Bleeding, Pinned, Silenced, Slowed, Reeling, Feared, Cursed...). Adding adds rounds, to the cap.
-- **A few bespoke ones,** each one line: Frozen, Stunned, Song.
-- The board shows a stat as its level with timer pips ("MIG 2 ..."), an ailment as its rounds.
+**Ailments: flat, the number is rounds.**
+- Poisoned, Bleeding, Pinned, Silenced, Slowed, Reeling...: the same flat effect whatever the number; **the number is how many full rounds after this one it lasts.** Deepening an ailment extends its life, never its strength.
+- Worked (Joseph's): Poison 1 in R1: it ticks at the start of R2, and R2's end takes it to 0. Another Poison in R2 makes it 2, with no drop that round; then it ticks, drops, ticks, drops, and is cured.
+- Poisoned ticks at the start of each round; Bleeding bites when its bearer acts; Slowed and Reeling are read when the round's order is set.
+- Base adds 1 round, Mer 2, Jatte 3; a Drif flurry adds one a hit.
 
-**The staircase, the other way to run a stat's level (Joseph's walk-through, Nov 22; it's the rule built today):** no timer; a round nobody moved the stat, it steps one level back toward 0. One number on the tag, a gentle fade instead of a cliff. The real difference from the timer: a self-buff pays off once (Aukraft on yourself, then one boosted attack before it steps down), so build-up is a team play (a buffer keeping the Vasara at Mighty 2); with the timer a self-buff covers two or three attacks.
+**Bundles** (Feared, Steadfast, Cursed, Venom, Disarmed) step down like a stat. **Their stat parts are as big as their number** (Cursed 2 is Hexed 2); **their ailment parts are on while they last** (Cursed 2 is also Poisoned while it holds).
 
-Joseph's linear 20% steps reach x0.2 at Feeble 4: a foe made harmless. Today's curve slows as it goes, which is why it never bottoms out.
+**One cap: 3** (stats -3 to +3, bundles 1 to 3, ailments up to 3 rounds). The escape hatch, if a fight needs breathing room: -5 to +5.
 
-Slowed and Reeling under it: both flat. Slowed puts you at the back of your group; Reeling drops you into Late. One reduction for N rounds, not five sizes of reduction: within a group there's only front and back, so there's nothing to scale.
+**Bespoke, one line each:** Frozen (loses turns; any damaging hit breaks it and shatters), Stunned (clears the first time it costs an action), Song (heals at each round's start until it runs out).
 
-The cap: -3 to +3 is already seven values; -5 to +5 is eleven. Five gains the tier ladder one point each and finer steps (each DEF point near 15% instead of 25%, the same top); the cost is retuning every per-point number and statuses that last up to five rounds, most of a fight.
+**Slowed and Reeling:** both flat. Slowed: the back of your group. Reeling: into the Late group. One reduction for N rounds.
+
+**Considered and set aside:** one number carrying both size and time (the taper: Feeble 3, 2, 1), every stat flat (no build-up), a level with a refreshing timer (SMT V's way: two numbers on a tag), linear 20% steps (x0.2 at Feeble 4 makes a foe harmless).
 
 ## 8. Open, for later
 
