@@ -88,7 +88,8 @@ Two parts. **Part 1** is the status rules for the whole new game: what every mov
 Joseph's questions: should the range grow (to -5 to +5), what a stack means, and whether Slowed is a minor Reeling. Claude's draft of the simpler system hiding in today's rules (most of it is already true, just unstated):
 
 1. **Every status is one number** (1 to the cap; opposites share one number, minus to plus).
-2. **It counts down one at the end of every round.** Adding to it adds (to the cap). No "untouched round" bookkeeping; topping up has to out-pace the count, and costs the topper its turn.
+2. **It counts down one at the start of every round, after doing its round-start job** (Poison ticks; the round's order reads Slowed and Reeling), so a status added this round is felt in full for the rest of it. Adding to it adds (to the cap). No "untouched round" bookkeeping; topping up has to out-pace the count, and costs the topper its turn.
+   - Worked example: Nedkraft (Base, adds 2) in round 1: Feeble 2 for the rest of round 1; round 2 starts, Feeble 1; round 3 starts, gone. Cast again in round 2 instead: 1 + 2, Feeble 3. Cast every round and it climbs toward the cap; at the cap, any cast holds it. Halvnedkraft (adds 1) lasts only the rest of the round it lands: the Halv is the weak one.
 3. **The tier says how much a move adds:** Halv 1, Base 2, Mer 3, Jatte 4, Ur 5. (This is the case for a cap of 5: one point per tier.)
 4. **Each status says what one point does, and is one of two kinds:**
    - **scaling**, the effect times the number: Poisoned (damage a point), Fortified (DEF a point), Frozen (20% a point to lose the turn: Frozen 5 is certain, then 80, 60, 40, 20);
