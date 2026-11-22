@@ -1,5 +1,5 @@
 """The Bann family (Nov 21, Joseph): Bann is the ban. Bannskott is Skott with its second designated rider, a shot that
-may Silence; the pinned-prey finisher is Fallskott (was Banskott). Lonn names a rider by its word when a verb has more
+may Silence; the pinned-prey finisher is Fangskott (was Banskott). Lonn names a rider by its word when a verb has more
 than one."""
 import unittest
 from engine import *
@@ -29,10 +29,10 @@ class Bannskott(unittest.TestCase):
             landed += any(x["status"] == "Silenced" for x in evs(b, "status"))
         self.assertGreater(landed, 0)
 
-class Fallskott(unittest.TestCase):
+class Fangskott(unittest.TestCase):
     def test_the_finisher_is_renamed(self):
-        self.assertIn("Fallskott", VERBS); self.assertNotIn("Banskott", VERBS)
-        self.assertIn("Fallskott", [compile_verb(v, **p)["name"] for v, p in KITS["Ullar"][3]])
+        self.assertIn("Fangskott", VERBS); self.assertNotIn("Banskott", VERBS)
+        self.assertIn("Fangskott", [compile_verb(v, **p)["name"] for v, p in KITS["Ullar"][3]])
 
 if __name__ == "__main__":
     unittest.main()

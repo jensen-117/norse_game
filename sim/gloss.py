@@ -162,7 +162,8 @@ GLOSS = {
     # ------------------------------------------------------------------ class verbs (classes.md Part 7)
     "Naglskott": g("verb", "a pinning shot: Pinned", "Old Norse nagl, a nail, + skott", "NAHG-ul-skoht"),
     "Peka":  g("verb", "to point out: Marked", "Swedish peka, to point", "PEH-kah"),
-    "Fallskott": g("verb", "the trapper's shot: harder on the Pinned", "Swedish fälla, a trap, and to fell", "FAHL-skoht", was="Banskott (Old Norse bani, slayer)"),
+    "Fangskott": g("verb", "the trapper's shot: harder on the Pinned", "Swedish fånga, to catch (fångst, a catch); English hears fangs", "FAHNG-skoht",
+                   was="Banskott (Old Norse bani, slayer), then Fallskott (one letter from Allskott)"),
     "Avliva": g("verb", "to put down: harder on a foe under half HP", "Swedish avliva, to put down (what a hunter does for wounded prey)", "AHV-lee-vah"),
     "Skrida": g("verb", "to glide: step to a cell, Swift, and Evasive", "Swedish skrida, Old Norse skríða, to glide (the skiing Finns)", "SKREE-dah"),
     "Egga":  g("verb", "to egg on: a taunt", "Old Norse eggja, to incite (English egg on)", "EG-gah"),
@@ -428,7 +429,7 @@ INTENT = {
     "Skott": "Loose an arrow from anywhere.",
     "Naglskott": "Nail them to the spot.",
     "Peka": "There. Everyone, hit that one.",
-    "Fallskott": "The trapped prey: a shot it can't avoid.",
+    "Fangskott": "The caught prey: a shot it can't avoid.",
     "Avliva": "Finish the wounded one.",
     "Skrida": "Glide away on skis: reposition and be hard to hit.",
     "Sveda": "Set it alight and let it burn.",

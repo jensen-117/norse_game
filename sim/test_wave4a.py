@@ -1,6 +1,6 @@
 """Wave 4a: the starting three's kits, tested in complete turns (refactor_plan Wave 4; classes.md Parts 2-4).
 
-Statuses (Pinned, Scorched, the riders' second statuses), payoffs (Pierce through a lowered guard, Fallskott, Avliva,
+Statuses (Pinned, Scorched, the riders' second statuses), payoffs (Pierce through a lowered guard, Fangskott, Avliva,
 Hevn), the status-move rules (Styng, the weakness), and movement and tempo (Skrida, Djupanda, where the Ullar stands).
 """
 import random, unittest
@@ -192,7 +192,7 @@ class Payoffs(unittest.TestCase):
         self.assertAlmostEqual(self.ratio(hero("Vasara", "Krosh"), krosh, sunder), 1 / stage_mult(-2))  # Crush: none
 
     def test_banskott_on_the_pinned(self):
-        u = hero("Ullar", "Fallskott")
+        u = hero("Ullar", "Fangskott")
         def pin(b, e): b.apply_status(u, e, "Pinned", 1.0)
         self.assertAlmostEqual(self.ratio(u, u.actions[1], pin), 1.5)
 
@@ -200,9 +200,9 @@ class Payoffs(unittest.TestCase):
         """Same seed, same roll: the Pinned target takes exactly x1.5 (its Slowed cancelled, so the roll can't shift)."""
         dmg = []
         for pinned in (False, True):
-            u = hero("Ullar", "Fallskott"); e = dummy(); b = fight([u], [e], seed=3)
+            u = hero("Ullar", "Fangskott"); e = dummy(); b = fight([u], [e], seed=3)
             if pinned: e.status["Pinned"] = dict(rounds=2); e.stages["SPD"] = 1     # set, not rolled: the rng stays in step
-            orders(b, {u.uid: (key(u, "Fallskott"), e.uid)}); dmg.append(evs(b, "hit", src=u.name)[0]["dmg"])
+            orders(b, {u.uid: (key(u, "Fangskott"), e.uid)}); dmg.append(evs(b, "hit", src=u.name)[0]["dmg"])
         self.assertAlmostEqual(dmg[1] / dmg[0], 1.5, delta=0.01)
 
     def test_avliva_under_half(self):
@@ -334,7 +334,7 @@ class TheAIUsesThem(unittest.TestCase):
         theirs that Wave 4a made playable is chosen at least once."""
         from composer import catalog, habitat, compose, place, spawn
         cat, seen = catalog(), set()
-        want = {"Fallskott", "Genomskott", "Genomskoda", "Lamsveda", "Hevn"}     # Rodegga, Djupanda: below
+        want = {"Fangskott", "Genomskott", "Genomskoda", "Lamsveda", "Hevn"}     # Rodegga, Djupanda: below
         for i in range(40):
             rng = random.Random(500 + i)
             party = [build_hero(c, 3) for c in ("Vasara", "Ullar", "Brennumar")]

@@ -280,7 +280,7 @@ class Nov20Rules(unittest.TestCase):
     def test_halv_only_on_attacks(self):
         for v in ("Lak", "Vakna", "Skolja", "Sveda", "Reyk", "Naglskott", "Egga", "Knyta", "Kvad", "Aukskold", "Skrida", "Djupanda"):
             with self.assertRaises(ValueError, msg=v): compile_verb(v, tier="Halv")
-        for v in ("Eld", "Skott", "Krosh", "Sol", "Blast", "Blixt", "Fallskott", "Avliva", "Hevn"):
+        for v in ("Eld", "Skott", "Krosh", "Sol", "Blast", "Blixt", "Fangskott", "Avliva", "Hevn"):
             h = compile_verb(v, tier="Halv"); self.assertEqual(h["price"], HALV_COST[h["cost_type"]], v)   # Nov 21: Halv's own rung
 
     def test_a_pinned_vasara_still_covers(self):

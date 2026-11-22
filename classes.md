@@ -59,7 +59,7 @@ The first four classes (the vertical slice), designed the same way: **fantasy �
 | **Mark** | Strip its defences | **Peka** (*coined*: Swedish *peka*, "to point"): inflicts **Marked** | **Sundered** → **Lonnpeka** (he points out the gap) | Styngpeka adds damage. Merpeka: Marked 2 in one shot |
 | **Volley** | Hit many | **Flokskott** | (as Skott) | Exists |
 | **Silence** | Stop a caster | **Bannskott** (Nov 21, Joseph): Skott with its second designated rider, Bann: a 0.6 shot that may leave the target **Silenced** (no MP moves). Bann is the ban: Bann, Bannskott, Bannenlykt | | 32 HP, like Blotskott. Merbannskott 64 |
-| **Finish** | Pay off a setup | **Fallskott** (Swedish *fälla*, a trap, and to fell; was Banskott, Nov 21): **x1.5 against a Pinned target** | | His cash-in |
+| **Finish** | Pay off a setup | **Fangskott** (Swedish *fånga*, to catch; English hears fangs; was Banskott, then Fallskott, one letter from Allskott, Nov 21): **x1.5 against a Pinned target** | | His cash-in |
 | **Put down** | Finish the wounded | **Avliva** (Swedish, "to put down": what a hunter does for wounded prey): **x2 against a foe under half HP** | | Single-target. Later: conditional riders of this kind |
 | **Glide** | Escape his weakness | **Skrida** (Swedish *skrida*, "to glide"; ON *skríða*, as in the ancient "gliding Finns" on skis): **Swift**; **aimed at a cell, like Move** (Nov 20): an empty cell, he steps there; an ally's, the two swap places; Move's rules hold (never empty the Front, no Pinned ally). Gain Nimble either way | | Merskrida: Nimble 2. Ullr is the god of skis |
 
@@ -69,7 +69,7 @@ The first four classes (the vertical slice), designed the same way: **fantasy �
 
 **Signature mechanic: Pinned** (new status).
 - **Slowed and rooted:** one Speed stage down for a few rounds, **and it can't change rows.** No Frozen chain (unlike Chilled). **Decided (Nov 20): it locks the cell,** the simplest version: no Move, Swap, Advance or Skrida (lanes too), and no one can swap with it. Pull them to the Front and Pin them there. Cover moves no one, for heroes or enemies, so a Pinned unit still Covers. Two rounds, three at Mer.
-- **Touches:** the **Vasara's** Taunt (a Pinned enemy can't step out of reach of her hammer), and his own Fallskott.
+- **Touches:** the **Vasara's** Taunt (a Pinned enemy can't step out of reach of her hammer), and his own Fangskott.
 
 **Second status: Marked** (shared: anyone's hits benefit).
 - **Marked is the EVA-down counter** (pillars Part 5c): Marked *N* is *N* Evasion stages down. **Marked 2 can't dodge** (no grazes); Marked 3 adds crits. "Can't dodge" moved here from Pinned, so each status does one clear thing.
@@ -226,7 +226,7 @@ A Flok-and-talisman build that invested hard (about +2 or +3) sweeps a row of Tr
 
 **Element power**, from the magic base of 0.9: Eld 0.9; Blast 0.9 in two hits (cheaper, less reliable); Blixt **1.0 at 8 MP** (the tiring, spiky one); Sol 0.9; the rest 0.9 until they're designed. Reyk deals no damage of its own (0.6 for Styngreyk's added hit).
 
-**Naming.** The rules build the name; curation renames when a name is long or hard to say (Banskott stayed for its two good syllables, then became Fallskott on Nov 21 so Bann could mean one thing). Two ways, both composing with Mer, Snar, Flok:
+**Naming.** The rules build the name; curation renames when a name is long or hard to say (Banskott stayed for its two good syllables, then became Fangskott on Nov 21 so Bann could mean one thing). Two ways, both composing with Mer, Snar, Flok:
 - **A rider with its own word**, in front of the root: Brak-rosh, Blot-skott, **Lam**-sveda (Feeble: lame), **Stel**-blixt (Stunned: stiff), **Rod**-egga (Blinded: seeing red). A player can learn the parts: "lam" is Feeble, "stel" is Stun. A rider's word belongs to its verb: Blinded is Blinda on Sol (dazzled) and Rod on Egga (rage).
 - **A new word for the whole move**, parts attaching to it: **Daska** (Egga + Styng: Swedish *daska*, to smack: the taunt that strikes; with Rod, Rodaska), **Genomskott** (Naglskott + Styng: a through-shot that Pins), **Genomskoda** (Peka + rider: Swedish *genomskada*, to see through someone). Genom- is a soft family (a later spear class might get a Genomspett).
 
@@ -248,7 +248,7 @@ A Flok-and-talisman build that invested hard (about +2 or +3) sweeps a row of Tr
 | Ullar | 3 | Merblotskott | Mer, rider | 64 HP | 0.75 (78), Bleeding | 38 HP, 278 |
 | Ullar | 3 | Genomskott | Naglskott + Styng | 16 HP | Pinned + Styng's hit | Styngnaglskott, 25 HP |
 | Ullar | 3 | Genomskoda | Peka + rider | 16 HP | Marked + Sundered | Lonnpeka, 25 HP |
-| Ullar | 3 | Fallskott | base | 16 HP | 0.75, x on the Pinned | 17 HP |
+| Ullar | 3 | Fangskott | base | 16 HP | 0.75, x on the Pinned | 17 HP |
 | Brennumar | 1 | Halveld | Halv | 2 MP | 0.45 (47) | free, 124 |
 | Brennumar | 1 | Eld | base | 6 MP | 0.9 (94) | 7 MP, 248 |
 | Brennumar | 1 | Reyk | minor | 3 MP | Blinded | 7 MP |

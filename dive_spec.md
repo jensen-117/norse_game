@@ -105,12 +105,14 @@ The tapestry is already the record of a dive (Part 1). The Sagas keep it, and le
 - **Stats on every Saga** (all already in the event stream): rooms cleared, HP left, falls, rounds, Weak hits and Bonus Rounds, moves used and collected, marks; one score; the best telling per triple and party. Reasons to come back: beat your own telling, or write a different story.
 - **Inks and ornament (meta-progression, cosmetic):** class feats unlock inks to draw a Saga in (finish a dive with the Skurmar standing: storm blues and greys), later ornament sets (borders, corner pieces) and UI colour schemes. Paint a new Saga, or paint over an old one.
 
+**Agreed (Nov 21, Joseph):** rooms and fights seeded by room (rule 1 below), and a retelling pays only its Saga.
+
 **What it asks of the dive now (cheap, and only true if decided before the dive is built):**
 1. **Seed by room, not one stream.** Room contents, packs and loot come from (triple, column, slot); each fight's dice from (triple, room). Then a different choice in one fight never reshuffles the rooms after it, and the same choices replay the same fight exactly.
 2. **Every Saga keeps the engine stamp** (the Fight Lab does this already). A retelling on a changed engine says so: the world has shifted since this Saga was told.
 3. **A Saga is a list of rooms and fight records,** the same records the Lab replays.
 
-**Open (Joseph's call):** what a retelling pays. If marks, gear, EXP and recruits carry out of a retelling, retellings become a farm. Proposal: the first telling is the real one; a retelling pays only its Saga (stats, score, inks).
+**What a retelling pays (agreed):** the first telling is the real one; a retelling pays only its Saga (stats, score, inks). Marks, gear, EXP and recruits come only from first tellings, so retellings can't be farmed.
 
 **Cost:** inks are palette swaps over the Res64 ramps (cheap); ornament sets are code-drawn by the tapestry brief (moderate); bespoke glyph sets are the expensive part, and can wait.
 
