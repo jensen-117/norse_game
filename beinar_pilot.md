@@ -46,7 +46,7 @@ Two parts. **Part 1** is the status rules for the whole new game: what every mov
 
 ## 4. Statuses that aren't counters
 
-- **Reeling:** the unit acts in the Late group, whatever its speed; stacks are duration. Inflicted by **Vingla** (to totter); also Besk's crash. Its opposite (a forced early group, "Alert") stays unnamed until a move needs it.
+- **Reeling:** the unit acts **no earlier than the Late group** (Nov 21 fix: Swift and normal moves drop to Late; Heavy and Last moves stay where they are, so a Bid and Tung release still lands Heavy); stacks are duration. Inflicted by **Vingla** (to totter); also Besk's crash. Its opposite (a forced early group, "Alert") stays unnamed until a move needs it.
 - **Feared** in the new game is pinned with your guard down (above). The old game's "move later" Feared is Reeling's job now.
 
 ## 5. Elements: the affinity ladder
@@ -64,6 +64,8 @@ Two parts. **Part 1** is the status rules for the whole new game: what every mov
 - The board shows where it sits now: "ELD WEK", "VTN RST".
 - The play it allows (Joseph's): hero one's Ogneld takes a foe from Ineffective to Resist; enemies act; hero two's Merogneld takes it to Weak!; the Late Tungeld lands on Weak! for x1.5 and a Bonus Round.
 - Forced weakness is strong: a boss and elite tool on the enemy side, short and visible.
+
+**Wind-ups** need no new part: **Bid** winds up (round one is the wind-up; round two the hero is locked and it releases; x2.6; lost if broken), and **Tung** moves the release to Heavy (Bidtungeld). Bidskott, Bidkrosh and Bideld are legal now. A fused part for "Bid and Tung" would be a new word with no new meaning; an iconic move gets a byname instead.
 
 ## 6. The verbs
 
