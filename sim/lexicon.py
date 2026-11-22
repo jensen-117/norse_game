@@ -240,10 +240,33 @@ def gaps():
                        and e["kind"] not in ("action", "affinity", "status", "name_part", "myth"))
     return missing, unclaimed
 
+def rider_owners():
+    """A rider word -> the verbs it may sit in front of: its own verb, and that verb's root names (Rod: Egga, Daska)."""
+    out = {}
+    for verb, v in VERBS.items():
+        if v.get("rider"): out.setdefault(v["rider"][1], {verb}).update(nm for nm, (vb, _) in ROOT_NAMES.items() if vb == verb)
+    return out
+
+def grammatical(parse):
+    """Whether the grammar could build this reading, or only an eye could see it (Stormogel as Storm + Mogel):
+    a move's root comes last; a family is followed only by its job (Bein + seidr); a stat word follows Auk or Ned;
+    a rider word that belongs to a verb sits right before that verb. Returns the broken rule, or None."""
+    owners = rider_owners()
+    for i, a in enumerate(parse):
+        kind, nxt = GLOSS[a]["kind"], parse[i + 1] if i + 1 < len(parse) else None
+        if nxt is None: continue
+        if kind in ("verb", "weapon", "name"): return f"{a} is a move's root: nothing follows it"
+        if kind == "family" and GLOSS[nxt]["kind"] != "rank": return f"{a} is a family: only its job follows it"
+        if kind == "rider" and a in owners and nxt not in owners[a]: return f"{a} belongs to {'/'.join(sorted(owners[a]))}"
+    for i, a in enumerate(parse):
+        if GLOSS[a]["kind"] == "stat" and (i == 0 or parse[i - 1] not in ("Auk", "Ned")): return f"{a} needs Auk or Ned before it"
+    return None
+
 def two_readings(hero, moves, units):
-    """Names the seam rules let a reader take apart two ways (Rodaska: Rod + Daska, or Rod + Aska)."""
+    """Names the seam rules let a reader take apart two ways (Rodaska: Rod + Daska, or Rod + Aska), each reading
+    marked with whether the grammar could build it."""
     names = sorted({h["name"] for h in hero} | {m["name"] for m in moves} | {u["name"] for u in units})
-    return {n: p for n in names for p in [parses(n)] if len(p) > 1}
+    return {n: [dict(parts=x, broken=grammatical(x)) for x in p] for n in names for p in [parses(n)] if len(p) > 1}
 
 # ---------------------------------------------------------------- the export
 def export(path=OUT):

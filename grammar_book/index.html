@@ -252,7 +252,7 @@ function layout() {
     const fams = [...new Set(eng.flatMap(m => m.families))].sort();
     blocks = fams.flatMap(f => [{ sect: f, sub: L.words[f]?.means, thumb: f }, ...eng.filter(m => m.families.includes(f)).map(m => ({ foeMove: m.name }))]);
   } else if (view === "two") {
-    blocks = [{ sect: "Read two ways", sub: "The seam rules let a reader take these apart two ways. Each needs a call: keep it, or rename one side.", thumb: "Two" },
+    blocks = [{ sect: "Read two ways", sub: "The seam rules let an eye take these apart two ways. The grammar builds only one; the other is a misreading it can't make.", thumb: "Two" },
               ...Object.entries(L.two_readings).map(([n, ps]) => ({ two: n, parses: ps }))];
   } else if (view === "front") { blocks = [{ front: true }]; }
 }
@@ -308,7 +308,7 @@ function blockHTML(b) {
   if (b.words) return `<div class="body"><div class="row"><b>${esc(b.label)}</b><div class="chips">${b.words.map(wordChip).join("")}${b.more > 0 ? `<span class="chip more">+${b.more} more: narrow the search</span>` : ""}</div></div></div>`;
   if (b.foeMove) { const m = idx.foeMove[b.foeMove];
     return `<div class="fm"><button class="chip" data-word="${esc(m.name)}" style="justify-self:start;font-size:16px">${esc(m.name)}</button><span class="who">${m.users} ${m.users === 1 ? "foe" : "foes"}</span><span class="t">${esc(m.text)}</span></div>`; }
-  if (b.two) return `<div class="e open"><div class="body"><div class="hw" style="padding:0"><span><span class="w">${esc(b.two)}</span></span></div>${b.parses.map((p, i) => `<div class="row"><b>Reading ${i + 1}</b><div class="tiles">${tilesHTML(p)}</div></div>`).join("")}<div class="row"><b>Said by</b><div class="chips">${wordChip(b.two)}</div></div></div></div>`;
+  if (b.two) return `<div class="e open"><div class="body"><div class="hw" style="padding:0"><span><span class="w">${esc(b.two)}</span></span></div>${b.parses.map(p => `<div class="row"><b>${p.broken ? "The eye" : "The grammar"}</b><div><div class="tiles">${tilesHTML(p.parts)}</div>${p.broken ? `<div class="note">Can't be built: ${esc(p.broken)}.</div>` : ""}</div></div>`).join("")}<div class="row"><b>Said by</b><div class="chips">${wordChip(b.two)}</div></div></div></div>`;
   if (b.front) return frontHTML();
   if (b.none) return `<p class="empty">No entry or word matches. Try a part of the word (“krosh”), or its meaning (“fire”).</p>`;
   return "";
@@ -395,7 +395,7 @@ function showWord(n) {
     <div class="text">${esc(fm.text)}</div><div class="facts"><span>said by <b>${fm.users}</b> ${fm.users === 1 ? "foe" : "foes"}</span><span>${fm.families.map(esc).join(", ")}</span></div>`;
   if (fu) h += `${hs.length || fm ? "<hr>" : ""}<div class="side foe">A foe</div>${fu.parts ? `<div class="tiles">${tilesHTML(fu.parts)}</div>` : ""}
     <div class="facts"><span>family <b>${esc(fu.family)}</b></span>${fu.element ? `<span>element <b>${esc(fu.element)}</b></span>` : ""}</div>`;
-  if (L.two_readings[n]) h += `<div class="note">This name reads two ways: ${L.two_readings[n].map(p => p.join(" + ")).join(", or ")}.</div>`;
+  if (L.two_readings[n]) h += `<div class="note">Built as ${L.two_readings[n].filter(p => !p.broken).map(p => p.parts.join(" + ")).join(", or ")}; an eye may read ${L.two_readings[n].filter(p => p.broken).map(p => p.parts.join(" + ")).join(", or ")}.</div>`;
   h += `<button class="goto" type="button" disabled title="The workbench is the library's next step">Go To workbench · coming next</button>`;
   $("#cardbody").innerHTML = h;
   const d = $("#card"); if (!d.open) d.showModal();

@@ -106,9 +106,8 @@ GLOSS = {
     "Drif":  g("manner", "flurry: small hits that keep coming on a coin flip", "Old Norse drífa, a shower of missiles", "DRIFF"),
 
     # ------------------------------------------------------------------ upgrades
-    "Styng": g("upgrade", "adds a hit to a move that does no damage of its own", "?", "STING",
-               note="Reads as English sting."),
-    "Lonn":  g("upgrade", "adds the move's own rider: a status or a stage", "?", "LOHN",
+    "Styng": g("upgrade", "adds a hit to a move that does no damage of its own", "coined (Joseph): chosen to evoke English sting", "STING"),
+    "Lonn":  g("upgrade", "adds the move's own rider: a status or a stage", "Joseph's, from an old search (the second n may be his)", "LOHN",
                note="Shows in a name only where the rider has no word of its own (Lonnpeka); otherwise the rider's word shows (Brakrosh)."),
 
     # ------------------------------------------------------------------ stat grammar
@@ -142,8 +141,8 @@ GLOSS = {
                 note="Not Ving: -ving reads as an English -ing (Snarving, starving).", owner="Berserker"),
 
     # ------------------------------------------------------------------ rider words (a rider's word belongs to its verb)
-    "Blot":  g("rider", "blood: Bleeding (on Skott)", "?", "BLOHT",
-               note="Read as blood. Old Norse blót is a sacrifice; worth a look before it's locked."),
+    "Blot":  g("rider", "blood: Bleeding (on Skott)", "coined (Joseph): blood; Blotskott is the bloodshot", "BLOHT",
+               note="A Swede also hears blot, the old blood-sacrifice (Old Norse blót): a fitting echo for a bleeding wound."),
     "Brak":  g("rider", "a crack: Sundered (on Krosh)", "Swedish and Old Norse brak, a crash", "BRAHK"),
     "Lam":   g("rider", "lame: Feeble (on Sveda)", "Swedish lam, lame, palsied", "LAHM"),
     "Rod":   g("rider", "red: Blinded with rage (on Egga)", "Swedish röd, red: seeing red", "ROHD"),
@@ -167,7 +166,7 @@ GLOSS = {
     "Avliva": g("verb", "to put down: harder on a foe under half HP", "Swedish avliva, to put down (what a hunter does for wounded prey)", "AHV-lee-vah"),
     "Skrida": g("verb", "to glide: step to a cell, Swift, and Evasive", "Swedish skrida, Old Norse skríða, to glide (the skiing Finns)", "SKREE-dah"),
     "Egga":  g("verb", "to egg on: a taunt", "Old Norse eggja, to incite (English egg on)", "EG-gah"),
-    "Lya":   g("verb", "to cover an ally: take their hits", "?", "LEE-ah"),
+    "Lya":   g("verb", "to cover an ally: take their hits", "coined (Joseph): a borrowed word, shortened", "LEE-ah"),
     "Hevn":  g("verb", "revenge: harder for every hit taken", "Norwegian hevn, revenge (Old Norse hefnd)", "HEV-un"),
     "Kvad":  g("verb", "a lay, a song: the Song's stacks heal each round", "Norwegian and Danish kvad, a poem (Old Norse kvæði)", "KVAHD"),
     "Skolja": g("verb", "to rinse: clears statuses and lowered stats", "Swedish skölja, to rinse", "SKOHL-yah"),
@@ -195,13 +194,13 @@ GLOSS = {
     "Pilskur": g("name", "an arrow-shower: bleeding arrows on everyone (All, Mer, Blot, Skott)", "Swedish pil, arrow, + skur, a shower", "PEEL-skoor"),
     "Skogsbrand": g("name", "a forest fire (All, Mer, Styng, Lonn Sveda)", "Swedish skogsbrand, forest fire", "SKOOGS-brahnd"),
     "Skoldborg": g("name", "shield-fort: DEF up on a row (Flok Aukskold)", "Swedish sköld, shield, + borg, fort", "SKOHLD-borg", state="planned", owner="Dagskald"),
-    "Bannenlykt": g("name", "the Banishing Lantern: Marks a foe", "? + Swedish lykta, lantern; Kajasken's lantern", "BAHN-en-likt", state="planned",
+    "Bannenlykt": g("name", "the Banishing Lantern: Marks a foe", "coined (Joseph): bannen reads as banned, banishing; + Swedish lykta, lantern; Kajasken's lantern", "BAHN-en-likt", state="planned",
                     note="See Bann.", owner="Dagskald"),
     "Stynglykt": g("name", "the stinging lantern: a hit and the Mark", "Styng + lykt", "STING-likt", state="planned", owner="Dagskald"),
     "Korplykt": g("name", "the Raven Lantern: Marks a row", "Swedish korp, raven, + lykt", "KORP-likt", state="planned", owner="Dagskald"),
     "Allsyn": g("name", "all-sight: Marks everyone", "All + Swedish syn, sight", "AHL-seen", state="planned",
                 note="Reads as 'all sin' in English; a short name is needed either way (Allbannenlykt is too long).", owner="Dagskald"),
-    "Sava":  g("name", "to save, to sew: Mending 3 on an ally", "?", "SAH-vah", state="planned", note="Joseph floated Hava.", owner="Nalarbani"),
+    "Sava":  g("name", "to save, to sew: Mending 3 on an ally", "coined (Joseph): a borrowed word, close enough", "SAH-vah", state="planned", note="Joseph floated Hava.", owner="Nalarbani"),
     "Besk":  g("name", "the bitter tonic: Evasive 3, then the crash", "Swedish besk, bitter; bäsk, herbal bitters", "BESK", state="planned", owner="Nalarbani"),
     "Hasin": g("name", "the hamstring: a heavy pinning, bleeding shot", "Old Norse hásin, the hock-sinew", "HAH-sin", state="planned", owner="Ullar"),
 
