@@ -92,10 +92,10 @@ class TestPrice(unittest.TestCase):     # the cost ladder (Nov 21, classes.md Pa
 
     def test_priced_by_the_pool(self):     # the ladder number at the sheet's level; elsewhere, in proportion to the pool
         u = build_hero("Brennumar", 3)
-        self.assertEqual([a["cost"] for a in u.actions], [2, 12, 48, 12, 0])
+        self.assertEqual([a["cost"] for a in u.actions], [12, 48, 12, 0])   # leg 3 is full: no Halv (Nov 21)
         low = build_hero("Brennumar", 3, level=25)
         self.assertEqual([a["cost"] for a in low.actions], [max(1, round(a["price"] * low.maxmp / 150)) if a["price"] else 0 for a in low.actions])
-        self.assertLess(low.actions[2]["cost"], 48)
+        self.assertLess(low.actions[1]["cost"], 48)
 
 class TestKeywords(unittest.TestCase):
     def test_groups(self):

@@ -130,7 +130,7 @@ def _board_unit(u):
              rank=getattr(u, "mogel_rank", None) or getattr(u, "rank_name", None) or getattr(u, "rank", None),
              job=getattr(u, "job", None), winding=b.shown(u, u.bide[0]) if u.bide else None, intent=b.intents.get(u.uid),
              knots=getattr(u, "knots", 0), song=(u.status.get("Song") or {}).get("stacks", 0),   # the Song's verses (Nov 21)
-             counters=[u.counter_name(s) for s in ("ATK", "DEF", "EVA", "ACC", "SPD") if u.counter_name(s)])   # Mighty 1, Nimble 3
+             counters=[u.counter_name(s) for s in ("ATK", "DEF", "EVA", "ACC", "SPD") if u.counter_name(s)])   # Mighty 1, Evasive 3
     if u.side == "party":
         d.update(hp=round(max(0, u.hp)), maxhp=round(u.maxhp), mp=round(u.mp), maxmp=round(u.maxmp),
                  breaths=u.breaths, wounded=u.wounded)

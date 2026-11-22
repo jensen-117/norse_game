@@ -140,7 +140,7 @@ def plain(a):
         if a.get("item"): return f"Restores {PLAIN_SHARE.get(a.get('amount'), 'some of')} one ally's HP."
         who = "a row of allies" if a.get("shape") == "row" else who_ally
         s = f"{PLAIN_TIER.get(tier, 'Average')} healing for {who}."
-        return s + (" The light leaves them Nimble: attacks on them miss 1 in 3." if a.get("also") else "")
+        return s + (" The light leaves them Evasive: attacks on them miss 1 in 3." if a.get("also") else "")
     if k == "song":
         who = "every ally" if a["all"] else "a row of allies" if a.get("shape") == "row" else "one ally"
         return (f"Adds {'two stacks' if tier == 'Mer' else 'a stack'} of Song to {who}, up to three: at the start of each round, "
@@ -167,7 +167,7 @@ def plain(a):
         s = (f"Shove one foe a row {'back' if a.get('push') else 'forward'}. Into an occupied space the two swap places and both "
              "are slammed, each by a share of both bodies. A Pinned unit is a wall.")
         return s + (" The gust batters it first." if a.get("styng") else "")
-    if k == "glide": return "Swift. Step to your other row, or trade places with an ally; gain Nimble."
+    if k == "glide": return "Swift. Step to your other row, or trade places with an ally; gain Evasive."
     if k == "windfall": return "Patient: breathe deep this turn, and a large share of your MP comes back next turn."
     if k == "cleanse": return f"Washes ailments and lowered stats off {who_ally}."
     if k == "revive":
@@ -379,16 +379,21 @@ def sheet_affinity(cls):
 def build_hero(cls, leg=1, level=None, playable=True, name=None, kit=None):
     """A hero of the new game (refactor_plan Wave 3): a class sheet and a kit snapshot (data.KITS), priced by the
     hero's own bars. With playable=True, moves the engine can't carry out yet are left out of the kit and listed in
-    u.excluded with their reasons; a Battle refuses them either way. Every hero also has a free Halv basic attack
-    (BASIC_VERB) outside the four slots, and the universal actions (Defend, Meditate for magicals, items, Move, Flee).
+    u.excluded with their reasons; a Battle refuses them either way. The Halv basic attack (BASIC_VERB) takes a free
+    slot of the four (Nov 21); the universal actions are outside them (Defend, Meditate for magicals, items, Move, Flee).
     `kit` replaces the leg's snapshot with (verb, parts) pairs (tests; later the Lab's kit builder)."""
     from words import compile_kit
     c = CLASSES[cls]; L = level or SHEET_LEVEL
+    picks = len(kit) if kit is not None else len(KITS[cls][leg])         # the moves chosen, before any left out
     kit = [compile_verb(v, **parts) for v, parts in kit] if kit is not None else compile_kit(cls, leg)   # kit: (verb, parts)
     excluded = [(a["name"], a["unresolved"]) for a in kit if a["unresolved"]] if playable else []
     if playable: kit = [a for a in kit if not a["unresolved"]]
-    basic = compile_verb(BASIC_VERB[cls], tier="Halv"); basic["basic"] = True   # the Halv slot (Nov 21: it has a price now)
-    u = Unit(name or cls, "party", L, sheet_attrs(cls, L), c["atk"], c["mat"], sheet_affinity(cls), [basic] + kit, cls=cls)
+    # the Halv is a kit pick (Nov 21, Wave 7 phase B): it takes a free slot, and never bumps a move from an
+    # established kit; a full kit (KIT_SLOTS moves) has none
+    basic = []
+    if picks < KIT_SLOTS:
+        basic = [compile_verb(BASIC_VERB[cls], tier="Halv")]; basic[0]["basic"] = True
+    u = Unit(name or cls, "party", L, sheet_attrs(cls, L), c["atk"], c["mat"], sheet_affinity(cls), basic + kit, cls=cls)
     for a in u.actions:                    # a martial verb's range: its root in this class's weapon (Skott on a Bow: Long)
         if a.get("root") and c.get("weapon"):                  # damage, and a status move's arrow (Naglskott, Peka)
             a["reach"] = RANGES[root_range(a["root"], c["weapon"])]; a["weapon"] = c["weapon"]
@@ -1445,7 +1450,7 @@ class Battle:
         return next((c for c, w in legal if self.wants_front(w)), None)
 
     def glide(self, u, a, tag):
-        """Skrida: Swift; to the chosen cell (an ally there trades places), by Move's rules, and Nimble either way."""
+        """Skrida: Swift; to the chosen cell (an ally there trades places), by Move's rules, and Evasive either way."""
         ok, other, _ = self.step_to(u, a["cell"]) if a.get("cell") else (False, None, None)
         if ok:
             dest = tuple(a["cell"])
@@ -1667,7 +1672,7 @@ class Battle:
             elif a["kind"] == "heal":
                 hurt = [x for x in self.allies(u) if x.hp < 0.5 * x.maxhp]
                 bright = lambda xs: sum(0.15 * ref for x in xs for st, d in (a.get("also") or [])
-                                        if x.stage(st) * d < STACK_CAP)          # Gyllenlykt's Nimble on those it reaches
+                                        if x.stage(st) * d < STACK_CAP)          # Gyllenlykt's Evasive on those it reaches
                 if a["all"]:
                     xs = self.allies(u)
                     s = sum(min(self.heal_amount(u, a), x.maxhp - x.hp) for x in xs if x.hp < 0.7 * x.maxhp)

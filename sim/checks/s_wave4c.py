@@ -5,6 +5,11 @@ from playwright.sync_api import sync_playwright
 sys.path.insert(0, os.path.dirname(__file__)); from s_smoke import serve
 HERE = os.path.dirname(os.path.abspath(__file__))
 
+def keyfor(p, name):
+    """The menu number of a move by its name, for the hero whose turn it is (Nov 21: kits shift when the Halv isn't in one)."""
+    return str(p.evaluate("""(n) => { const o = Lab.call('options', Screen.debug.current);
+        return [o.halv, ...o.moves, o.meditate].filter(Boolean).findIndex(m => m.name === n || m.shown === n) + 1; }""", name))
+
 def click_foe(p, who="u.side === 'enemy' && u.alive"):
     foe = p.evaluate(f"Screen.debug.units.find(u => {who})")
     cv = p.query_selector("#screen"); cv.scroll_into_view_if_needed(); box = cv.bounding_box(); k = box["width"] / 320
@@ -27,7 +32,8 @@ def run():
         p.select_option("#hab", "Wildwood"); p.click("#rollpack"); p.wait_for_timeout(100)
         p.click("#start"); p.wait_for_function("Screen.state && Screen.state.phase === 'declare' && !Screen.debug.busy", timeout=60000)
         p.focus("body")
-        for rnd, k in ((2, "3"), (3, "4")):                                          # Knyta, then Kuling
+        for rnd, mv in ((2, "Knyta"), (3, "Kuling")):
+            k = keyfor(p, mv)
             for _ in range(2): p.keyboard.press(k); p.wait_for_timeout(30)
             p.keyboard.press("Enter"); p.wait_for_timeout(50); p.keyboard.press("Enter")   # the others: Halv strikes
             p.wait_for_function(f"(Screen.state.round >= {rnd} || Screen.state.phase !== 'declare') && !Screen.debug.busy", timeout=60000)

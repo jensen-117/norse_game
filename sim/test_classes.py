@@ -29,8 +29,10 @@ class Sheets(unittest.TestCase):
         for cls in KITS:
             for leg in KITS[cls]:
                 u = build_hero(cls, leg)
-                self.assertEqual(u.actions[0]["tier"], "Halv"); self.assertEqual(u.actions[0]["cost"], HALV_COST[u.actions[0]["cost_type"]])   # the basic: Halv's rung (Nov 21)
-                for a in u.actions[1:]:
+                basic = [a for a in u.actions if a.get("basic")]            # the Halv: only in a free slot (Nov 21)
+                self.assertEqual(len(basic), int(len(KITS[cls][leg]) < KIT_SLOTS), (cls, leg))
+                for a in basic: self.assertEqual((a["tier"], a["cost"]), ("Halv", HALV_COST[a["cost_type"]]))
+                for a in u.actions:
                     if a["price"]: self.assertEqual(a["cost"], a["price"], a["name"])   # the ladder number at the sheet's level
                     self.assertEqual(a["unresolved"], [], a["name"])
                 full = build_hero(cls, leg, playable=False)

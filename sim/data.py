@@ -112,7 +112,7 @@ SHATTER_MULT = 1.5
 GRAZE_BASE, CRIT_BASE, STEP = 0.20, 0.05, 0.10
 GRAZE_MULT, CRIT_MULT = 0.5, 1.5
 # The new game's accuracy (Nov 21, classes.md 7d): the attacker's ACC minus the target's EVA. Ahead (Keen, or a Marked
-# target): a hit crits 1 in 3 and never grazes. Behind (Blinded, or a Nimble target): a hit whiffs 1 in 3 (lands nothing).
+# target): a hit crits 1 in 3 and never grazes. Behind (Blinded, or an Evasive target): a hit whiffs 1 in 3 (lands nothing).
 # Even: the plain roll (a flat graze, the base crit). Speed is out of the roll; damage hits only (status moves keep theirs).
 WHIFF_CHANCE = 1 / 3
 AHEAD_CRIT = 1 / 3
@@ -396,7 +396,7 @@ SPEED_GROUP_BY_KIND = {"defend": 3, "cover": 3, "taunt": 3, "move": 1}
 # The named statuses ARE the counters: Blinded 2 is ACC at -2. MAT and MDF have no names yet.
 STACK_CAP = 3
 STAT_NAMES = {"ATK": ("Feeble", "Mighty"), "DEF": ("Sundered", "Fortified"), "ACC": ("Blinded", "Keen"),
-              "EVA": ("Marked", "Nimble"), "SPD": ("Slowed", "Quick"), "MAT": (None, None), "MDF": (None, None)}
+              "EVA": ("Marked", "Evasive"), "SPD": ("Slowed", "Quick"), "MAT": (None, None), "MDF": (None, None)}
 COUNTER_OF = {n: (stat, sign) for stat, pair in STAT_NAMES.items() for n, sign in zip(pair, (-1, 1)) if n}
 COUNTER_OF["AccDown"] = ("ACC", -1)            # the Reyk spirits' old rider: Blinded 1
 STACKS_BY_TIER = {"Halv": 1, "Base": 1, "Mer": 2, "Jatte": 3, "Ur": 3}   # a status move's stacks (Mer adds two)
@@ -615,7 +615,7 @@ VERBS = {
     "Hevn":     dict(cost=16, cls="Vasara", kind="damage", answer=True, root="Krosh", element="Crush", halv=True,
                      manner_power={"Bid": 2.0}),   # +HEVN_PER_HIT a hit taken; Bidhevn releases double (Nov 20)
     # Dagskald (Sol school, child Lak; magical)
-    "Lak":      dict(cost=8, targets=("Flok", "All"), cls="Dagskald", kind="heal", element="Lak", target="ally", rider=(("EVA", 3), "Sol")),   # Gyllenlykt: and Nimble 3 (Nov 21: the panic button)
+    "Lak":      dict(cost=8, targets=("Flok", "All"), cls="Dagskald", kind="heal", element="Lak", target="ally", rider=(("EVA", 3), "Sol")),   # Gyllenlykt: and Evasive 3 (Nov 21: the panic button)
     "Sol":      dict(cost=6, halv=True, targets=("Flok", "All"), cls="Dagskald", kind="damage", element="Sol", rider=("Blinded", "Blinda")),   # Blindasol
     "Kvad":     dict(cost=6, targets=("Flok", "All"), cls="Dagskald", kind="song", target="ally"),   # a Song stack a tier on one ally (Nov 20)
     "Skolja":   dict(cost=6, targets=("All",), cls="Dagskald", kind="cleanse", target="ally"),
@@ -623,7 +623,7 @@ VERBS = {
     "Aukraft":  dict(cost=3, targets=("All",), cls="Dagskald", kind="stat", stat="ATK", up=True, target="ally", rider=(("DEF", 1), "Lonn")),
     # Skurmar (Blast school, child Blixt; magical)
     "Blast":    dict(cost=6, halv=True, targets=("Flok", "All"), cls="Skurmar", kind="damage", element="Blast"),
-    "Knyta":    dict(cost=3, cls="Skurmar", kind="knot", target="self"),
+    "Knyta":    dict(cost=3, cls="Skurmar", kind="knot", target="self", tier_group={"Mer": -1}),   # Merknyta: Late (Nov 21: two knots take longer)
     "Blixt":    dict(cost=8, share=1.0, halv=True, targets=("Flok", "All"), cls="Skurmar", kind="damage", element="Blixt", rider=("Stunned", "Stel")),   # the tiring, spiky one (Nov 21)
     "Kuling":   dict(cost=6, cls="Skurmar", kind="damage", element="Blast", target="all", weight=3, knots=1),   # All; a knot pays a step: 24
     "Storm":    dict(cost=6, cls="Skurmar", kind="damage", element="Blast", target="all", weight=4, knots=2, tier="Mer"),   # Mer, All: 24
@@ -764,6 +764,7 @@ CLASS_MANNER_POWER = {"Snar": 1.0}   # going first costs a step, not power (Bid,
 # Costs: one ladder for both resources. A verb's authored rung ("cost") x 2 a step; Halv has its own rung. Steps: Mer +1,
 # Flok +2, All +3 (carved or the verb's own reach: "weight"), a manner +1, Styng +1, the rider +1; a knot spent pays one.
 COST_LADDER = (2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64, 96, 128)
+KIT_SLOTS = 4              # a hero's moves; the Halv is a pick and takes a free slot (Nov 21, Wave 7 phase B)
 HALV_COST = {"HP": 4, "MP": 2}
 ENEMY_DAMAGE = 1.2        # x damage enemies deal (Nov 21, the enemy rebuild: a Trash or Regular hit is 11-12% of a mid
                           # hero; one setting keeps the tiers' ladder, Elites ~17%, Bosses ~23%; wind-ups carry the spikes)

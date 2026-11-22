@@ -259,6 +259,7 @@ def compile_verb(verb, tier=None, target=None, manners=(), styng=False, lonn=Fal
     for k in ("root", "knots", "follow", "pays_on", "pays_below", "pays", "answer", "amount", "push"):
         if k in v: a[k] = v[k]
     if "group" in v: a["group"] = v["group"]
+    if eff in v.get("tier_group", {}): a["group"] = v["tier_group"][eff]   # a tier that takes longer (Merknyta: Late)
     a.update(mkw)
     group = a.get("release_group", a.get("group", SPEED_GROUP_BY_KIND.get(kind, 0)))
     a["keywords"] = [k for k in (GROUP_KEYWORD.get(group), "Patient" if a.get("bide") else None) if k]

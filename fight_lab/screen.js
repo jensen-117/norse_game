@@ -363,7 +363,7 @@ const Screen = (() => {
       if (u.side === "party" && u.state === "dying") { pc.fillStyle = C.hpLo; for (let i = 0; i < u.breaths; i++) pc.fillRect(bx + i * 4, b.fy + 2, 3, 3); }
       if (u.alive && u.knots) { pc.fillStyle = C.white; for (let i = 0; i < u.knots; i++) pc.fillRect(bx + i * 4, b.fy + 5, 3, 2); }   // the Skurmar's knots
       if (u.alive && u.counters && u.counters.length) {   // the stat counters (Nov 21): a short tag each, green up, red down
-        const UP = { Mighty: 1, Fortified: 1, Nimble: 1, Keen: 1, Quick: 1 };
+        const UP = { Mighty: 1, Fortified: 1, Evasive: 1, Keen: 1, Quick: 1, Waxing: 1, Warded: 1 };
         let ty = b.fy + 5 + (u.knots ? 3 : 0) + (u.song ? 3 : 0), tx = bx;
         for (const c of u.counters.slice(0, 3)) { const [nm, n] = c.split(" "), tag = nm.slice(0, 3).toUpperCase() + n;
           tiny(tx, ty, tag, UP[nm] ? C.heal : C.hpLo); tx += tinyW(tag) + 3; }
@@ -614,7 +614,7 @@ const Screen = (() => {
     if (mode === "confirm" && confirmInfo && !busy) {          // Fight with orders missing: say so, then OK or Back
       const n = confirmInfo.missing.length;
       text(14, BOX.rows[0], `${NUM[n] || n} hero${n === 1 ? " does" : "es do"} not have orders.`, C.white);
-      text(14, BOX.rows[1], confirmInfo.stuck.length ? `${confirmInfo.stuck.join(", ")} can't reach anyone and will Guard.`
+      text(14, BOX.rows[1], confirmInfo.stuck.length ? `${confirmInfo.stuck.join(", ")} will Guard (no Halv to use).`
                                                    : (n === 1 ? "They will Halv-strike a foe at random." : "They will Halv-strike foes at random."), C.dim);
       boxItem(BOX.utilX[0], BOX.rows[2], textW("OK"), "OK", autopilot, true, true);
       boxItem(BOX.utilX[1], BOX.rows[2], textW("Back"), "Back", back, true);
@@ -858,7 +858,7 @@ const Screen = (() => {
     "paint", "skip", "silenced", "tick", "down", "reform", "crawl", "pile", "scatter", "reassemble", "dying", "breath", "dead", "revive",
     "stabilised", "item", "mp", "fled", "flee_failed", "retarget", "fizzle", "shatter", "flurry", "cleanse", "immune", "thaw",
     "taunt", "drawn", "flare", "rooted", "weak", "out_of_reach", "song", "song_fades", "knot", "follow", "wall", "spent", "whiff"]);
-  const UPS = new Set(["Mighty", "Fortified", "Keen", "Nimble", "Quick"]);   // the counters' up names
+  const UPS = new Set(["Mighty", "Fortified", "Keen", "Evasive", "Quick"]);   // the counters' up names
   async function play(r) {
     const g = gen, live = () => g === gen;       // this session only: a newer fight retires it
     if (r.error) { busy = false; return say(r.error, C.hpLo); }
@@ -925,7 +925,7 @@ const Screen = (() => {
         return sleep(B.heal);
       case "status":
         if (u && e.status === "Bound") { u.bound = true; u.boundT = vt; addFx(u, "squash", MOTION.squash.dur, { rows: 2 }); return sleep(B.hit); }   // netted
-        if (u && UPS.has(e.status)) { playFx("spark:Gro", u); return sleep(B.small); }       // Nimble from a glide
+        if (u && UPS.has(e.status)) { playFx("spark:Gro", u); return sleep(B.small); }       // Evasive from a glide
         if (u) { playFx("spark:Natt", u); addFx(u, "shake", MOTION.shake.dur * .6); } return sleep(B.small);
       case "skip": if (u && e.why === "Bound") { u.bound = false; addFx(u, "shake", MOTION.shake.dur); } return sleep(B.line);
       case "transform": {                              // the net is spent: a beat, fade out, the spear, fade in

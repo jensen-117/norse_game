@@ -1,7 +1,7 @@
 """Wave 4b: the Dagskald, tested in complete turns (classes.md Part 5; Joseph, Nov 20).
 
 Kvad (verses on the singer; each verse heals each living ally a third of his Base Lak at round start; a verse fades
-each round he doesn't sing; the song ends when he falls), Gyllenlykt, was Solak (Lak with Lonn: and Nimble 3; Flok and All), heals read
+each round he doesn't sing; the song ends when he falls), Gyllenlykt, was Solak (Lak with Lonn: and Evasive 3; Flok and All), heals read
 WIS in the new game, and Blindasol (Sol with Lonn: a Blinded stack on every hit that doesn't graze).
 """
 import random, unittest
@@ -95,17 +95,17 @@ class Solak(unittest.TestCase):
         for parts, name, shape, all_ in ((dict(lonn=True), "Gyllenlykt", None, False), (dict(lonn=True, target="Flok"), "Flokgyllenlykt", "row", False),
                                          (dict(lonn=True, target="All"), "Allgyllenlykt", None, True), (dict(lonn=True, tier="Mer"), "Mergyllenlykt", None, False)):
             a = compile_verb("Lak", **parts); self.assertEqual((a["name"], a.get("shape"), a["all"]), (name, shape, all_))
-        self.assertIn("Nimble", plain(compile_verb("Lak", lonn=True)))
+        self.assertIn("Evasive", plain(compile_verb("Lak", lonn=True)))
 
     def test_heals_and_leaves_them_nimble(self):
         d, v = hero("Dagskald", ("Lak", dict(lonn=True))), hero("Vasara", "Krosh"); b = fight([d, v], [dummy()])
         v.hp = 0.3 * v.maxhp; hp = v.hp
         orders(b, {d.uid: (key(d, "Gyllenlykt"), v.uid)})
-        self.assertGreater(v.hp, hp); self.assertEqual(v.counter_name("EVA"), "Nimble 3"); self.assertIsNone(d.counter_name("EVA"))
+        self.assertGreater(v.hp, hp); self.assertEqual(v.counter_name("EVA"), "Evasive 3"); self.assertIsNone(d.counter_name("EVA"))
 
-    def test_mergyllenlykt_stays_at_the_cap(self):     # Nimble 3 is already the cap (Nov 21): Mer adds heal, not Nimble
+    def test_mergyllenlykt_stays_at_the_cap(self):     # Evasive 3 is already the cap (Nov 21): Mer adds heal, not Evasive
         d, v = hero("Dagskald", ("Lak", dict(lonn=True, tier="Mer"))), hero("Vasara", "Krosh"); b = fight([d, v], [dummy()])
-        orders(b, {d.uid: (key(d, "Mergyllenlykt"), v.uid)}); self.assertEqual(v.counter_name("EVA"), "Nimble 3")
+        orders(b, {d.uid: (key(d, "Mergyllenlykt"), v.uid)}); self.assertEqual(v.counter_name("EVA"), "Evasive 3")
 
     def test_floksolak_heals_a_row_at_the_row_share(self):
         d, v, u = hero("Dagskald", ("Lak", dict(lonn=True, target="Flok"))), hero("Vasara", "Krosh"), hero("Ullar", "Skott")
@@ -117,7 +117,7 @@ class Solak(unittest.TestCase):
         a = d.actions[1]; h = b.heal_amount(d, a)
         self.assertAlmostEqual(h, b.heal_amount(d, dict(a, shape=None)) * SHAPE_MULT["row"])
         self.assertAlmostEqual(v.hp - hp[v.name], h); self.assertAlmostEqual(u.hp - hp[u.name], h)
-        self.assertEqual(d.hp, hp[d.name]); self.assertEqual((v.counter_name("EVA"), u.counter_name("EVA")), ("Nimble 3", "Nimble 3"))
+        self.assertEqual(d.hp, hp[d.name]); self.assertEqual((v.counter_name("EVA"), u.counter_name("EVA")), ("Evasive 3", "Evasive 3"))
 
 class WisHeals(unittest.TestCase):
     def test_the_new_game_heals_from_wis(self):

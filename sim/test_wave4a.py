@@ -263,15 +263,15 @@ class StatusMoves(unittest.TestCase):
 # ================================================================ movement and tempo
 class Gliding(unittest.TestCase):
     """Skrida aims at a cell, like Move (Nov 20, Joseph): an empty cell, he steps there; an ally's, they trade places;
-    Move's rules hold; Nimble either way."""
+    Move's rules hold; Evasive either way."""
     def test_skrida_steps_to_a_cell_and_gains_nimble(self):
         u, v = hero("Ullar", "Skrida"), hero("Vasara", "Krosh"); b = fight([u, v], [dummy()])
         u.cell, v.cell = ("front", 0), ("front", 1)
         self.assertEqual((b.group_of(u, u.actions[1]), b.aim(u.actions[1])), (1, "cell"))   # Swift, aimed at a cell
         orders(b, {u.uid: (key(u, "Skrida"), ["rear", 2])})
-        self.assertEqual((u.cell, u.counter_name("EVA")), (("rear", 2), "Nimble 1"))
+        self.assertEqual((u.cell, u.counter_name("EVA")), (("rear", 2), "Evasive 1"))
         orders(b, {u.uid: (key(u, "Skrida"), ["front", 0])})                 # either way
-        self.assertEqual((u.cell, u.counter_name("EVA")), (("front", 0), "Nimble 2"))
+        self.assertEqual((u.cell, u.counter_name("EVA")), (("front", 0), "Evasive 2"))
 
     def test_the_menu_offers_moves_cells(self):
         u, v = hero("Ullar", "Skrida"), hero("Vasara", "Krosh"); b = fight([u, v], [dummy()])
@@ -280,7 +280,7 @@ class Gliding(unittest.TestCase):
 
     def test_merskrida_nimble_two(self):
         u = hero("Ullar", ("Skrida", dict(tier="Mer"))); v = hero("Vasara", "Krosh"); b = fight([u, v], [dummy()])
-        orders(b, {u.uid: (key(u, "Merskrida"), ["rear", 2])}); self.assertEqual(u.counter_name("EVA"), "Nimble 2")
+        orders(b, {u.uid: (key(u, "Merskrida"), ["rear", 2])}); self.assertEqual(u.counter_name("EVA"), "Evasive 2")
 
     def test_skrida_onto_an_ally_swaps(self):
         u, v = hero("Ullar", "Skrida"), hero("Vasara", "Krosh"); b = fight([u, v], [dummy()])
@@ -289,13 +289,13 @@ class Gliding(unittest.TestCase):
 
     def test_skrida_never_empties_the_front(self):
         """Move's rule: alone in the Front he can't be ordered behind it; ordered while it was legal, he holds the
-        line when it lands (the Nimble still comes)."""
+        line when it lands (the Evasive still comes)."""
         u, d = hero("Ullar", "Skrida"), hero("Dagskald", "Sol"); b = fight([u, d], [dummy()])
         u.cell, d.cell = ("front", 0), ("rear", 1)
         with self.assertRaises(ValueError): b.submit(u.uid, key(u, "Skrida"), ["rear", 0])
         d.cell = ("front", 1); b.submit(u.uid, key(u, "Skrida"), ["rear", 0]); b.submit(d.uid, "guard")
         d.cell = ("rear", 1); b.commit()                                     # she stepped back before it landed
-        self.assertEqual((u.cell, u.counter_name("EVA")), (("front", 0), "Nimble 1"))
+        self.assertEqual((u.cell, u.counter_name("EVA")), (("front", 0), "Evasive 1"))
 
     def test_skrida_is_held_by_a_pin(self):
         u, v = hero("Ullar", "Skrida"), hero("Vasara", "Krosh"); b = fight([u, v], [dummy()])
