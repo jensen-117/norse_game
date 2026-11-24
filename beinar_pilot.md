@@ -85,6 +85,9 @@ Two parts. **Part 1** is the status rules for the whole new game: what every mov
 
 ## 7. Settled (Nov 22, Joseph): stats and ailments are different things
 
+> **Superseded in part (Nov 24):** see `Battle_Refactor_Current.md` (D1: accuracy; D2: stats persist for the fight and combine into five counters, so the staircase and the split names go; D3: held stats; D4: bundles are shorthand, so Feared is Late and Sundered 1, Steadfast a held DEF).
+
+
 This replaces the counter and bundle timing in sections 2 and 3 (their names, tug-of-war and bundle lists stand). The new game only; old fights keep the old rules.
 
 **One rule for time:** at the end of each round (after any Bonus Round), **every stat, ailment and bundle that nobody moved this round drops by one.** "Moved" is any change: adding, an opposite pulling it back, topping it up. A status is never counted down in the round it lands.
@@ -516,7 +519,7 @@ Knot (the Skurmar's identity: fine) and Bound beyond the Drattr's net (rare by d
 
 *Revised Nov 23 for the pilot (the built four: Beinbryn, Beinorv, Beinseidr, Fornbein).*
 
-**Status (Nov 23, late):** step 3 (the mirror) is built; the rest waits on the `battle_system_adr.md` review. Resume at the intercession ladder (step 4's Cover), then the kits, then the brains (refactor_plan.md, "Where we paused").
+**Status (Nov 23, late):** step 3 (the mirror) is built; the rest waits on the `battle_system_adr.md` review. **Nov 24:** the review is recorded in `Battle_Refactor_Current.md`; Waves A-C there come first, then this list resumes. Resume at the intercession ladder (step 4's Cover), then the kits, then the brains (refactor_plan.md, "Where we paused").
 
 1. **The status rules** (Part 1): **built** (Nov 22). Still to come: the affinity ladder over damage types (for Calcify; the Elite and Boss can ship without it).
 2. **The brains** (Part 2, sections 1-3): the units' rules, with claims and the fallback counts; **the team plans** (section 7), with the priority target, legality, re-planning and the announced switch.

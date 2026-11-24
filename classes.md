@@ -97,6 +97,8 @@ The first four classes (the vertical slice), designed the same way: **fantasy â†
 
 **Bidhevn** (Hevn with the Bid manner): she sets her feet and **absorbs a full round, then releases double.** The Patient manner was made for her. *Decided (Nov 20): double an equally primed Hevn (Hevn's own x2 for Bid, not Bid's x2.6), so at most x4 an unprimed Hevn. Hevn counts the attacks that hurt her since her last action opportunity (acted, lost to a stun, or a Bonus Round's), +25% each, up to +100%.*
 
+> **Superseded in part (Nov 24):** see `Battle_Refactor_Current.md` (D2: stats persist for the fight, so Sundered no longer decays when she stops hitting, and the Ullar's refresh goes; her signature moves toward spending stacks, O2).
+
 **Signature mechanic: Sundered** (the build shape, pillars Part 5c).
 - **Each cracking blow adds a stage, up to three;** each stage is one DEF stage down.
 - **At the end of every round it wasn't struck, it loses a stage.** So the enemy she keeps hitting stays at three, and the ones she neglects decay. (Engine: a "struck this round" flag.)
@@ -159,6 +161,8 @@ Any three of the four make a party with at least one designed synergy.
 
 **Signature mechanic: Knots.**
 - **Knyta ties knots, up to three. They don't decay; they're spent** (a pool he holds, not a status on a target). **Knots carry between rooms** (to test for power).
+> **Superseded in part (Nov 24):** see `Battle_Refactor_Current.md` (D8: Meditate is gone; Knots 3 restores a small amount of MP each turn, below a Blast's cost).
+
 - **Holding pays, and it builds up:** Knots 1: Blast hits harder. Knots 2: Blixt can't graze. Knots 3: half a Meditate's MP back each turn.
 - **Spending pays more:** the untie spells. Holding all three costs three of his four slots; without them he's still a stronger witch while he holds.
 
@@ -261,6 +265,8 @@ A Flok-and-talisman build that invested hard (about +2 or +3) sweeps a row of Tr
 | Dagskald | 1 | Sol | base | 6 MP | 0.9 (94) | 12 MP, 149 |
 | Dagskald | 1 | Lak | base, a half-step up | 8 MP | heals ~100 (one Krosh: 1.5 foe hits) | 12 MP |
 | Dagskald | 2 | Kvad | base | 6 MP | a Song stack: singing is the efficient heal | 12 MP |
+> **Superseded in part (Nov 24):** see `Battle_Refactor_Current.md` (D3: Gyllenlykt holds EVA at +3 for 3 rounds, then restores it; D8: Lak heals 75 for 12 MP).
+
 | Dagskald | 3 | Gyllenlykt | Lak + rider (the Golden Lantern: was Solak) | 16 MP | heals 60 (the rider's 0.6) + Nimble 3: the panic button | Solak, 19 MP |
 | Dagskald | 3 | Merkvad | Mer | 12 MP | +2 stacks | 19 MP |
 | Dagskald | 3 | Allaukraft | minor, All | 24 MP | ATK up, everyone | 31 MP |

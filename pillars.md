@@ -41,6 +41,8 @@ What the game is, and what every other spec answers to. When combat_spec, dive_s
 ## Part 5: Moves (Locked)
 
 - **Four move slots per hero.** A class **starts with two** (a Dagskald: a weak Ray and a weak Heal), leaving room to grow.
+> **Superseded in part (Nov 24):** see `Battle_Refactor_Current.md` (D8: Meditate is gone; Djupanda is a found move; the Halv is an ordinary kit move at 4 HP or 2 MP, never auto-filled).
+
 - **Universal actions take no slot, and are named in plain English** (they're UI verbs): Defend, **Meditate** (a nominal MP recovery, free; **magicals only**: martial techniques cost HP, so martials lean on magicals and items), items, moving rows, Flee.
 - **The tongue is for what you learn, carve or carry.** Moves are spoken in it (Eld, Naglskott, Egga). A stronger Meditate a magical can learn is ***Djupanda*** ("deep breath").
 - **Learning a fifth move means forgetting one.** One screen for it, shared by tomes and weapons.

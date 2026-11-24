@@ -1,0 +1,234 @@
+# Battle Refactor: Current
+
+**What this is:** the record of where the battle system is going, why, what the game does today, and the gap between them. It reconciles the IDE session's design record (`battle_system_adr.md`, branch `docs/battle-system-adr`, Nov 23) with the design conversation that reviewed it (Nov 23-24, Joseph and Claude). **Where an older doc states a rule this one changes, this one wins;** those docs carry a one-line pointer here.
+
+**Scope:** the new game only (`profile="new"`). Old-game fights stay byte-identical (fingerprints, `regress.py`, the move golden), as they have through every wave.
+
+**Status key:** **Decided** (agreed, not built), **Built**, **Open** (needs design), **Notes** (progression thinking, not locked).
+
+---
+
+## Part 1: Direction, and why
+
+The battle is a conversation between tactical JRPGs (SMT, Persona, Etrian Odyssey) and roguelikes (Slay the Spire, Into the Breach, Darkest Dungeon, Spelunky). Each decision below answers to these five aims.
+
+1. **The stat tug-of-war.** Setup lasts the whole fight, so buffing and debuffing are real investments: three turns of preparation in a twelve-round boss fight, none in a three-round trash fight. Setup is answered by counter-setup, counter magic and items, never by a timer quietly undoing it. *(Nocturne's lasting buffs and resets, made legible by roguelike intents.)*
+2. **Attrition across a dive.** No free sustain: no universal Meditate, no free attacks, heals that don't refill the run. HP and MP are carried from room to room; Rests, draughts and choices carry the run. A party that ignores a dimension of the game (stats, sustain, reach) pays for it, and finds what it lacks in the Pouch.
+3. **Legible odds.** You can always see the roll: a clean hit at neutral, crits when ahead, grazes when behind. Nothing fails silently at neutral; a 50% graze keeps a bad position moving forward instead of switching it off.
+4. **Foes are characters.** Each family, and each job within it, has habits: moves made for it, and the times and places it likes to use them. Players learn a family by what it does ("Mogel want you Blinded"). Foes don't pay costs as heroes do; their identity is their kit and their wants.
+5. **Scarce, personal growth.** A run grows a few moves deep, not every move wide. Growth is a choice against recovery (the Rest), so each run's build is its own: one signature move carved deep, a few useful ones beside it.
+
+---
+
+## Part 2: The decisions
+
+Each entry: **Direction** (what and why), **Today** (what the code and docs do now), **Toward implementation** (notes, not pseudocode).
+
+### D1. Accuracy: the crit and graze ladder (Decided; IDE ADR-01)
+
+**Direction.** The net is the attacker's ACC minus the target's EVA, from −3 to +3.
+
+| Net | Graze | Crit | Clean |
+|---|---|---|---|
+| +3 / +2 / +1 | 0 | 100% / 66% / 33% | the rest |
+| 0 | 0 | 5% | 95% |
+| −1 / −2 / −3 | 50% / 75% / 100% | 5% of what doesn't graze | the rest |
+
+- **No whiffs.** A graze deals 50%, carries no riders, no flare, and **earns no Bonus Round**. A status-only move that grazes is shrugged off.
+- **Status moves land for certain at neutral** (the hidden 20% fail is gone). Crits ×1.5.
+- *Why:* every stack of Keen, Marked, Blinded and Evasive now means something; ACC owns crits, EVA owns grazes, DEF owns damage. A graze is a floor, not an off switch.
+- *Cost, accepted:* damage at neutral rises about 11% (a neutral hit averaged 0.93 of a clean one; now 1.03), on both sides: one retune. "Miss!" goes; Evasive reads as glancing blows. ±3 is absolute: Blinded 3 lands no statuses, Evasive 3 takes half damage and no riders, until it's answered.
+
+**Today.** `Battle.odds` (Nov 21, Wave 7 A): neutral graze `GRAZE_BASE` 0.20, crit `CRIT_BASE` 0.05 plus DEX; ahead, a crit `AHEAD_CRIT` 1/3 and no graze; behind, a whiff `WHIFF_CHANCE` 1/3, then the plain roll. A status move rolls like a hit (Nov 22), so at neutral it fails on the 20% graze. `land()` grants a Bonus Round on a weak hit **even when it grazed** (engine.py, the `aff == "weak"` branch after the hit).
+
+**Toward implementation.** `odds`, `roll`, `expected_roll_mult`, `land`, `flurry`, `status_lands`, `knot_hold` and the AI's valuations. The whiff's text and float go; the page's MISS float goes. Retune the yardstick once (neutral damage up ~11%). Tests: neutral statuses land; a graze strips riders and the Bonus Round; ±3 at 100%. The page's odds readout shows the new table.
+
+### D2. Stats persist, and the pairs combine (Decided; IDE ADR-02)
+
+**Direction.**
+- **Stats persist for the fight** and wash when it ends. No end-of-round decay. Opposite moves cancel step for step (clamped −3 to +3).
+- **Five counters, combined:** Mighty / Feeble (ATK and MAT), **Fortified** / Sundered (DEF and MDF), Quick / Slowed (SPD), Keen / Blinded (ACC), Evasive / Marked (EVA). Waxing, Waning, Hexed and Warded retire. Bodies keep separate base stats (the Bein's high DEF, the Ande's high MDF still route damage); only the counters combine, so the Vasara's Sundered helps the Brennumar too.
+- **The curve stays:** ×1.33 / 1.67 / 2.0 up, ×0.75 / 0.6 / 0.5 down. Mighty 3 against Sundered 3 is ×4: the payoff for three turns of setup, telegraphed and answerable. Kept, and measured.
+- **No rider cap.** A damage rider (Brakrosh's Sundered) lands a step on every clean hit and can take a target to 3. Costing carries it: Brakrosh is 32 HP for 0.6 of a Krosh against Krosh's 16 HP for 1.0. Measured (Nov 24): in a 1700-HP boss room it shortens the fight ~18% (one Brakrosh) to ~27% (three); in Fodder it's wasted and Halvkrosh is the right call. The curve gives its own diminishing returns (+33%, +25%, +20% a step). *Look at the circumstances that produce a configuration before inventing a rule against it.*
+- *Why:* setup that lasts is a decision; setup that decays is upkeep. Foes' big debuff turns become telegraphed threats you prepare for (Joseph's example: a Hexer whose Weaken and Debilitate sweep the party; you hold Mighty 3 and Fortified 3, or Skolja ready).
+- **Twinned offense verbs** (carried from the IDE ADR, not yet re-discussed): Aukseid a selfish caster ramp (self Mighty, candidate +2), Aukraft the ally or party +1.
+
+**Today.** `STAT_NAMES` plus `NEW_GAME_STAT_NAMES` (seven pairs, Waxing/Waning/Hexed/Warded named in the new game). `end_round` walks every untouched stat one step toward 0 (the staircase, Nov 22). Aukraft pushes ATK, Aukseid MAT. classes.md's Sundered (Vasara) decays when she stops hitting; the Ullar's Lonnpeka refreshes it.
+
+**Toward implementation.** `Unit.stages`, `raw_damage` (one offense counter, one defense counter, read by physical and magical alike), `end_round` (no stat decay), `counter_name`, `counter_value`, `status_stat`, `BUNDLES`, words.py's stat verbs, gloss and audit, `screen.js`'s counter sets. **Lonnskolja** (lifts lowered stats to 0) becomes the key counter spell; **Song** keeps its own decay (it's a counter that fades when nobody sings: a song stops). The Vasara's Sundered signature is lost as written: see O2.
+
+### D3. Held stats (Decided; new, Nov 24)
+
+**Direction.** One primitive: **a move sets a stat to a level for N rounds. While it holds, nothing moves that stat. When it ends, the stat returns to what it was before.**
+
+| Move | Holds | For |
+|---|---|---|
+| **Gyllenlykt** | EVA at +3 | 3 rounds |
+| **Disarm** | Feeble 3 (offense at −3) | 3 rounds |
+| **Steadfast** | DEF where it is | N rounds |
+
+- *Why:* three moves, one rule. A held stat is bounded (it can't snowball), reads clearly, and restores honestly: an enemy's Disarm on a debuffed hero doesn't quietly cleanse them when it ends, and on a buffed hero it doesn't quietly wipe their Mighty.
+- Gyllenlykt under D1 is very strong (3 rounds of every hit grazing: half damage, no statuses, no riders, no Bonus Rounds against that hero); priced for it (16 MP today; re-checked when built). Disarm on a hero is a 3-round shutdown: telegraphed. A move can print a different ending as its price ("takes all your EVA with it") if a design wants it; the default is restore.
+- **This replaces the IDE ADR-06's Gyllenlykt as a tile** (no burst, ~64 MP). Tile paint stays open for the Mogel (O4).
+
+**Today.** Gyllenlykt is Lak with Lonn: a heal and Evasive 3 (the printed rider), which decays by the staircase. Disarmed is a bundle (ATK −1 and MAT −1 a stack, cap 3). Steadfast is a bundle (DEF +1 a stack; never Late, never shoved; a wall).
+
+**Toward implementation.** A `held` record on the unit (stat, level, rounds, the value to restore). Stat changes check it first. It ticks at round end like an ailment and restores on expiry. Steadfast no longer blocks Late or shoves (Fear on a Steadfast hero still makes them Late; their DEF doesn't move).
+
+### D4. Bundles are shorthand (Decided; new, Nov 24)
+
+**Direction.** A bundle is a label on a move: it applies its parts, then each part lives by its own rule. Stat parts persist (D2); ailment parts tick their rounds. There is no bundle status left to track or oppose.
+
+- **Feared** = Late for its rounds, and Sundered 1. (Late is the one primitive: Reeling is Late only.)
+- **Cursed** = Sundered 1 and Poisoned (was MDF −1).
+- **Venom** = Poisoned and Bleeding (unchanged).
+- **Disarmed** becomes Disarm, a held stat (D3). **Steadfast** becomes a held stat (D3).
+- New moves compose freely: *Sticky Slime* (a Mogel spit: Bound, then Late for 3 rounds) is two existing parts, no new rule.
+
+**Today.** `BUNDLES` in data.py are statuses with stat parts that scale with their rounds and step down like ailments; Feared and Steadfast pull against each other stack for stack (`BUNDLE_OPPOSITE`).
+
+**Toward implementation.** `apply_status` expands a bundle into its parts; `BUNDLE_OPPOSITE` and the bundle stat path in `status_stat` go. The page shows the parts, not the label (the move's card keeps the label).
+
+### D5. Guard (Decided; IDE ADR-08)
+
+**Direction.** Guard halves damage **and a weak hit on a Guarding target earns no Bonus Round.** Guard does nothing to stats: stats are answered by counter magic, opposite moves and items. *Why:* a telegraphed weakness intent becomes a three-way puzzle for every hero (kill or interrupt it, Cover it with a resistant tank, or Guard to deny the tempo).
+
+**Today.** `land()` halves damage for `t.defending`, then grants the Bonus Round on a weak hit regardless.
+
+**Toward implementation.** Gate `self.eligible.add` on `not t.defending` in `land`, `flurry` and `status_lands`. The AI values a weak hit on a Guarding hero without the Bonus Round.
+
+### D6. No forced Advance (Decided; IDE ADR-09)
+
+**Direction.** When a side's Front falls, nobody loses a turn stepping up. The empty Front already exposes the Rear (`eff_front`); a melee unit left in the Rear hits at half (`REAR_MELEE_MULT`) until it **chooses** to step up. *Why:* the formation already punishes a collapse; confiscating the turn on top of that takes away the crisis turn.
+
+**Today.** `plan_phase` runs `advancers` before the unit decides.
+
+**Toward implementation.** Skip `advancers` in the new game, both sides. The AI needs a rule to step up when it's melee in an exposed Rear (or its foes will sit there at half). The page shows a Rear melee unit as exposed. Old tests that assert auto-advance stay under the old profile.
+
+### D7. Code leaks (Decided; IDE review)
+
+- `preview_order` doesn't share `order`'s tie-break (an exact SPD tie goes to the party): one sort key.
+- `knot_hold` still prices grazes by the old formula (`GRAZE_BASE − STEP × net`): read `odds()`.
+- A graze on a weakness earns a Bonus Round (D1 and D5 fix it).
+- `paint` on a whiff emits a 0-damage hit (moot once D1 removes whiffs; check the graze path).
+
+### D8. Sustain (Decided; IDE ADR-04, amended)
+
+**Direction.**
+- **Meditate goes.** Magicals carry big pools (100-200 MP) and meter them across rooms with Rests, Spirit Draughts and found moves. *Why:* a guaranteed refill means MP is never a resource; casters now feel the room-to-room tension martials feel in HP.
+- **Djupanda becomes a found move** (a run reward), shaped as the IDE ADR has it: a Late Bid (wind up, then a Late release of MP). Strong in long boss fights where the party protects the caster; costly in short ones.
+- **The Skurmar's Knots 3** restores a small amount of MP each turn, no longer "half a Meditate." The amount stays below a Blast's cost (the Nov 21 lesson: 9 MP a round was free Blasts forever).
+- **Lak heals 75 for 12 MP** (was 100 for 8). *Why:* a heal about the size of one Regular hit (~75) trades even for a turn, so healing is never automatic and never dead; a full 200-MP bar heals about 1,250 (16 casts), under one Rest, where it was about 2,500 (1.6 Rests). The turn choice becomes heal, or buff and debuff so the fight ends sooner. Row and party heals scale by the reach rules (Floklak about 30-ish a head in a boss fight is the feel). **Refactor plan Phase C's "heals at 1.2 (Lak ~125)" is retired.**
+- **The Halv is an ordinary kit move**: 4 HP or 2 MP, cheap and never free, competing for the four slots. Most likely acquired by carving your main move down, or a future talisman that turns your starter into its Halv. **The auto-filled Halv goes:** an empty slot stays empty until you pack or carve something.
+- **The sharp edge, accepted:** a caster at 0 MP has no attack (even Halveld costs 2 MP): Guard and items only. The pools are large; the numbers tune it.
+
+**Today.** `can_meditate` gives every new-game magical Meditate (`MEDITATE_SHARE` 0.15 of max MP); `screen.js` reserves a menu slot for it. Djupanda is a free Bid any magical can carry (`DJUPANDA_SHARE` 0.40), in the Brennumar's leg-3 kit. `LAK_CLEAN` 100; Lak costs 8 MP. `build_hero` drops the class's Halv (`BASIC_VERB`) into a free slot of `KIT_SLOTS`. classes.md: the Skurmar's Knots 3 deepens his Meditate and Djupanda.
+
+**Toward implementation.** `can_meditate` off; the menu's slot goes; `LAK_CLEAN` 75 and Lak's cost 12; `build_hero` stops filling; kits re-checked (a leg-1 kit of two moves and two empty slots); Knots 3's MP amount; Djupanda's release group. The gauntlet needs Rest rooms (D9) before its numbers mean anything for casters.
+
+### D9. The per-hero Rest (Decided; new, Nov 24)
+
+**Direction.** At a Rest, **each hero** chooses Rest or Carve. Rest restores (the IDE ADR's 2/3 of max HP and MP is the starting number) and raises the Down; Carve mutates one of that hero's moves and heals nothing. *Why:* growth costs one hero's recovery, not the party's, and it opens meta-play: keep the Vasara safe in the Rear so she can carve.
+
+**The screen** (Joseph): the campfire backdrop; three hero panels, each with a campfire and a rune to click; each Rest panel previews what it would heal; an "everyone rests" shortcut; **Continue…** (the same lock-in-then-resolve rhythm as a fight round). The resting heroes get their green +NN floats in the background while the screen moves to the carvers, left to right: pick the move, pick the mutation, confirm, the next carver, then back to the tapestry.
+
+**Today.** dive_spec and pillars: a Rest room is Rest **or** Carve for the party; the column before each boss is always a camp. The dive isn't built; the gauntlet has no Rests.
+
+**Toward implementation.** A Rest step in `gauntlet.py` (per hero: the AI rests whoever is hurt) so caster parties are measured fairly. The screen waits for the dive's UI.
+
+### D10. Intercession (Decided Nov 23; recorded in beinar_pilot.md Part 3)
+
+Lya is intercession (I protect someone you might fire at); Egga is Taunt (I draw your fire). In the new game, **Lya takes one interception, then the stance ends**; Merlya takes 2 (Jatte 3, foe bosses); Lonnlya is Fortified 1, then Cover (foes: Cover, Hi-Cover, Great Cover, Bulwark, Hi-Bulwark). One coverer per ally; a whole move is one interception; rows and All aren't caught. Lya keeps 8 HP. **Foes get intercession, never Taunt.** Not built (step 2 of the pilot's list).
+
+### D11. Foes are characters (Decided; Nov 24)
+
+**Direction.**
+- **Foes have habits, as data:** a unit *wants* a hero at a level of something (`wants: {"Blinded": 1}`) and uses the move that gets it there until it's true; clear it and the habit returns. This is the brains' goal-with-UNTIL (beinar_pilot Part 2). Mixed teams coordinate for free: the Mogel want Blinded 1, the Leshi want 2, so the Leshi keep pressing after the Mogel are satisfied.
+- **Custom moves made for a family** are welcome (*Mogel Spray*: no cost, one target, no damage, Blinded 1). We have all the pieces and arrange them as we please.
+- **Foes don't pay costs as heroes do**, and needn't: trash is swept away in a few rounds. Their kits are where control lives: a twist that leaves a lasting stat is a kit choice, made on purpose.
+- **The boss reset** (IDE ADR-03: a telegraphed, turn-costing self-cleanse or party-leveller at Normal or Late speed) becomes a **Stabilize** move in the team plans (beinar_pilot Part 2 section 7), not a separate AI system.
+
+**Today.** Generated foe kits (Ande, Mogel) take their child element's Styng form automatically (Styngreyk: a certain Blinded on a clean hit), which under D2 leaves lasting stats. The Beinar pilot's hand-made kits and brains are designed, not built. The mirror is built (Nov 23).
+
+**Toward implementation.** With the pilot's brains: `wants` as a rule type; the pilot's kits checked against D1-D4; the generated Ande and Mogel kits reviewed in the enemy pass.
+
+### D12. Already built under this direction
+
+- **The mirror** (Nov 23): packs reserve reach slots within budget; on for the new game's rooms. beinar_pilot Part 2 section 8.
+- **The status rules** (Nov 22) still stand except where D1-D4 replace them: ailments (stacks, caps, rounds, never dropping the round they land), parents hit and children twist, Frozen replacing Chilled (single-target chills only), boss immunities, Skolja and Lonnskolja, a printed size winning over the tier. **Replaced:** the stat staircase (D2), the split stat names (D2), bundles as statuses (D4), whiffs (D1).
+
+---
+
+## Part 3: Open (needs design)
+
+### O1. The stack economy
+
+Moves relate to stacks in seven ways:
+
+| Kind | What it does | Example |
+|---|---|---|
+| **Build** | adds stacks | Brakrosh |
+| **Cash-in** | needs a stack, or scales with stacks, without using them | Fangskott (needs Pinned); Hevn (hits she took) |
+| **Spend** | uses stacks up for a payoff | the Vasara eating Sundered (O2) |
+| **Regular** | any hit, simply better against the stacks there | any hit on a Sundered target |
+| **Convert** | turns one stack into another | Fortified into Mighty ("the shield becomes the hammer"); a niche inverter (Fortified 3 becomes Sundered 3, Feeble 3 becomes Mighty 3); Scorched or Chilled into something new |
+| **Steal** | moves a stack from the target to yourself | take their Mighty: for tricky classes |
+| **Answer** | pays off on events | Hevn (hits taken since her last turn) |
+
+- **A move pays in at most two of three currencies:** price (HP or MP), stacks (spent), time (a Bid wind-up, a Tung strike acting last, making yourself Late). A *required* stack is a condition, not a payment.
+- **"Spend a stack" wants one shared grammar piece** every class talks to (the Vasara eats Sundered, the Ullar Marked, the Brennumar Scorched). It needs a word: a naming session.
+- **A cash-in on your own stacks** (Joseph, as a shape, numbers not set): a move stronger than a Krosh that returns a share of its damage to the user as recoil, and hits harder for each Sundered on *you*. "Might kill you, will melt them," and a crit build beside it melts faster. Numbers to work out: from ×1.33 to ×2 over three levels is about +22% a level. Whether its bonuses multiply with Mighty or add (Mighty 3 with three levels: ×2.67 multiplied, ×2.33 added) is decided with it.
+
+### O2. The Vasara's Sundered signature
+
+D2 ends "the one she keeps hitting stays at three," and the Ullar's refresh of it. Direction (Joseph): design into the new space. Her signature moves to **eating** Sundered stacks (a Krosh branch that spends a stack for a special attack; the mirror image spends her own Fortified). The Ullar likewise could spend Marked (Fangskott already cashes in on Pinned).
+
+### O3. Two-curve costing (IDE ADR-07)
+
+Output and reach (Mer, Flok, All, Styng) stay steep; tactical sidegrades (Tung, Bid, Jar, Drif, a modest Snar) cheap, their drawback being their cost; Lonn not taxed twice (0.6 power **and** ×2 price). Awkward extremes (Allblotskott) become Pouch items rather than hero carves. Belongs with the audit's open question (23 carves past the ladder), and with D2's costing role for riders.
+
+### O4. Tile paint (IDE ADR-06, less Gyllenlykt)
+
+Typed cell effects: the Mogel's empty-tile, occupied-tile and row paints with a cap of about three slimed cells, later caltrops. Built with the Mogel's enemy pass; the page draws tiles then.
+
+### O5. The Wild Hunt (IDE ADR-05)
+
+combat_spec already has the **Hunt clock**: a step a room, and a step for every 5 rounds a fight runs past 5; when it catches you, the next room becomes a Hunt fight. Claude's proposal: the clock stays the anti-stall, and the ADR's lines ("The air turns bitter cold…", the horn) become its voice when a long fight moves it, rather than a second clock that spawns units mid-fight. Not yet decided.
+
+### O6. Rests in the gauntlet, and the four-family enemy pass
+
+The gauntlet's per-hero Rest (D9). The enemy pass restores family bodies' HP (classes.md: "families are all plain for now; their deviations are the enemy pass"); the IDE ADR-10's family notes (the Draugr's telegraphed haymaker wind-ups waking up Guard, Cover and Stun; the Mogel's paint; the Ande as all-reach glue) fold into it beside beinar_pilot Parts 3 and 4.
+
+---
+
+## Part 4: Progression notes (not locked)
+
+- **Method:** lay the system bare before locking anything: every morpheme, every move coded to a class, every permutation. Design the **Vasara's web of moves**, then the **Brennumar's**, and gate from what they show. The tool: a **Growth view** in the Grammar Library, generated by the compiler (roots, then each one-carve fork, then the second), each edge marked keep, cut or maybe by Joseph. Those marks become the gating tables. (The Vasara today has 103 legal words: Krosh 53, Hevn 27, Egga 11, Aukskold 10, Lya 2.)
+- **Gating is data:** per root, "from here, these carves." The grammar decides what a word *is*; the table decides what's reachable next.
+- **Scarcity is intended.** A run holds about 3-6 Rests for the whole party, plus Event carves: one deep signature move a run, a few shallower ones.
+- **Rewards:** after a fight, one of three (a tome, a mutation, or marks); later legs may offer moves already carved (a Reyk in leg 2, a Styngreyk in leg 3). Carving at the Rest (D9).
+- **The Vasara:** *the Anvil: covers allies, takes the hits, debilitates with the hammer.* Moves in five groups: **Strike** (Krosh, the mace: break), **Shield bash** (**Stot**, new: control: Stun, Tung, shoves, Late), **Protect** (Egga, Lya), **Brace** (Aukskold), **Answer** (Hevn). She **starts with Krosh, Egga and Stot**, one slot open for a find. Found as hammer and shield tomes: Lya, Aukskold, Hevn.
+- **Krosh's forks** (sketch): Merkrosh (power), Halvkrosh (cheap), Brakrosh (break), Flokrosh (a row-crush: a dead end, and strong), Drifkrosh, Jarkrosh, Bidkrosh; Brakrosh onward to Snarbrakrosh or Tungbrakrosh; Halvkrosh onward by a manner (Halvsnarkrosh, Halvdrifkrosh compile today; Styng doesn't apply to damage verbs). Jattekrosh found or carved: not settled.
+- **Jarf becomes Jar** (Jarkrosh, Jarskar, Jarspett): **no clean hits, only crits or grazes.** At neutral a coin (it averages a normal hit, with more swing); ahead on ACC the grazes vanish and every hit crits, so Keen with Jar is a build. Today Jarf is 0.7 power, ×1.5 cost, +20% crit chance, crits ×3.
+- **The shared core:** build the common spine, then let each class have its conversation with it, dipping into places that make it unique.
+
+---
+
+## Part 5: Order of work
+
+1. **This record**, and pointers from the docs it supersedes. *(Nov 24.)*
+2. **Wave A:** D1 accuracy, D5 Guard, D6 no forced Advance, D7 leaks.
+3. **Wave B:** D2 persistent combined stats, D3 held stats, D4 bundles as shorthand.
+4. **Wave C:** D8 sustain (Meditate, Djupanda found, Lak 75/12, no Halv auto-fill, Knots 3 MP) and D9's Rest in the gauntlet.
+5. **The Beinar pilot resumes** (beinar_pilot.md, "What the build needs"): D10 intercession, the kits, the brains and team plans with D11's wants and the reset as Stabilize; then the gauntlet against Joseph's damage picture and his calibration fights.
+6. **Then:** the enemy pass (O6), tile paint (O4), costing (O3), the Hunt clock (O5), and progression (Part 4: the Growth view, the Vasara and Brennumar webs).
+
+Each wave: old fights byte-identical, the tests, the gauntlet and sweep before and after, the Lab republished, then Joseph plays. D1 and D2 land before the brains because the brains' valuations and the calibration read them.
+
+---
+
+## Sources
+
+- The IDE design record: `battle_system_adr.md` on branch `docs/battle-system-adr` (commit 45a623d), kept there as history.
+- The review: this conversation, Nov 23-24 (Joseph and Claude).
+- Superseded rules, by pointer: classes.md (Sundered's decay, Gyllenlykt's Evasive, the Skurmar's Meditate knots), beinar_pilot.md Part 1 (the stat staircase, bundles as statuses), pillars.md (Meditate as universal), refactor_plan.md Phase C (heals at 1.2).
