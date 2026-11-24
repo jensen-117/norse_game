@@ -98,6 +98,16 @@ details summary { cursor: pointer; color: var(--dim); font-size: 12px; }
       <div class="cards" id="packcards"></div>
     </section>
     <section>
+      <h2>Run</h2>
+      <div class="row">
+        <label class="field">Where<select id="runwhere"><option>Barrow</option><option>Wildwood</option><option>Rapids</option></select></label>
+        <label class="field">Adds<select id="runadd"><option value="">as rolled</option><option value="Trash">+2 Trash</option><option value="Regular">+2 Regular</option></select></label>
+        <label class="field">Run<input id="runno" type="number" min="1" max="999" value="1" style="width:56px"></label>
+      </div>
+      <div class="row"><button id="runstart">Start run</button><button id="runnext" disabled>Next room</button><button id="runstop" disabled>End run</button></div>
+      <div class="cards" id="runtrack"><div class="card">Trash, Regular, Elite, a camp, then the Boss, in one place. HP, MP, the pouch, Wounded and the dead carry between rooms; the adds go in every room but the Regular one (it has its own two).</div></div>
+    </section>
+    <section>
       <div class="row"><button class="primary" id="start" disabled>Fight</button><button id="auto" disabled>Auto</button></div>
     </section>
     <section>
@@ -242,6 +252,10 @@ function initPanel() {
   $("#rollpack").onclick = rollPack;
   $("#calload").onclick = calibRoom;
   { const c = store.get("cal", null); if (c) { $("#calshape").value = c[0]; $("#caladd").value = c[1]; $("#calno").value = c[2]; } }
+  $("#runstart").onclick = runStart;
+  $("#runnext").onclick = runNext;
+  $("#runstop").onclick = () => { call("run_stop"); run = null; drawRun(null); armStart(); status("Run ended."); };
+  { const r = store.get("runcfg", null); if (r) { $("#runwhere").value = r[0]; $("#runadd").value = r[1]; $("#runno").value = r[2]; } }
   $("#start").onclick = () => startFight("party");
   $("#auto").onclick = () => startFight("auto");
   $("#seed").onchange = () => { store.set("seed", +$("#seed").value); lab.set_seed(+$("#seed").value); makeParty(); rollPack(); };
@@ -261,7 +275,9 @@ function readSpec() {
     kit: +$("#kit").value,
   }));
 }
+function leaveRun() { if (run) { call("run_stop"); run = null; drawRun(null); } }
 function makeParty() {
+  leaveRun();
   lab.set_seed(+$("#seed").value);
   const r = call("make_party", JSON.stringify(readSpec()));
   partySpec = r.spec; store.set("party", partySpec);
@@ -274,6 +290,7 @@ function makeParty() {
   partyReady = true; armStart();
 }
 function calibRoom() {          // the sweep's rooms by shape and number: Claude replays the AI on the same room
+  leaveRun();
   const [kind, budget] = $("#calshape").value.split(":");
   store.set("cal", [$("#calshape").value, $("#caladd").value, +$("#calno").value]);
   const r = call("calib_room", kind, +budget, $("#caladd").value, +$("#calno").value);
@@ -284,6 +301,7 @@ function calibRoom() {          // the sweep's rooms by shape and number: Claude
   packReady = true; armStart();
 }
 function rollPack() {
+  leaveRun();
   store.set("hab", $("#hab").value);
   const r = call("roll_pack", $("#hab").value, +$("#budget").value, $("#ranged").value, +$("#elevel").value, $("#artonly").checked);
   const box = $("#packcards"); box.textContent = "";
@@ -292,7 +310,62 @@ function rollPack() {
     ` · ${u.cell[0]} ${u.cell[1] + 1} · cost ${u.cost}${u.art ? "" : " · no art yet"}`)));
   packReady = true; armStart();
 }
-function armStart() { $("#start").disabled = $("#auto").disabled = !(partyReady && packReady) || busy; }
+function armStart() {
+  const inRun = run && !run.over, roomReady = inRun ? runRoomReady : (partyReady && packReady);
+  $("#start").disabled = $("#auto").disabled = !roomReady || busy;
+  $("#runnext").disabled = !(inRun && runCleared) || busy;
+  $("#runstop").disabled = !run;
+  $("#runstart").disabled = busy;
+}
+
+/* ------------------------------------------------------------ a run (Nov 24): Trash, Regular, Elite, a camp, the Boss */
+let run = null, runRoomReady = false, runCleared = false;
+function showPack(title, pack) {
+  const box = $("#packcards"); box.textContent = "";
+  box.append(el("div", { class: "card foe" }, el("b", {}, title)));
+  pack.forEach(u => box.append(el("div", { class: "card foe" }, el("b", {}, u.name), ` · ${u.cell[0]} ${u.cell[1] + 1} · cost ${u.cost}${u.art ? "" : " · no art yet"}`)));
+}
+function drawRun(r, camp) {
+  const box = $("#runtrack"); box.textContent = "";
+  if (!r) { box.append(el("div", { class: "card" }, "No run. Make a party, choose a place, and start one.")); return; }
+  box.append(el("div", { class: "card" }, el("b", {}, `Run ${r.n} · ${r.where}${r.add ? " · +2 " + r.add : ""}`), el("div", { class: "mv" },
+    r.stages.map((s, i) => i < r.stage ? `✓ ${s}` : i === r.stage && !r.over ? `▸ ${s}` : s).join("  ·  "))));
+  for (const h of r.heroes) box.append(el("div", { class: "card" }, el("b", {}, h.name),
+    h.state === "dead" ? " · dead" : ` · ${h.hp}/${h.maxhp} HP${h.maxmp ? ` · ${h.mp}/${h.maxmp} MP` : ""}${h.wounded ? " · Wounded" : ""}${h.state === "dying" ? " · dying" : ""}`,
+    h.pouch.length ? el("div", { class: "mv" }, h.pouch.map(p => `${(ITEM()[p[0]] || {}).name || p[0]} ×${p[1]}`).join(" · ")) : ""));
+  if (r.log.length) box.append(el("div", { class: "card" }, el("div", { class: "mv" }, r.log.join(" "))));
+  if (camp) {
+    const picks = r.heroes.map((h, i) => el("input", { type: "checkbox", id: `rest${i}`, ...(h.state === "dead" ? { disabled: true } : { checked: true }) }));
+    box.append(el("div", { class: "card" }, el("b", {}, "The camp"), el("div", { class: "mv" }, "Rest: two-thirds of HP and MP back, and Wounded heals. (Carving waits for the dive.)"),
+      ...r.heroes.map((h, i) => el("label", { class: "check" }, picks[i], ` ${h.name} rests`)),
+      el("div", { class: "row" }, el("button", { class: "primary", onclick: () => breakCamp(picks.map(p => p.checked)) }, "Break camp"))));
+  }
+  if (r.over) box.append(el("div", { class: "card" }, el("b", {}, r.over === "won" ? "The run is won." : `The run ends at the ${r.stages[r.stage]}.`)));
+}
+function takeRun(res) {
+  if (res.error) { status(res.error, true); return; }
+  run = res.run; runCleared = false;
+  runRoomReady = !!(res.pack && run && !run.over);
+  if (res.pack) showPack(`Run ${run.n}: ${res.room}`, res.pack);
+  else if (res.camp) { const pb = $("#packcards"); pb.textContent = ""; pb.append(el("div", { class: "card" }, el("b", {}, `Run ${run.n}: the camp`), " · the Boss is next")); }
+  drawRun(run, res.camp);
+  if (res.camp) status("The camp: choose who rests.");
+  else if (res.room) status(`Next: ${res.room}. Fight when ready.`);
+  armStart();
+}
+function runStart() {
+  store.set("runcfg", [$("#runwhere").value, $("#runadd").value, +$("#runno").value]);
+  makeParty();
+  takeRun(call("run_start", +$("#runno").value, $("#runadd").value, $("#runwhere").value));
+}
+function runNext() { takeRun(call("run_room")); }
+function breakCamp(flags) { takeRun(call("run_camp", JSON.stringify(flags))); }
+function afterRunFight() {
+  const res = call("run_after"); if (!res.run) return;
+  run = res.run; runRoomReady = false; runCleared = !run.over; drawRun(run);
+  status(run.over === "won" ? "The run is won." : run.over ? `The run ends at the ${run.stages[run.stage]}.` : `Cleared. Next: ${run.stages[run.stage]}.`);
+  armStart();
+}
 
 /* ------------------------------------------------------------ the recorder: each fight goes to the lab's own database,
    with the seed and every order, so Claude can replay it exactly. */
@@ -330,7 +403,9 @@ window.Lab = {
     noteLines.push(t); $("#recstat").dataset.learn = t;
   },
   onState(r) {
-    busy = false; armStart();
+    busy = false;
+    if (run && !run.over && r.winner) afterRunFight();
+    armStart();
     try { store.set("memory", lab.memory_save()); } catch {}
     if (fightId && r.events && r.events.some(e => e.kind === "round" || e.kind === "end")) saveFight();
     if (noteLines.length) { status(noteLines.slice(-1)[0]); noteLines = []; }
@@ -339,14 +414,14 @@ window.Lab = {
 let noteLines = [];
 function startFight(control) {
   autoMode = control === "auto";
-  makeParty();
+  if (run && !run.over) runRoomReady = false; else makeParty();
   const r = call("start", control);
   if (r.error) { status(r.error, true); return; }
   $("#log-raw").textContent = ""; $("#sheet").hidden = true;
   fightId = "f" + Date.now().toString(36); $("#note").value = ""; $("#savenote").disabled = false; saveFight();
   busy = true; armStart(); status("Fighting.");
   if (document.activeElement && document.activeElement.blur) document.activeElement.blur();   // Enter belongs to the fight now,
-  Screen.begin(r, AREA_OF($("#hab").value));                                                  // not to the Fight button
+  Screen.begin(r, AREA_OF(run && !run.over ? run.where : $("#hab").value));                                                  // not to the Fight button
 }
 function showBestiary() {
   const list = call("bestiary"), box = $("#sheet");

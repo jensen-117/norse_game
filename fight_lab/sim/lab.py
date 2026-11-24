@@ -100,15 +100,99 @@ def calib_room(kind, budget, add, n):
     return _j(dict(where=where, pack=[dict(cell=[r, l], name=describe(e), family=e["family"], rank=e["rank"], job=e.get("job"),
                                            element=e["element"], cost=e["cost"], art=e["art"]) for r, l, e in picks]))
 
+# ------------------------------------------------------------ a run (Nov 24, Joseph): a gauntlet you play, room by room
+# Trash, Regular, Elite, a camp, then the Boss, in one place, carrying HP, MP, the pouch, Wounded and the dead between
+# rooms (dive_spec). The adds dial puts two more Trash or Regulars in every fight room but the Regular one, which has its
+# own two. Room i of run n is rolled from Random(RUN_SEED + 10n + i). Each room's record carries the party as it walked in.
+RUN_STAGES = [("Trash", "fodder", 3, None), ("Regular", "fodder", 3, "Regular"), ("Elite", "elite", 4, None),
+              ("Camp", None, 0, None), ("Boss", "boss", 4, None)]
+RUN_SEED = 7000
+
+def _carry(u):
+    return dict(hp=u.hp, mp=getattr(u, "mp", 0), maxhp=u.maxhp, maxmp=getattr(u, "maxmp", 0), wounded=bool(getattr(u, "wounded", False)),
+                unwounded=list(getattr(u, "unwounded", ())) or None, state=u.state, pouch=[list(p) for p in u.pouch])
+
+def apply_carry(u, c):
+    """A hero as they walked into a run's room (replay.py rebuilds a run's later rooms with this)."""
+    u.hp, u.mp, u.maxhp, u.maxmp, u.wounded, u.state = c["hp"], c["mp"], c["maxhp"], c["maxmp"], c["wounded"], c["state"]
+    if c.get("unwounded"): u.unwounded = tuple(c["unwounded"])
+    u.pouch = [list(p) for p in c["pouch"]]
+
+def _run_state(extra=None):
+    r = S.get("run")
+    if not r: return dict(run=None)
+    out = dict(run=dict(n=r["n"], add=r["add"], where=r["where"], stages=[s[0] for s in RUN_STAGES], stage=r["stage"],
+                        over=r.get("over"), log=r["log"],
+                        heroes=[dict(name=u.name, cls=u.cls, hp=round(max(0, u.hp)), maxhp=round(u.maxhp), mp=round(getattr(u, "mp", 0)),
+                                     maxmp=round(getattr(u, "maxmp", 0)), wounded=bool(getattr(u, "wounded", False)), state=u.state,
+                                     pouch=[list(p) for p in u.pouch]) for u in r["party"]]))
+    out.update(extra or {}); return out
+
+def run_start(n, add, where):
+    if not S["party_spec"]: return _j(dict(error="Make a party first."))
+    S["run"] = dict(n=max(1, int(n)), add=add or None, where=where, stage=0, party=_party(), log=[], fought=False)
+    return run_room()
+
+def run_stop(): S["run"] = None; return _j(dict(run=None))
+
+def run_room():
+    """The run's current room: a pack ready to fight, or the camp."""
+    r = S.get("run")
+    if not r or r.get("over"): return _j(_run_state())
+    name, kind, budget, own_add = RUN_STAGES[r["stage"]]
+    r["fought"] = False
+    if kind is None: return _j(_run_state(dict(camp=True)))
+    rng = random.Random(RUN_SEED + 10 * r["n"] + r["stage"])
+    try:
+        picks = shaped_room(rng, CAT, r["where"], kind, budget, own_add or r["add"], mirrored=True)
+    except CompositionError as e:
+        return _j(dict(error=str(e)))
+    S["pack_spec"] = dict(placed=[(x, l, e) for x, l, e in picks], level=ENEMY_LEVEL,
+                          run=dict(n=r["n"], add=r["add"], where=r["where"], stage=name))
+    return _j(_run_state(dict(room=name, pack=[dict(cell=[x, l], name=describe(e), family=e["family"], rank=e["rank"], job=e.get("job"),
+                                                   element=e["element"], cost=e["cost"], art=e["art"]) for x, l, e in picks])))
+
+def run_camp(rest_json):
+    """D9: each hero Rests or not (carving waits for the dive); then on to the boss."""
+    r = S.get("run")
+    if not r or RUN_STAGES[r["stage"]][1] is not None: return _j(dict(error="Not at the camp."))
+    for u, yes in zip(r["party"], json.loads(rest_json)):
+        if yes and u.state != "dead":
+            before = (round(u.hp), round(getattr(u, "mp", 0))); rest(u)
+            r["log"].append(f"Camp: {u.name} rests ({before[0]} to {round(u.hp)} HP" + (f", {before[1]} to {round(u.mp)} MP" if getattr(u, "maxmp", 0) else "") + ").")
+    r["stage"] += 1
+    return run_room()
+
+def run_after():
+    """After a run's fight: on to the next room, or the run ends."""
+    r, b = S.get("run"), S["battle"]
+    if not r or not r.get("fought") or b is None or b.winner is None: return _j(_run_state())
+    name = RUN_STAGES[r["stage"]][0]
+    r["fought"] = False
+    if b.winner == "party":
+        r["log"].append(f"{name}: won in {b.round} round{'' if b.round == 1 else 's'}.")
+        r["stage"] += 1
+        if r["stage"] >= len(RUN_STAGES): r["over"] = "won"
+    else:
+        r["log"].append(f"{name}: {'fled' if b.winner == 'fled' else 'lost'} in {b.round} round{'' if b.round == 1 else 's'}."); r["over"] = "lost"
+    return _j(_run_state())
+
 # ------------------------------------------------------------ a fight
 def start(control="party"):
     if not S["party_spec"] or not S["pack_spec"]: return _j(dict(error="Make a party and roll a pack first."))
     bseed = S["rng"].getrandbits(32)          # a whole number: a float seed goes through hash(), which differs on 32-bit Pyodide
     p = S["pack_spec"]
-    b = Battle(_party(), spawn(p["placed"], p["level"]), random.Random(bseed), events=True, profile="new")
+    r = S.get("run") if p.get("run") else None
+    if r is not None and not r.get("over"):      # a run's room: the party as it walked in, the dead left behind
+        for u in r["party"]: settle(u)
+        party = [u for u in r["party"] if u.state != "dead"]; r["fought"] = True
+    else: party = _party()
+    carry = [_carry(u) for u in r["party"]] if r is not None else None
+    b = Battle(party, spawn(p["placed"], p["level"]), random.Random(bseed), events=True, profile="new")
     S["battle"] = b
     import sys
-    S["record"] = dict(engine=ENGINE, platform=sys.platform, profile=b.profile, calib=p.get("calib"), lab_seed=S["seed"], bseed=bseed, control=control, party=S["party_spec"],
+    S["record"] = dict(engine=ENGINE, platform=sys.platform, profile=b.profile, calib=p.get("calib"), run=p.get("run"), carry=carry,
+                       lab_seed=S["seed"], bseed=bseed, control=control, party=S["party_spec"],
                        pack=[[r, l, e] for r, l, e in p["placed"]], level=p["level"], orders=[], pending={},
                        winner=None, rounds=0, log=[])
     ev = b.begin(control=None if control == "auto" else "party")

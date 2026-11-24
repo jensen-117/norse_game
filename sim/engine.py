@@ -7,6 +7,16 @@ from words import *        # naming, the move record, and the one compiler every
 def clamp(x, lo, hi): return max(lo, min(hi, x))
 def stage_mult(n): return (3 + n) / 3 if n >= 0 else 3 / (3 - n)
 def level_factor(level): return 0.6 + level / 20
+def settle(u):
+    """What doesn't carry out of a fight (HP, MP, the pouch and Wounded do): the gauntlet's and the Lab's runs."""
+    u.status, u.pushed = {}, set()
+    u.stages = {k: 0 for k in u.stages}
+    u.held = {}
+    u.bide = u.charge = None
+    u.hits_taken, u.overpaid = 0, False
+    for k in ("taunted_by", "defending", "crawling"):
+        if hasattr(u, k): setattr(u, k, None if k == "taunted_by" else False)
+
 def rest(u):
     """D9 (Nov 24): a hero who Rests gets back REST_SHARE of max HP and MP, and Wounded heals (its whole pools come
     back first). The dead stay dead (Vakna and the Mead are for them)."""

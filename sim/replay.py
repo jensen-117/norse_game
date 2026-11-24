@@ -12,6 +12,9 @@ def rebuild(rec):
         from hash32 import hash_double
         seed = hash_double(seed, 31)
     party = lab._party()
+    if rec.get("carry"):                # a run's later room: the party as it walked in, the dead left behind
+        for u, c in zip(party, rec["carry"]): lab.apply_carry(u, c)
+        party = [u for u in party if u.state != "dead"]
     profile = rec.get("profile") or ("new" if all(getattr(u, "kit_leg", None) is not None for u in party) else "legacy")   # older records: the rule they ran under
     b = Battle(party, spawn([tuple(x) for x in rec["pack"]], rec["level"]), random.Random(seed), events=True, profile=profile)
     return b

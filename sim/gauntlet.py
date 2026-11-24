@@ -19,16 +19,6 @@ CAMP_BEFORE = "Boss"       # D9 (Nov 24): the column before every boss is a camp
 POUCH = [[["strong_life", 1]], [["iron_hammer", 1]], [["thunderpot", 1]]]
 PARTIES = [("Dagskald", "Skurmar", "Vasara"), ("Vasara", "Ullar", "Brennumar")]
 
-def settle(u):
-    """What doesn't carry out of a fight (HP, MP, the pouch and Wounded do)."""
-    u.status, u.pushed = {}, set()
-    u.stages = {k: 0 for k in u.stages}
-    u.held = {}
-    u.bide = u.charge = None
-    u.hits_taken, u.overpaid = 0, False
-    for k in ("taunted_by", "defending", "crawling"):
-        if hasattr(u, k): setattr(u, k, None if k == "taunted_by" else False)
-
 def run(classes, leg, seed):
     rng = random.Random(seed)
     party = [build_hero(c, leg, SHEET_LEVEL) for c in classes]
