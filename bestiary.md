@@ -316,6 +316,8 @@ Procedural packs are rolled by one small machine (`sim/composer.py`) that fills 
 
 **Rules are toggles:** the budget (6 by default; 3 for a small fight), a unit cap (never more than the 6 cells), banned costs ("no 1-costs"), per-cost caps ("only one 3-cost"), family minimums and maximums ("at least one Mogel and one Ande"), per-family weights, and **ranged**: `include` re-rolls until the pack has at least one unit that reaches our Rear, `exclude` gates them all out (the pure-melee pack), unset takes whatever rolls. The fit check means a rule set that can't be satisfied is caught before a pack is half-built (for example, no 1-costs with 5 slots left and no 3-cost allowed).
 
+**The mirror (Nov 23, agreed; not built):** most packs reserve one reach slot per three units (rounded up), within the budget, seated in the Rear; Regular rooms and up always (but a rare brute room), Trash half the time. Ande and Mogel are the glue families: they lend reach to the Drattr, Draugr and Djur. Full rule: beinar_pilot.md Part 2, section 8. Parked families and reach-as-culture (the woodfolk, the Wyrms' spit, the Drattr blowgun): beinar_pilot.md Part 5.
+
 **Placement:** biggest units choose first. Front-liners (Mogel) fill the Front row, casters (Ande) the Rear; overflow spills into the other row, and the Front is never left empty while the Rear holds someone.
 
 **Sample rolls** (art only):

@@ -265,6 +265,38 @@ Names: Nedskold is DEF down, Nedvig EVA down, Aukvig EVA up (*vig*, agile). An e
 - A Spettbein (stiletto Beinar: Aukhitt for Keen, Drifspett, Halvspett) as a second Striker.
 - Build order (refactor_plan Wave 7): Phase B (the Halv as a pick, Merknyta Late, Evasive), then this pilot (status rules first, then brains), then Phase C (the Circle).
 
+## 7. Team plans (Nov 23, agreed with Joseph; not built)
+
+**Why:** the Nov 23 calibration fights. 54 of 58 foe attacks went at the Vasara and the Dagskald ended every fight at 100%: the packs were all Front melee, and the only glue between brains was "the boss's focus." A **plan** is the layer above the units' own rules: the pack's shared focus and stance.
+
+**The priority target** (Joseph's rule; every plan that hunts uses it): 1. anyone reachable at 60% HP or below, the lowest first; 2. otherwise anyone with a heal; 3. otherwise the lowest HP. Coin flip on ties; the Dying are skipped (finishing blows have their own rule).
+
+**Who picks:** at the start of round 1 the pack's **head** (the boss; otherwise its most expensive unit) picks a plan from the legal ones, weighted by family. The plan goes on the intent line. Each unit's rules read **the plan's focus** and **its stance** (hold or press) where Part 3 says "the boss's focus."
+
+| Plan | The pack | The Front | Legal when the pack has | Until |
+|---|---|---|---|---|
+| **Hunt** | presses the priority target | **holds**: Cover, Fortify; strikes only what's in front | reach | the target falls: re-pick; the target is above 60% after 3 rounds (the party is protecting it): re-plan |
+| **Break** | everyone on the Front hero | presses: Sunder, Frighten, then the heavies | anything (the fallback) | that hero falls: Hunt |
+| **Inflict** | keeps its debuffers covered and stacks debuffs | holds | two or more debuff moves | the focus carries 2+ debuffs, or 3 rounds: Hunt or Break |
+| **Stabilize** | 1-2 rounds of reset: Fortify, Calcify, Rally, a heal, a raise, a boss's once-a-fight ultimate (Joseph's Hrim boss whose move skips Chilled straight to Frozen) | holds | a heal, raise or cleanse, or two or more defensive buffs | back to the plan before |
+| **Desperate** | the family's last stand (below) | | a trigger: the pack has lost half its cost, or the head fell | the end |
+
+- **Stabilize triggers** when the head or a key caster is under 40% while the heroes are healthier than the pack.
+- **Desperate by family:** the Bein **break** (setups stop; each unit's strongest strike on the most-hurt hero). The Draugr **dig in** (Part 4: the grudge).
+- **Re-planning** is checked at round end, at most one switch every 2 rounds (no flip-flopping), and **every switch is announced** ("The Beinbryn lock shields." "The dead turn on the singer."). That line is the player's tell and the "they realised halfway in" moment.
+- **Variety** comes from family weights (the Bein lean toward Inflict and Hunt, the Draugr toward Break), from what the room's makeup makes legal, and from a small weighted roll; not from noise. A family that always opens the same way is fine: players learn it and play around it. Every family opening the same way is not.
+- **Guard against over-correcting:** Hunt can't win every pick (the healer would fall every fight instead of never). Its weight is tuned against Joseph's damage picture (section 5).
+
+## 8. The mirror: composition (Nov 23, agreed; not built)
+
+Most hero squads carry Rear reach, so most packs do too. A pack of N units **reserves one reach slot for every three units, rounded up** (1 for 2-3 units, 2 for 4-6), filled first and seated in the Rear. **Reach** is a damage move that hits our Rear from where the unit stands (the catalog's `ranged` tag: a spell, a bow, a throw, the Spettbein's spear from the Front).
+
+- **Regular, Elite and Boss rooms:** always, except a named **brute room** about 1 in 8, so it never becomes a law the player can count on.
+- **Trash rooms:** half the time (a Halvbeinorv); the Skralla swarm is a deliberate exception.
+- **Within the budget:** a reach unit takes a melee unit's place; the room's cost doesn't change.
+- **The adds dial** (calibration: +0/+1/+2 units on top) stays separate. Added units fill reach slots first. Its default is picked **after the brains**, from Joseph's fights and the gauntlet: brains and adds both make rooms harder, and tuning both at once is guessing.
+- **Reach by family today** (catalog entries that reach / total): Ande 60/60, Mogel 60/60, Bein 18/22, Drattr 4/10, Draugr 1/5, Djur 0/4. **Ande and Mogel are the glue families:** near-unrestricted reach, so they pair with the Drattr, the Draugr and the Djur. The Draugr stay thin on purpose (Part 4). The Djur want a spitter (Joseph: elemental Wyrms that spit their element). The Drattr want a reed blowgun (Joseph: a bow that works underwater).
+
 # Part 3: The Beinar Roster (v2, Nov 22: the focused session, with Joseph)
 
 The Beinar are the Barrow's dead warband. They kept their old jobs, and a Beinar room should read like a squad with a plan: **each job asks the party one question**, and the room is hard when the questions stack. **Kits differ by rank on purpose:** a Regular and an Elite of one job carry different tools, so a mixed room covers more than either alone; Halv ranks are there to be annoying. Some jobs exist at one rank only, and that's fine.
@@ -306,42 +338,54 @@ Not Crash (said aloud, one vowel from Krosh, the Vasara's hammer).
 ### Beinbryn: the guard
 *Trying to say:* "You'll have to go through me." Cover (a family rule) on every rank: it takes the hits meant for an ally under half HP.
 
+*Revised Nov 23 (Joseph): no Taunt on foes, and Cover takes one hit.* "This guy wants to get his DEF up, attack with Slash, and Cover when needed."
+
 | Rank | Kit |
 |---|---|
-| Halv | Taunt, Cut |
-| Regular | Taunt, Hew, Thrust |
-| Elite | Taunt, Carve, Fortify |
-| Boss (Fornbeinbryn) | **Calcify**, Fortify, Carve, Poke |
+| Halv | Cover, Cut |
+| Regular | Cover, Hew, Fortify |
+| Elite | Cover, Carve, Fortify, **Calcify** |
+| Boss (Fornbeinbryn) | **Bulwark**, Calcify, Great Carve, Fortify |
 
-- **Taunt:** one hero's single-target attacks this round must go to the Beinbryn, if they can reach it (Egga). The menu must say so: "Taunted: your attack goes to the Beinbryn."
-- **Calcify** (new, boss only): "I am a skeleton trying not to get smashed to bits." One step toward resist on **Crush**, on itself, on the affinity ladder (Part 1, section 5), so the ladder must carry damage types as well as elements. (Its seed was Motkrosh; the foes get a word of their own.)
+- **Cover** (Lya): a move, not a passive. Name an ally; the **first** single-target move aimed at it this round is taken by the Beinbryn, and then the stance ends. One interception, so two Beinbryn can't lock the board. **This is the shared rule, heroes and foes** (Lya, below).
+- **Bulwark** (Lonnlya): Fortified 1 and Cover in one move.
+- **Calcify** (Elite and Boss; on the Seidr only at Boss): "I am a skeleton trying not to get smashed to bits." One step toward resist on **Crush**, on itself, on the affinity ladder (Part 1, section 5), so the ladder must carry damage types as well as elements (not built; the Elite and Boss can ship without it and gain it after). Big, so few carry it.
 - **Fortify:** Fortified (Aukskold).
+- Taunt (Egga) stays the heroes'. A foe Taunt would also have needed the party's orders and the menu rebuilt around it.
 
 Brain, goal *keep the casters standing*:
-1. A hero damaged a Beinseidr, a Beinlur or the boss last round: **Taunt** that hero ("the Beinbryn taunts the Ullar, who shot the Beinseidr").
-2. Cover, by the family rule.
-3. (Boss) it was struck by Crush last round and isn't calcified: Calcify.
-4. In the Front, not Fortified, and didn't Fortify last turn: Fortify.
-5. Its best strike on the boss's focus. 6. Fall back.
+1. The plan holds, and a Beinseidr or the head is the party's likely target (it was struck last round, or it's under 50%): **Cover** it (Bulwark if it has it and isn't Fortified).
+2. (Elite, Boss) it was struck by Crush last round and isn't calcified: Calcify.
+3. In the Front, not Fortified, and didn't Fortify last turn: Fortify.
+4. Its best strike on the plan's focus. 5. Fall back.
 
-Counterplay: Crush (until it Calcifies); area moves ignore Taunt; Kasta shoves it out of the Front; Sundered and Marked.
+Counterplay: Crush (until it Calcifies); spend one hit on the Beinbryn to break the Cover, then strike the caster; area moves aren't caught; Kasta shoves it out of the Front; Sundered and Marked.
+
+**The shared Cover rule (Nov 23, Joseph; not built):** in the new game, **Lya** takes one interception and ends; the old game keeps today's round-long Lya, byte-identical. **Lonnlya** (Fortified 1, then Cover; classes.md already planned it) is the "Merdamma" Joseph reached for: Lonn is the grammar's slot for a verb's own rider, and Mer would mean a bigger number, which Cover doesn't have. A one-hit Lya is worth less than today's, so its 8 HP price is re-checked when it's built. (Joseph floated **Damma**, "to dam", for the move; Lya already holds it. Damma stays free for a row-wide block, a Flok cover, if one is ever wanted.)
 
 ### Beinorv: the striker
 *Trying to say:* "Your Rear is mine." Reaches anywhere.
 
+*Revised Nov 23 (Joseph):* the archer hits the Rear naturally; its brain tells it where to aim.
+
 | Rank | Kit |
 |---|---|
 | Halv | Arrow, Called Shot |
-| Regular | Arrow, Called Shot, Pinning Shot |
-| Elite | Arrow, Pinning Shot, Killing Shot, **Arrow Rain** |
+| Regular | Arrow, Pinning Shot, Killing Shot, its **quiver arrow** |
+| Elite | Rapid Arrows, Pinning Shot, Killing Shot, Volley, Sharpen Sight |
+| Held back | Arrow Rain |
 
-- **Called Shot:** Marked (Peka).
+- **The quiver:** each Beinorv rolls **Barbed Arrow** (Bleeding) **or Poison Arrow** (Poisoned) when it's placed, as a Beinseidr rolls its element. One ailment per archer keeps kits lean; two archers with different quivers are the dovetail.
+- **Rapid Arrows** (Drif): the heroes' flurry rule with foe numbers. Two hits always land, each coin flip won adds one more, up to five, each worth a third of an Arrow: about **0.96 of an Arrow** on average (hero Drif: 0.94), five hits 1 time in 8. Each hit rolls its own whiff, as Drif does today. (Five separate rolls at a third each was weighed: it averages 1.5 Arrows, and fixing that shrinks every hit to chip damage.)
+- **Volley** (the row) at Elite and Boss only. **Arrow Rain** (the row wind-up) is held back.
+- **Sharpen Sight** (Keen) moves here from the deferred Beinlur.
+- **Called Shot:** Marked (Peka). The Halv archer's job: fodder that sets up the others.
 - **Pinning Shot:** a Styng-type: a bite of damage and **Pinned 2** (Genomskott).
 - **Killing Shot:** x1.5 on the Pinned (Fangskott).
 - **Arrow Rain:** a wind-up on a row (Flokbidskott): it lands next round, and is lost if the archer is Stunned, Frozen or netted.
 - Arrow keeps its name across ranks; by the rule its tiers would read Hi-Arrow and Great Arrow (an arcing shot, which fits).
 
-Brain, goal *kill the weakest*, with **claims** so archers work together: one claims the Mark, one the Pin. **The Pin is topped up, not stacked:** while a hero is Pinned 2, nobody re-Pins; at Pinned 1, the claimant (or, if it's busy, the next archer) tops it back to 2. Then: finish anyone in killing range; Killing Shot on the Pinned; Arrow Rain on the row holding the most hurt heroes.
+Brain, goal *the plan's focus* (under Hunt, the priority target: the hurt, then the healers, then the weakest), with **claims** so archers work together. Its quiver arrow goes on a focus that doesn't already carry that ailment. one claims the Mark, one the Pin. **The Pin is topped up, not stacked:** while a hero is Pinned 2, nobody re-Pins; at Pinned 1, the claimant (or, if it's busy, the next archer) tops it back to 2. Then: finish anyone in killing range; Killing Shot on the Pinned; Arrow Rain on the row holding the most hurt heroes.
 
 Counterplay: Evasive on the weakest (Gyllenlykt), Lya, Skolja the Pin; Blinded archers whiff (Reyk); reach the Rear (Skott, spells, Svepa pulls it forward); stun the Arrow Rain.
 
@@ -350,7 +394,7 @@ Counterplay: Evasive on the weakest (Gyllenlykt), Lya, Skolja the Pin; Blinded a
 
 | Element | Bolt | Its extra |
 |---|---|---|
-| Eld | Fire Bolt | **Corpse Candle** (Singed, toward Scorched: the folklore lights over graves) |
+| Eld | Fire Bolt | (carries Singed once the fire ladder lands) |
 | Hrim | Frost Bolt | the chill rides the bolt |
 | Blixt | Lightning Bolt | the stun rides the bolt |
 | Natt | Shadow Bolt | |
@@ -359,9 +403,11 @@ Counterplay: Evasive on the weakest (Gyllenlykt), Lya, Skolja the Pin; Blinded a
 | Rank | Kit |
 |---|---|
 | Halv | Bolt, Curse |
-| Regular | Bolt, Silence, Curse |
+| Regular | Bolt, Silence, Curse (the Aska Seidr: Sunder, since its bolt already curses) |
 | Elite | Hi-Bolt, Sunder, Hi-Curse |
-| Boss (Fornbeinseidr) | Great Bolt, Hi-Sunder, Hi-Curse, Silence |
+| Boss (Fornbeinseidr) | Great Bolt, Hi-Sunder, Hi-Curse, Silence, Calcify |
+
+*Revised Nov 23 (Joseph):* **Corpse Candle is cut**: the bolt by element is enough, and the Fire Bolt takes Singed when the Brennumar fire ladder is built. The bolt's size follows the rank (a Halv bolt for the Halv Seidr, Base for the Regular, Mer for the Elite: about one hero Eld's worth at Regular). The child-element bolts (Hrim, Aska) take their Styng forms by the rule (0.7 and the certain twist). **No heals on the Seidr:** when foe healing comes, it comes as **one job** (the Beinlur, or a lich-like Seidr variant), not spread across every Seidr, which would make the pest the only kill in every room.
 
 - **Curse:** Cursed, the bundle (Part 1): **each stack is Hexed 1 and Poisoned 1** (Dokkn in the heroes' grammar). Hi-Curse lands two stacks.
 - **Silence:** Silenced, no MP moves (Bannskott). Martials pay HP, so the brain only Silences casters.
@@ -376,7 +422,9 @@ Brain, goal *soften the line*:
 
 Counterplay: **Bannskott** (it pays MP: Silence it back), Skolja, Sol, and reaching the Rear.
 
-### Beinlur: the dead skald (new)
+### Beinlur: the dead skald (new; **held back**, Nov 23)
+*Held back (Joseph):* healing is the strongest thing a foe can do, so the Beinlur waits until the pilot's brains have been tested. Its Sharpen Sight went to the Elite Beinorv.
+
 *Trying to say:* "Get up. We're not done." The lur is the Dagskald's own Bronze Age horn: the Beinlur is what a Dagskald becomes in the Barrow. It strikes with a spare bone.
 
 | Rank | Kit |
@@ -434,7 +482,7 @@ Kit: **Command**, **Cleaver**, **Carve** (Great Carve at boss tier, by the rule)
 - **Rally:** Mighty 2 on its side (Allmeraukraft).
 - Desperate (50% and below in the Front): drop the routine, its strike every turn.
 
-Brain: 1. Command. 2. Its side isn't Mighty and it didn't Rally in the last two rounds: Rally. 3. Two or more heroes stand in the focus's row: Cleaver on that row. 4. Carve the focus. 5. Fall back.
+Brain: 1. **Command:** as the head, it picks the plan (Part 2, section 7) and says its focus out loud. 2. Its side isn't Mighty and it didn't Rally in the last two rounds: Rally. 3. Two or more heroes stand in the focus's row: Cleaver on that row. 4. Carve the focus. 5. Fall back.
 
 ## Rooms (a first guess)
 
@@ -442,8 +490,9 @@ Brain: 1. Command. 2. Its side isn't Mighty and it didn't Rally in the last two 
 |---|---|---|
 | Trash | 4 to 6 Skralla, or 2 Skralla and 2 Halvbeinorv | area damage; protect the weakest |
 | Regular | Beinbryn, Beinseidr, Beinorv | the triangle: shield, pest, striker |
-| Elite | Storbeinbryn, Tork, Beinlur, Storbeinorv | hold formation; kill the horn first |
-| Boss | Fornbein, Beinlur, Beinbryn, Beinseidr (and their piles) | break the order before the Cleaver lands |
+| Elite (pilot) | Storbeinbryn, Storbeinseidr, two Beinorv (two quivers) | break the Cover; reach the Rear |
+| Boss (pilot) | Fornbein, Beinbryn, Beinseidr, Beinorv (and their piles) | break the order before the Cleaver lands |
+| Elite (later) | Storbeinbryn, Tork, Beinlur, Storbeinorv | hold formation; kill the horn first |
 
 ## What foes still can't do after this roster
 
@@ -451,16 +500,53 @@ Knot (the Skurmar's identity: fine) and Bound beyond the Drattr's net (rare by d
 
 ## What the build needs
 
-1. **The status rules** (Part 1): counter names (Waxing, Waning, Warded, Hexed), the bundles (Cursed: Hexed and Poisoned a stack; Disarmed: Feeble and Waning a stack), and **the affinity ladder over damage types too** (for Calcify).
-2. **The brains** (Part 2), with claims and the fallback counts.
-3. **Foe versions of hero mechanics:** Taunt aimed at the party's orders (the menu says so), Dirge (the song kind on foes), Shoulder Charge (a shove on heroes, with the bounce), Silence on heroes, the row wind-ups (Arrow Rain, Cleaver; to check: whether a foe Bid on a row resolves today).
-4. **Rise!:** a new action, standing a pile now at up to 75%.
-5. **The foes' register in data:** moves named by the ladders above, each with its heroes'-grammar twin recorded (so the library's Foes' moves chapter can show it).
+*Revised Nov 23 for the pilot (the built four: Beinbryn, Beinorv, Beinseidr, Fornbein).*
+
+1. **The status rules** (Part 1): **built** (Nov 22). Still to come: the affinity ladder over damage types (for Calcify; the Elite and Boss can ship without it).
+2. **The brains** (Part 2, sections 1-3): the units' rules, with claims and the fallback counts; **the team plans** (section 7), with the priority target, legality, re-planning and the announced switch.
+3. **The mirror** (section 8) in the composer and the calibration rooms.
+4. **Foe versions of hero mechanics:** Cover by the shared one-hit rule (Lya in the new game; Bulwark as Lonnlya), Silence on heroes, the quivers, Rapid Arrows (Drif with foe numbers), the row moves (Volley; Cleaver as a wind-up; to check whether a foe Bid on a row resolves today). Later, with their jobs: Dirge, Shoulder Charge, Rise!.
+5. **The foes' register in data:** moves named by the ladders above, each with its heroes'-grammar twin recorded (so the library's Foes' moves chapter can show it), and the units' English names in place of the generated ones ("Halvstyngaska").
 6. **Art:** Joseph's four starters cover the Beinbryn, Beinseidr and two Beinorv; the Beinseidr's five element ramps exist. New bodies (Beinlur, Spettbein, Tork, Skralla) need sprites; stand-ins can be the sword-and-shield frames, tinted.
-7. Then the Draugr the same way, and mixed rooms to playtest.
+7. Then the Draugr (Part 4), and mixed rooms to playtest.
 
 ## Decided (Nov 22, Joseph)
 
 The foes' register (above); Bash, Smash, Break; Poke, Thrust, Lunge; Calcify; Disarmed as Feeble and Waning a stack; the Beinseidr keeps five elements, bolts named plainly; Rise! (up to 75%; plain pile rules elsewhere); Pinning Shot as a Styng-type at Pinned 2, topped up by claim; Arrow Rain and Cleaver as row wind-ups; the names Beinlur, Tork, Skralla, Spettbein.
 
 Also decided: the Slash ladder **Cut, Hew, Carve**; the pilot is **the built four plus the Beinlur**, then Tork, Spettbein and Skralla once the brains prove out.
+
+## Decided (Nov 23, Joseph)
+
+- **Team plans:** Hunt (Siege and Pick Off merged, on Joseph's priority target), Break, Inflict, Stabilize, Desperate; picked by the head, weighted by family, announced on a switch (Part 2, section 7).
+- **The mirror:** reach slots in every pack, within the budget (Part 2, section 8). The adds dial's default waits for the brains.
+- **Cover is one interception, heroes and foes alike** (new game); no foe Taunt. Lonnlya (Bulwark) is Fortified 1 and Cover.
+- **Kits:** the Beinbryn as revised; the Beinorv quiver (Barbed or Poison), Rapid Arrows, Volley for Elite and Boss, Arrow Rain held back, Sharpen Sight on the Elite archer; the Beinseidr loses Corpse Candle; Calcify on Elite and Boss Beinbryn and the Boss Seidr.
+- **The pilot is the built four** (Beinbryn, Beinorv, Beinseidr, Fornbein). The Beinlur is held back; foe healing comes later as one job.
+- **The Draugr stay thin on reach** (Part 4); Ande and Mogel are the glue families.
+
+# Part 4: The Draugr (Nov 23, a first pass; agreed in outline)
+
+The saga dead. They hit hard and act after you (SPD 0.6). The Bein are a drilled squad you **out-think**; the Draugr are a grudge you **manage**. Two ideas run the family:
+
+- **The drag:** every Draugr status makes a hero **Late** (Grab: Reeling; Frighten: Feared; the Frost Bolt: Chilled), so a slow family's hits land before your heal.
+- **The grudge:** a Draugr's focus is whoever hurt it most. The player's own choices pick the target.
+
+They don't protect each other (no Cover): a Gandraugr in a pure Draugr room is exposed, and that's the counterplay. **Reach stays thin on purpose** (Joseph): the Gandraugr is their only reach, and the mirror fills a big room's second reach slot from guests (Bein, Ande, Mogel). Family rules stay: the crawl (killed by anything but Slash or Eld, it crawls on once at 35%), weak to Slash, Eld and Sol, resist Crush, Natt and Aska. Built moves are in `data.FAMILIES`; *new* marks a move the pass adds. Moves take the foes' register: the status moves are **Frighten** (Feared) and **Curse** (Cursed).
+
+| Unit | Tier | Seat | Its plan | Kit |
+|---|---|---|---|---|
+| **Halvdraugr** | Trash | Front | "Clutch at your ankles." | Claw, Rake (all); *new* **Grab** (Reeling 1: Late) |
+| **Draugr** | Regular | Front | "You hurt me. You." | Grave Axe (Slash), Barrow Fist (Crush), Sweep (all: punishes a clumped line), Frighten (DEF down and Late: sets up the axe) |
+| **Stordraugr** | Elite | Front | "Bleed, then bite." | Hi-Grave Axe, Hi-Barrow Fist, Sweep, Blot (Bleeding; by the register **Bleed**, Joseph's call); *new* **Death Bite** (about 80 and Poisoned 1: the finisher) |
+| **Gandraugr** | Regular, Magical | Rear (reach) | "Slow the singer." | Shadow Bolt (Natt), Frost Bolt (Hrim, its Styng form: Chilled; three single-target casts freeze), Frighten, Curse |
+| **Forndraugr** | Boss | Front | "Mine. All of it." | Great Break (Barrow Fist, Jatte), Hi-Sweep, Hi-Frighten, Great Curse; *new* **Grudge** (its Command: names the hero who hurt it most, out loud); *new* **Unyielding** (Desperate: Steadfast 3 on itself, never Late, never shoved) |
+
+**Dovetails:** the Gandraugr Frightens the Dagskald (Late: the heal lands after the hits): their kind of Hunt, which slows the healer rather than killing him. Grab, then Frighten, then Death Bite: a Late, DEF-down hero takes the bite before it can answer. Three Frost Bolts freeze the fastest hero, which evens the tempo. Sweep punishes clumps. **Mixed Barrow rooms** pay both families off: the head picks the plan; a Beinbryn Covers the Gandraugr; Beinorv Pins hold heroes in place for slow heavies; the Draugr give the Bein the muscle they lack.
+
+**Desperate (the grudge):** each Draugr strikes whoever hurt *it* most; the Forndraugr goes Unyielding. The Bein break; the dead dig in.
+
+# Part 5: Parked (Nov 23)
+
+- **Reach as culture:** the families tell us who needs to exist. A people with bows in every band isn't a cheat when bows are who they are. Seeds: the Djur's spitting Wyrms (each spits its element), the Drattr's reed blowgun (a bow that works underwater).
+- **The woodfolk** (Joseph's working name: the **Leshi**; Eldleshi, Vatnleshi, Blastleshi by element). Not dirty goblin cave-raiders: an ancient, shamanistic nature people, half-hidden in their element, a step above the beasts and a step below people. Trickster-elder shamans and warriors twist trails, mimic voices and cause accidents. A Leshi skirmish should feel like the biome itself is messing with your footing, sightlines, sanity and tempo (Dokkn palls, Svindl staggering, Peka and Siktlykt marks). Reach is part of their culture (crude bows, slingsticks, thrown stones). Job seeds: **Stallu** (the Sámi ogre: their big one), **Knol**, **Klo**, **Blotvattr** (the redcap). Naming notes: *Leshi* is Slavic (the leshy), where the game's roots are Norse, Germanic and Uralic: a deliberate step outside, or a reason to look for a northern cousin. *Vattr* (ON *vættr*) is the honest Norse root, but sits beside **Vatn** and shares the **-ttr** ending with the **Drattr**. *Gufi* reads as "Goofy." None of these collide with the parser today. Its own naming session, when a room needs them.

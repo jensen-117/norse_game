@@ -236,7 +236,7 @@ A Flok-and-talisman build that invested hard (about +2 or +3) sweeps a row of Tr
 | Vasara | 1 | Krosh | base | 16 HP | 1.0 (104) | 28 HP, 104 |
 | Vasara | 1 | Egga | minor | 8 HP | taunt | 28 HP |
 | Vasara | 2 | Brakrosh | rider | 32 HP | 0.6 (62), Sundered | 42 HP, 104 |
-| Vasara | 2 | Lya | minor | 8 HP | cover (a later Lonnlya, e.g. Fortified then cover, at 16) | free |
+| Vasara | 2 | Lya | minor | 8 HP | cover (new game, Nov 23: **one interception**, then the stance ends; heroes and foes alike. Lonnlya: Fortified 1, then cover, at 16; the foes call it Bulwark) | free |
 | Vasara | 3 | Snarbrakrosh | Snar, rider | 64 HP | 0.6 (62), first, Sundered | 63 HP, 93 |
 | Vasara | 3 | Rodegga | Egga + rider (Rod: blind with rage) | 16 HP | taunt + Blinded | Lonnegga, 42 HP |
 | Vasara | 3 | Hevn | base | 16 HP | 1.0, +25% a hit taken | 28 HP |
