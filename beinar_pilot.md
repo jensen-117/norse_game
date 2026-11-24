@@ -289,7 +289,7 @@ Names: Nedskold is DEF down, Nedvig EVA down, Aukvig EVA up (*vig*, agile). An e
 
 ## 8. The mirror: composition (Nov 23, agreed; not built)
 
-Most hero squads carry Rear reach, so most packs do too. A pack of N units **reserves one reach slot for every three units, rounded up** (1 for 2-3 units, 2 for 4-6), filled first and seated in the Rear. **Reach** is a damage move that hits our Rear from where the unit stands (the catalog's `ranged` tag: a spell, a bow, a throw, the Spettbein's spear from the Front).
+Most hero squads carry Rear reach, so most packs do too. A pack of N units **reserves one reach slot for every three units, rounded up** (1 for 2-3 units, 2 for 4-6), filled first and seated by role. **Reach** is a damage move that hits our Rear from where the unit stands (the catalog's `ranged` tag: a spell, a bow, a throw, the Spettbein's spear from the Front).
 
 - **Regular, Elite and Boss rooms:** always, except a named **brute room** about 1 in 8, so it never becomes a law the player can count on.
 - **Trash rooms:** half the time (a Halvbeinorv); the Skralla swarm is a deliberate exception.
@@ -361,6 +361,18 @@ Brain, goal *keep the casters standing*:
 
 Counterplay: Crush (until it Calcifies); spend one hit on the Beinbryn to break the Cover, then strike the caster; area moves aren't caught; Kasta shoves it out of the Front; Sundered and Marked.
 
+**The intercession ladder (Nov 23, Joseph; not built).** Lya is **intercession** (I protect someone you might fire at); Egga is **Taunt** (I draw your fire). Both are the heroes'; **foes get intercession only**, nothing Taunt-adjacent that steers the party's attacks.
+
+| Hero word | Foe name | Interceptions this round | Also |
+|---|---|---|---|
+| Lya (8 HP) | Cover | 1 | |
+| Merlya (16 HP) | Hi-Cover | 2 | |
+| Jatte (foe bosses) | Great Cover | 3 | |
+| Lonnlya | Bulwark | 1 | Fortified 1 on the coverer first |
+| Merlonnlya | Hi-Bulwark | 2 | Fortified 1 |
+
+The number is interceptions; the stance ends when they're spent or the round ends. **One coverer per ally:** a newer Lya replaces the older. A whole move is one interception (a flurry, a Styng hit, the net). Rows, columns and All aren't caught. Lya keeps its 8 HP price (Joseph: it's used strategically). Lonnlya needs Lya's designated rider in the data (Fortified 1); Merlya already compiles.
+
 **The shared Cover rule (Nov 23, Joseph; not built):** in the new game, **Lya** takes one interception and ends; the old game keeps today's round-long Lya, byte-identical. **Lonnlya** (Fortified 1, then Cover; classes.md already planned it) is the "Merdamma" Joseph reached for: Lonn is the grammar's slot for a verb's own rider, and Mer would mean a bigger number, which Cover doesn't have. A one-hit Lya is worth less than today's, so its 8 HP price is re-checked when it's built. (Joseph floated **Damma**, "to dam", for the move; Lya already holds it. Damma stays free for a row-wide block, a Flok cover, if one is ever wanted.)
 
 ### Beinorv: the striker
@@ -390,7 +402,7 @@ Brain, goal *the plan's focus* (under Hunt, the priority target: the hurt, then 
 Counterplay: Evasive on the weakest (Gyllenlykt), Lya, Skolja the Pin; Blinded archers whiff (Reyk); reach the Rear (Skott, spells, Svepa pulls it forward); stun the Arrow Rain.
 
 ### Beinseidr: the pest
-*Trying to say:* "Everything gets worse while I live." **Keeps its five elements** (Natt, Aska, Eld, Hrim, Blixt; never Sol): the colour swap, its resistances and weaknesses, and its bolt. The bolt carries its element's own rider (Hrim chills, Blixt stuns, Aska curses).
+*Trying to say:* "Everything gets worse while I live." **Keeps its five elements** (Natt, Aska, Eld, Hrim, Blixt; never Sol): the colour swap, its resistances and weaknesses, and its bolt. The bolt carries its element's own rider (Hrim chills, Blixt stuns); the Grave Bolt is plain Aska damage (Nov 23).
 
 | Element | Bolt | Its extra |
 |---|---|---|
@@ -398,16 +410,16 @@ Counterplay: Evasive on the weakest (Gyllenlykt), Lya, Skolja the Pin; Blinded a
 | Hrim | Frost Bolt | the chill rides the bolt |
 | Blixt | Lightning Bolt | the stun rides the bolt |
 | Natt | Shadow Bolt | |
-| Aska | Grave Bolt | the curse rides the bolt |
+| Aska | Grave Bolt | none: a full-size bolt of Aska damage, no curse (a hand-made move, not a Styng form) |
 
 | Rank | Kit |
 |---|---|
 | Halv | Bolt, Curse |
-| Regular | Bolt, Silence, Curse (the Aska Seidr: Sunder, since its bolt already curses) |
+| Regular | Bolt, Silence, Curse |
 | Elite | Hi-Bolt, Sunder, Hi-Curse |
 | Boss (Fornbeinseidr) | Great Bolt, Hi-Sunder, Hi-Curse, Silence, Calcify |
 
-*Revised Nov 23 (Joseph):* **Corpse Candle is cut**: the bolt by element is enough, and the Fire Bolt takes Singed when the Brennumar fire ladder is built. The bolt's size follows the rank (a Halv bolt for the Halv Seidr, Base for the Regular, Mer for the Elite: about one hero Eld's worth at Regular). The child-element bolts (Hrim, Aska) take their Styng forms by the rule (0.7 and the certain twist). **No heals on the Seidr:** when foe healing comes, it comes as **one job** (the Beinlur, or a lich-like Seidr variant), not spread across every Seidr, which would make the pest the only kill in every room.
+*Revised Nov 23 (Joseph):* **Corpse Candle is cut**: the bolt by element is enough, and the Fire Bolt takes Singed when the Brennumar fire ladder is built. The bolt's size follows the rank (a Halv bolt for the Halv Seidr, Base for the Regular, Mer for the Elite: about one hero Eld's worth at Regular). The Frost Bolt takes its Styng form by the rule (0.7 and the certain chill). **The Grave Bolt doesn't** (Joseph, Nov 23): the Curse and Aska were broken apart for a reason, so it's a plain bolt of Aska damage at a bolt's full size; the Aska Seidr curses with its Curse. Generated foes' Aska attacks keep their Styng forms (Styngaska on the Askande is correct). **No heals on the Seidr:** when foe healing comes, it comes as **one job** (the Beinlur, or a lich-like Seidr variant), not spread across every Seidr, which would make the pest the only kill in every room.
 
 - **Curse:** Cursed, the bundle (Part 1): **each stack is Hexed 1 and Poisoned 1** (Dokkn in the heroes' grammar). Hi-Curse lands two stacks.
 - **Silence:** Silenced, no MP moves (Bannskott). Martials pay HP, so the brain only Silences casters.
@@ -423,7 +435,7 @@ Brain, goal *soften the line*:
 Counterplay: **Bannskott** (it pays MP: Silence it back), Skolja, Sol, and reaching the Rear.
 
 ### Beinlur: the dead skald (new; **held back**, Nov 23)
-*Held back (Joseph):* healing is the strongest thing a foe can do, so the Beinlur waits until the pilot's brains have been tested. Its Sharpen Sight went to the Elite Beinorv.
+*Held back (Joseph):* healing is the strongest thing a foe can do, so the Beinlur waits until the pilot's brains have been tested. Its Sharpen Sight went to the Elite Beinorv. **Revised (Nov 23, Joseph):** it's the foes' Dagskald, a necromancer that keeps the Bein topped up and defended; it uses the Beinseidr's staff-and-orb body until Joseph draws its own. **The Draugr are excluded from Rise!** (they have the crawl).
 
 *Trying to say:* "Get up. We're not done." The lur is the Dagskald's own Bronze Age horn: the Beinlur is what a Dagskald becomes in the Barrow. It strikes with a spare bone.
 
@@ -550,3 +562,7 @@ They don't protect each other (no Cover): a Gandraugr in a pure Draugr room is e
 
 - **Reach as culture:** the families tell us who needs to exist. A people with bows in every band isn't a cheat when bows are who they are. Seeds: the Djur's spitting Wyrms (each spits its element), the Drattr's reed blowgun (a bow that works underwater).
 - **The woodfolk** (Joseph's working name: the **Leshi**; Eldleshi, Vatnleshi, Blastleshi by element). Not dirty goblin cave-raiders: an ancient, shamanistic nature people, half-hidden in their element, a step above the beasts and a step below people. Trickster-elder shamans and warriors twist trails, mimic voices and cause accidents. A Leshi skirmish should feel like the biome itself is messing with your footing, sightlines, sanity and tempo (Dokkn palls, Svindl staggering, Peka and Siktlykt marks). Reach is part of their culture (crude bows, slingsticks, thrown stones). Job seeds: **Stallu** (the Sámi ogre: their big one), **Knol**, **Klo**, **Blotvattr** (the redcap). Naming notes: *Leshi* is Slavic (the leshy), where the game's roots are Norse, Germanic and Uralic: a deliberate step outside, or a reason to look for a northern cousin. *Vattr* (ON *vættr*) is the honest Norse root, but sits beside **Vatn** and shares the **-ttr** ending with the **Drattr**. *Gufi* reads as "Goofy." None of these collide with the parser today. Its own naming session, when a room needs them.
+
+## Decided (Nov 23, later)
+
+The Grave Bolt is plain Aska damage, full size, no curse; the Aska Seidr keeps Curse. The intercession ladder (Lya, Merlya, Lonnlya, Merlonnlya; Cover, Hi-Cover, Great Cover, Bulwark, Hi-Bulwark), one coverer per ally. Foes get intercession, never Taunt. The Beinlur is the foes' necromancer-healer on the Seidr's body, held back; no Rise! for the Draugr. **The mirror counts reach wherever a unit stands** (a Mogel or a Spettbein reaches from the Front) and seats units by their role; it's a composer rule, on for the new game's rooms, so old checks keep their packs.
