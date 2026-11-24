@@ -68,12 +68,13 @@ Each entry: **Direction** (what and why), **Today** (what the code and docs do n
 | **Steadfast** | DEF where it is | N rounds |
 
 - *Why:* three moves, one rule. A held stat is bounded (it can't snowball), reads clearly, and restores honestly: an enemy's Disarm on a debuffed hero doesn't quietly cleanse them when it ends, and on a buffed hero it doesn't quietly wipe their Mighty.
-- Gyllenlykt under D1 is very strong (3 rounds of every hit grazing: half damage, no statuses, no riders, no Bonus Rounds against that hero); priced for it (16 MP today; re-checked when built). Disarm on a hero is a 3-round shutdown: telegraphed. A move can print a different ending as its price ("takes all your EVA with it") if a design wants it; the default is restore.
+- **Gyllenlykt** under D1 is very strong (3 rounds of every hit grazing: half damage, no statuses, no riders, no Bonus Rounds against that hero); **start at 20 MP** (up from 16 MP, to tamp down spam; re-checked when built).
+- **Crisp counterplay (`Skolja`, `Stabilize`, and `Disarm`):** `Skolja` cleanses harmful temporary locks (`Disarm`), and Boss `Stabilize` can dispel helpful ones (`Gyllenlykt`, `Steadfast`). Specifically for **`Disarm`**: while counting down, no further `Feeble` can stack underneath it, **but** the affected unit can push back with `Mighty` to offset it (e.g., `Mighty 3` lifts `−3 → 0`; a second `Mighty 3` reaches `Mighty 3` even while Disarmed). Recording how far `Disarm` dropped Offense (`delta`) and adding it back clamped to `[−3, +3]` on expiry (or `Skolja`) handles every case with no hidden over-cap stage: pre-existing `Feeble`/`Mighty` restores honestly, and a hero who pushed to `Mighty 3` stays at `Mighty 3` when `Disarm` leaves. A move can still print a different ending as its price ("takes all your EVA with it") if a design wants it; the default is restore.
 - **This replaces the IDE ADR-06's Gyllenlykt as a tile** (no burst, ~64 MP). Tile paint stays open for the Mogel (O4).
 
 **Today.** Gyllenlykt is Lak with Lonn: a heal and Evasive 3 (the printed rider), which decays by the staircase. Disarmed is a bundle (ATK −1 and MAT −1 a stack, cap 3). Steadfast is a bundle (DEF +1 a stack; never Late, never shoved; a wall).
 
-**Toward implementation.** A `held` record on the unit (stat, level, rounds, the value to restore). Stat changes check it first. It ticks at round end like an ailment and restores on expiry. Steadfast no longer blocks Late or shoves (Fear on a Steadfast hero still makes them Late; their DEF doesn't move).
+**Toward implementation.** A `held` record on the unit (stat, level, rounds, restore value/delta, and whether positive counter-pushes are allowed as with `Disarm`). Stat changes check it first (`Disarm` blocks further negative pushes while allowing `Mighty` to push upward). It ticks at round end like an ailment and restores on expiry or cleanse. Steadfast no longer blocks Late or shoves (Fear on a Steadfast hero still makes them Late; their DEF doesn't move).
 
 ### D4. Bundles are shorthand (Decided; new, Nov 24)
 
@@ -120,11 +121,11 @@ Each entry: **Direction** (what and why), **Today** (what the code and docs do n
 - **The Skurmar's Knots 3** restores a small amount of MP each turn, no longer "half a Meditate." The amount stays below a Blast's cost (the Nov 21 lesson: 9 MP a round was free Blasts forever).
 - **Lak heals 75 for 12 MP** (was 100 for 8). *Why:* a heal about the size of one Regular hit (~75) trades even for a turn, so healing is never automatic and never dead; a full 200-MP bar heals about 1,250 (16 casts), under one Rest, where it was about 2,500 (1.6 Rests). The turn choice becomes heal, or buff and debuff so the fight ends sooner. Row and party heals scale by the reach rules (Floklak about 30-ish a head in a boss fight is the feel). **Refactor plan Phase C's "heals at 1.2 (Lak ~125)" is retired.**
 - **The Halv is an ordinary kit move**: 4 HP or 2 MP, cheap and never free, competing for the four slots. Most likely acquired by carving your main move down, or a future talisman that turns your starter into its Halv. **The auto-filled Halv goes:** an empty slot stays empty until you pack or carve something.
-- **The sharp edge, accepted:** a caster at 0 MP has no attack (even Halveld costs 2 MP): Guard and items only. The pools are large; the numbers tune it.
+- **The sharp edge, accepted:** a caster at 0 MP has no spell attack (even Halveld costs 2 MP) unless they cross-pollinated into an HP-cost martial move (future): drink a Spirit Draught, use `Djupanda`/`Meditate` if found, Guard, or wait. The pools are large; the numbers tune it.
 
 **Today.** `can_meditate` gives every new-game magical Meditate (`MEDITATE_SHARE` 0.15 of max MP); `screen.js` reserves a menu slot for it. Djupanda is a free Bid any magical can carry (`DJUPANDA_SHARE` 0.40), in the Brennumar's leg-3 kit. `LAK_CLEAN` 100; Lak costs 8 MP. `build_hero` drops the class's Halv (`BASIC_VERB`) into a free slot of `KIT_SLOTS`. classes.md: the Skurmar's Knots 3 deepens his Meditate and Djupanda.
 
-**Toward implementation.** `can_meditate` off; the menu's slot goes; `LAK_CLEAN` 75 and Lak's cost 12; `build_hero` stops filling; kits re-checked (a leg-1 kit of two moves and two empty slots); Knots 3's MP amount; Djupanda's release group. The gauntlet needs Rest rooms (D9) before its numbers mean anything for casters.
+**Toward implementation.** `can_meditate` off; the menu's slot goes; `LAK_CLEAN` 75 and Lak's cost 12; `build_hero` stops filling; kits re-checked (a leg-1 kit of two or three intentional starters and empty slots); Knots 3's MP amount; Djupanda's release group. Ensure `Battle.declare()` (not just `autofill()`) falls back cleanly to `Guard` when a caster has 0 MP instead of returning `u.actions[0]` and skipping as `"spent"`. The gauntlet needs Rest rooms (D9) before its numbers mean anything for casters.
 
 ### D9. The per-hero Rest (Decided; new, Nov 24)
 
@@ -191,9 +192,9 @@ Output and reach (Mer, Flok, All, Styng) stay steep; tactical sidegrades (Tung, 
 
 Typed cell effects: the Mogel's empty-tile, occupied-tile and row paints with a cap of about three slimed cells, later caltrops. Built with the Mogel's enemy pass; the page draws tiles then.
 
-### O5. The Wild Hunt (IDE ADR-05)
+### O5. The Wild Hunt (Agreed direction; IDE ADR-05)
 
-combat_spec already has the **Hunt clock**: a step a room, and a step for every 5 rounds a fight runs past 5; when it catches you, the next room becomes a Hunt fight. Claude's proposal: the clock stays the anti-stall, and the ADR's lines ("The air turns bitter cold…", the horn) become its voice when a long fight moves it, rather than a second clock that spawns units mid-fight. Not yet decided.
+`combat_spec` already has the **Hunt clock** (dive-level pressure turning future rooms into Hunt fights), and inside a single room stalling needs a hard stop so players can't loop `Djupanda` + heals forever once the clock maxes out. **Direction (agreed Nov 24):** diegetic float-text warnings only (Strike 1: cold/fog → Strike 2: hunting horn; no HUD badge) leading on Strike 3 to a **mid-fight Wild Hunt intrusion** where the Oskorei **ride through and kill/scatter the remaining room foes**, replacing the enemy board with high-DPS, low-ish-HP spectral Hunters (`no_flee`) that must be killed to end the fight. That kills stall-farming immediately, solves board-slot overflow cleanly, and keeps the Hunt terrifying. Exact stall-tick threshold and how it feeds `combat_spec`'s dive clock settle when built.
 
 ### O6. Rests in the gauntlet, and the four-family enemy pass
 
@@ -209,7 +210,7 @@ The gauntlet's per-hero Rest (D9). The enemy pass restores family bodies' HP (cl
 - **Rewards:** after a fight, one of three (a tome, a mutation, or marks); later legs may offer moves already carved (a Reyk in leg 2, a Styngreyk in leg 3). Carving at the Rest (D9).
 - **The Vasara:** *the Anvil: covers allies, takes the hits, debilitates with the hammer.* Moves in five groups: **Strike** (Krosh, the mace: break), **Shield bash** (**Stot**, new: control: Stun, Tung, shoves, Late), **Protect** (Egga, Lya), **Brace** (Aukskold), **Answer** (Hevn). She **starts with Krosh, Egga and Stot**, one slot open for a find. Found as hammer and shield tomes: Lya, Aukskold, Hevn.
 - **Krosh's forks** (sketch): Merkrosh (power), Halvkrosh (cheap), Brakrosh (break), Flokrosh (a row-crush: a dead end, and strong), Drifkrosh, Jarkrosh, Bidkrosh; Brakrosh onward to Snarbrakrosh or Tungbrakrosh; Halvkrosh onward by a manner (Halvsnarkrosh, Halvdrifkrosh compile today; Styng doesn't apply to damage verbs). Jattekrosh found or carved: not settled.
-- **Jarf becomes Jar** (Jarkrosh, Jarskar, Jarspett): **no clean hits, only crits or grazes.** At neutral a coin (it averages a normal hit, with more swing); ahead on ACC the grazes vanish and every hit crits, so Keen with Jar is a build. Today Jarf is 0.7 power, ×1.5 cost, +20% crit chance, crits ×3.
+- **Jarf becomes Jar** (Jarkrosh, Jarskar, Jarspett, Drifjarskar): **degraded accuracy where every non-Graze is a Crit** (no clean hits). Scales cleanly along the D1 ladder: `−2/−3` = `100%` Graze / `0%` Crit; `−1` = `75%` Graze / `25%` Crit; **`0` (neutral) = `50%` Graze / `50%` Crit** (`1.00×` EV, high swing); **`+1` = `25%` Graze / `75%` Crit** (`1.25×` EV); **`+2/+3` = `0%` Graze / `100%` Crit** (`1.50×` EV). So `Keen`/`Marked` + `Jar` scales smoothly through `+1` and `+2`. Today Jarf is 0.7 power, ×1.5 cost, +20% crit chance, crits ×3.
 - **The shared core:** build the common spine, then let each class have its conversation with it, dipping into places that make it unique.
 
 ---
@@ -220,7 +221,7 @@ The gauntlet's per-hero Rest (D9). The enemy pass restores family bodies' HP (cl
 2. **Wave A:** D1 accuracy, D5 Guard, D6 no forced Advance, D7 leaks.
 3. **Wave B:** D2 persistent combined stats, D3 held stats, D4 bundles as shorthand.
 4. **Wave C:** D8 sustain (Meditate, Djupanda found, Lak 75/12, no Halv auto-fill, Knots 3 MP) and D9's Rest in the gauntlet.
-5. **The Beinar pilot resumes** (beinar_pilot.md, "What the build needs"): D10 intercession, the kits, the brains and team plans with D11's wants and the reset as Stabilize; then the gauntlet against Joseph's damage picture and his calibration fights.
+5. **The Beinar pilot resumes** (beinar_pilot.md, "What the build needs"): D10 intercession, the kits, the brains and team plans with D11's wants and the reset as Stabilize; then the gauntlet against Joseph's damage picture and his calibration fights *(scope calibration here to Leg 1, or pull O3 rider/`Gyllenlykt` costing ahead of Leg 2–3 calibration so Legs 2–3 aren't tuned twice)*.
 6. **Then:** the enemy pass (O6), tile paint (O4), costing (O3), the Hunt clock (O5), and progression (Part 4: the Growth view, the Vasara and Brennumar webs).
 
 Each wave: old fights byte-identical, the tests, the gauntlet and sweep before and after, the Lab republished, then Joseph plays. D1 and D2 land before the brains because the brains' valuations and the calibration read them.
