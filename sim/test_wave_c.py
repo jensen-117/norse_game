@@ -16,6 +16,19 @@ class Prices(unittest.TestCase):
         self.assertAlmostEqual(d["amount"], ANDA_SHARE * MANNERS["Bid"]["power"])
         self.assertAlmostEqual(compile_verb("Anda")["amount"], ANDA_SHARE)
 
+class AndaGrowsOnlyByBid(unittest.TestCase):          # Joseph's Wave C review
+    def test_no_free_upgrades(self):
+        for kw in (dict(tier="Mer"), dict(manners=("Snar",)), dict(manners=("Snar", "Bid"))):
+            with self.assertRaises(ValueError, msg=kw): compile_verb("Anda", **kw)
+
+    def test_djupanda_is_a_root(self):
+        self.assertEqual(compile_verb("Anda", manners=("Bid",))["name"], "Djupanda")
+        self.assertIn("Djupanda", ROOT_NAMES); self.assertNotIn("Djupanda", BYNAMES)
+
+class Wording(unittest.TestCase):
+    def test_a_second_raise_reads_as_one(self):
+        self.assertIn("and raises their DEF", plain(compile_verb("Aukraft", lonn=True)))
+
 class TheRest(unittest.TestCase):
     def test_it_heals_two_thirds_and_the_wound(self):          # Joseph's pre-flight: the pools come back whole
         v = build_hero("Vasara"); full_hp, full_mp = v.maxhp, v.maxmp

@@ -162,7 +162,7 @@ def plain(a):
         steps = PLAIN_STEPS.get(max(1, TIERS.index(tier)) if tier in TIERS else 1, "one step")
         if a.get("also"):
             st, d = a["also"][0]
-            return f"Raises the {a['stat']} of {who_ally} by {steps}, but lowers their {st}."
+            return f"Raises the {a['stat']} of {who_ally} by {steps}, {'and raises' if d > 0 else 'but lowers'} their {st}."
         if a["direction"] > 0: return f"Raises the {a['stat']} of {who_ally} by {steps}."
         return f"Lowers the {a['stat']} of {who_foe} by {steps}."
     if k == "status":

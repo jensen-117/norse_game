@@ -656,7 +656,9 @@ VERBS = {
     "Reyk":     dict(cost=3, targets=("Flok", "All"), cls="Brennumar", kind="status", element="Reyk", status="Blinded", rider=("Poisoned", "Eitr"), styng=True),
     "Sveda":    dict(cost=6, targets=("Flok", "All"), cls="Brennumar", kind="status", element="Eld", status="Scorched", rider=("Feeble", "Lam"), styng=True),
     "Aukseid":  dict(cost=3, cls="Brennumar", kind="stat", stat="MAT", up=True, target="self"),
-    "Anda":     dict(cls=None, kind="windfall", free=True, target="self", amount=ANDA_SHARE),   # any magical; found, not universal (D8)
+    "Anda":     dict(cls=None, kind="windfall", free=True, target="self", amount=ANDA_SHARE, only=("Bid",)),   # any magical; found, not
+                # universal (D8). It takes only Bid (Djupanda): a free move that grows for free would be strictly better
+                # (Joseph, Nov 24: Snaranda, Meranda). Meranda waits for its price in HP (Battle_Refactor_Current, Part 4)
     # Ullar (Bow; martial)
     "Skott":    dict(cost=16, halv=True, targets=("Flok", "All"), cls="Ullar", kind="damage", root="Skott", element="Pierce", rider=("Bleeding", "Blot"),
                      riders=(("Silenced", "Bann"),)),   # Bannskott: a shot that Silences (Nov 21, Joseph)
@@ -704,8 +706,7 @@ CAPSTONES = {            # name: (verb, its parts as a frozen set). Holm and Has
 # parts each verb accepts settles in the mutation session; then every reachable long name needs a byname here.
 BYNAME_LETTERS = 15
 BYNAMES = {
-    "Geirskott": ("Naglskott", frozenset({"Mer", "Styng"})),
-    "Djupanda": ("Anda", frozenset({"Bid"})),                 # the deep breath: Anda wound up (D8, Nov 24; the Waterfall Rune does it for free)   # ON geirr, "spear": a pike-length shaft that pins the leg
+    "Geirskott": ("Naglskott", frozenset({"Mer", "Styng"})),   # ON geirr, "spear": a pike-length shaft that pins the leg
 }
 # Root names (Nov 21, Joseph): a verb and some of its parts get a word of their own, and further parts attach to it
 # (Merdaska, Snargenomskott). An exact capstone or byname still wins. A rider with its own spoken part (Brak, Blot, Lam,
@@ -715,7 +716,8 @@ ROOT_NAMES = {
     "Genomskott": ("Naglskott", frozenset({"Styng"})),  # a through-shot: it hurts and Pins
     "Genomskoda": ("Peka", frozenset({"Lonn"})),        # Swedish genomskada, to see through someone: Marked and Sundered
     "Gyllenlykt": ("Lak", frozenset({"Lonn"})),         # the Golden Lantern (Joseph's Kajasken myth): mends and hides (was Solak)
-}
+    "Djupanda":   ("Anda", frozenset({"Bid"})),         # the deep breath: Anda wound up (D8, Nov 24; the Waterfall Rune does
+}                                                       # it for free); a root, so further parts attach (Merdjupanda)
 
 TIER_WEIGHT = {"Halv": 0, "Base": 0, "Mer": 1, "Jatte": 2, "Ur": 3}   # every tier priced on purpose (review C08)
 

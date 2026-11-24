@@ -179,6 +179,10 @@ def normalize(verb, tier=None, target=None, manners=(), styng=False, lonn=False,
             raise ValueError(f"{verb} already acts sooner than Swift")
         if mn in v.get("manners", ()): raise ValueError(f"{verb} is already {mn}")
     if styng and not v.get("styng"): raise ValueError(f"{verb} takes no Styng")
+    if v.get("only") is not None:                      # a verb that grows only so far (Anda: only Bid, for now)
+        extra = [p for p in ([tier] if tier not in (None, "Base") else []) + [target] * bool(target) + list(manners)
+                 + ["Styng"] * bool(styng) + ["Lonn"] * bool(lonn) if p not in v["only"]]
+        if extra: raise ValueError(f"{verb} takes only {', '.join(v['only'])} (not {', '.join(extra)})")
     if lonn and not v.get("rider"): raise ValueError(f"{verb} has no designated rider")
     rider = None
     if lonn:                                           # True: the verb's own rider; a word: any of its designated riders
@@ -233,8 +237,9 @@ def compile_verb(verb, tier=None, target=None, manners=(), styng=False, lonn=Fal
         for nm, (vb, ps) in ROOT_NAMES.items():
             if vb == verb and ps <= frozenset(carved): root, used = nm, ps; break
     spoken = name or join_morphemes([x for x in (n["target"], None if n["tier"] == "Base" else n["tier"],
-                                                 "Styng" if n["styng"] and "Styng" not in used else None, *n["manners"],
-                                                 None if "Lonn" in used else part, root) if x])
+                                                 "Styng" if n["styng"] and "Styng" not in used else None,
+                                                 *[m for m in n["manners"] if m not in used],   # a root's manner (Djupanda's Bid)
+                                                 None if "Lonn" in used else part, root) if x and x not in used])
     # who it reaches: eligibility (self, ally, enemy, fallen) and scope (one, row, all) kept apart (review C09)
     vt = v.get("target", "enemy")
     a = act(kind, spoken, tier=eff, all=(n["target"] == "All" or vt in ("all", "allies")),
@@ -269,7 +274,7 @@ def compile_verb(verb, tier=None, target=None, manners=(), styng=False, lonn=Fal
     a["designated"] = True                                               # riders are the verb's own: no element rider (Blixt's Stun is Lonn's)
     for k in ("root", "knots", "follow", "pays_on", "pays_below", "pays", "answer", "amount", "push"):
         if k in v: a[k] = v[k]
-    if kind == "windfall": a["amount"] = v["amount"] * mpower   # Djupanda: Anda wound up, x2.6 (D8)
+    if kind == "windfall": a["amount"] = v["amount"] * mpower * tier_share   # Djupanda: Anda wound up, x2.6 (D8); a tier scales it
     if "group" in v: a["group"] = v["group"]
     if eff in v.get("tier_group", {}): a["group"] = v["tier_group"][eff]   # a tier that takes longer (Merknyta: Late)
     a.update(mkw)
