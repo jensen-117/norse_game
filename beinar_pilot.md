@@ -516,6 +516,8 @@ Knot (the Skurmar's identity: fine) and Bound beyond the Drattr's net (rare by d
 
 *Revised Nov 23 for the pilot (the built four: Beinbryn, Beinorv, Beinseidr, Fornbein).*
 
+**Status (Nov 23, late):** step 3 (the mirror) is built; the rest waits on the `battle_system_adr.md` review. Resume at the intercession ladder (step 4's Cover), then the kits, then the brains (refactor_plan.md, "Where we paused").
+
 1. **The status rules** (Part 1): **built** (Nov 22). Still to come: the affinity ladder over damage types (for Calcify; the Elite and Boss can ship without it).
 2. **The brains** (Part 2, sections 1-3): the units' rules, with claims and the fallback counts; **the team plans** (section 7), with the priority target, legality, re-planning and the announced switch.
 3. **The mirror** (section 8) in the composer and the calibration rooms.
