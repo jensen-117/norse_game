@@ -126,7 +126,8 @@ def _board_unit(u):
     b = S["battle"]
     d = dict(id=u.uid, name=u.name, side=u.side, cell=list(u.cell) if getattr(u, "cell", None) else None,
              frac=max(0.0, u.hp / u.maxhp) if u.maxhp else 0, state=u.state, alive=u.alive, piled=u in b.piles,
-             status=sorted(u.status), family=getattr(u, "family", None), cls=u.cls, element=getattr(u, "element", None),
+             status=sorted(u.status) + sorted(h["name"] for h in getattr(u, "held", {}).values()),   # holds show as badges (D3)
+             held={h["name"]: h["rounds"] for h in getattr(u, "held", {}).values()}, family=getattr(u, "family", None), cls=u.cls, element=getattr(u, "element", None),
              rank=getattr(u, "mogel_rank", None) or getattr(u, "rank_name", None) or getattr(u, "rank", None),
              job=getattr(u, "job", None), winding=b.shown(u, u.bide[0]) if u.bide else None, intent=b.intents.get(u.uid),
              knots=getattr(u, "knots", 0), song=(u.status.get("Song") or {}).get("stacks", 0),   # the Song's verses (Nov 21)

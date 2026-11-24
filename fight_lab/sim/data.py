@@ -398,7 +398,8 @@ SPEED_GROUP_BY_KIND = {"defend": 3, "cover": 3, "taunt": 3, "move": 1}
 # ---------------------------------------------------------------- stat counters and status shapes (pillars Part 5c)
 # One counter per stat, -STACK_CAP..+STACK_CAP: its own stacks plus its sources (statuses that also touch the stat),
 # capped in total. Up and down cancel. A counter nobody pushed this round moves one step toward zero at its end.
-# The named statuses ARE the counters: Blinded 2 is ACC at -2. MAT and MDF have no names yet.
+# The named statuses ARE the counters: Blinded 2 is ACC at -2. MAT and MDF have no names: in the new game they
+# are one counter with ATK and DEF (COMBINED_STAT).
 STACK_CAP = 3
 STAT_NAMES = {"ATK": ("Feeble", "Mighty"), "DEF": ("Sundered", "Fortified"), "ACC": ("Blinded", "Keen"),
               "EVA": ("Marked", "Evasive"), "SPD": ("Slowed", "Quick"), "MAT": (None, None), "MDF": (None, None)}
@@ -413,23 +414,32 @@ STACKED_AILMENTS = ("Poisoned", "Bleeding", "Pinned", "Silenced", "Reeling", "Ch
 # Late group (no earlier than Late; Heavy and Last stay; protection moves, Guard, Cover and Taunt, are spared, as Fear
 # always spared them): Reeling is Late alone; Chilled is Late, and a second chill freezes (Frozen replaces it); Feared
 # is Late (its DEF part comes with the bundles). Pinned only roots: neither it nor Chilled slows SPD any more.
-LATE_STATUSES = ("Reeling", "Chilled", "Feared")
+LATE_STATUSES = ("Reeling", "Chilled")     # Feared is now shorthand for Reeling and Sundered (Nov 24, D4)
 
-# Step 4 (Nov 22): bundles, the new game's. A bundle is one named status holding a set of effects a stack; its number
-# steps down like an ailment's (a round nobody added to it, one less; never the round it lands). Its stat parts are as
-# big as its number (Cursed 2 is MDF -2, Hexed 2); its ailment parts are on while it lasts (a flat ailment is on or off:
-# Cursed and a separate Poison keep the one Poison on as long as either lasts). Opposites pull stack for stack.
-BUNDLES = {
-    "Feared":    dict(stats={"DEF": -1}, late=True),                       # Late, and the guard drops (Ogn)
-    "Steadfast": dict(stats={"DEF": 1}, blocks_late=True, unshoved=True),  # set feet: never Late, never shoved (Mot)
-    "Cursed":    dict(stats={"MDF": -1}, ailments=("Poisoned",)),          # Hexed and Poisoned (Dokkn; the foes' Curse)
-    "Venom":     dict(ailments=("Poisoned", "Bleeding")),                  # a weapon trait, or a move
-    "Disarmed":  dict(stats={"ATK": -1, "MAT": -1}),                       # Feeble and Waning (Disarm); to 3, as all
+# Wave B (Nov 24, Battle_Refactor_Current D2-D4), the new game's stats:
+# D2. Stats persist for the fight (no end-of-round step toward zero) and wash when it ends. Five counters: offense
+# (ATK and MAT as one: Mighty / Feeble), defense (DEF and MDF as one: Fortified / Sundered), SPD, ACC, EVA. Bodies keep
+# their separate base stats; only the counters combine.
+COMBINED_STAT = {"MAT": "ATK", "MDF": "DEF"}
+# D4. A bundle is shorthand: a move's label that lands its parts, then each part lives by its own rule (stat parts
+# persist; ailment parts tick). A part's number scales with the stacks landing (Feared 2: Reeling 2 and Sundered 2).
+SHORTHAND = {
+    "Feared": (("Reeling", 1), ("Sundered", 1)),     # Late, and the guard drops (Ogn)
+    "Cursed": (("Sundered", 1), ("Poisoned", 1)),    # the foes' Curse (Dokkn)
+    "Venom":  (("Poisoned", 1), ("Bleeding", 1)),    # a weapon trait, or a move
 }
-BUNDLE_OPPOSITE = {"Feared": "Steadfast", "Steadfast": "Feared"}
-# Step 6 (Nov 22): Skolja washes every harmful ailment and bundle to 0, the bespoke harmful ones too (Scorched, Frozen,
-# Stunned, Bound), but not stats; Lonnskolja, its designated rider, also lifts every lowered stat to 0. These stay:
-HELPFUL_STATUSES = ("Song", "Steadfast")
+# D3. Holds: a move sets a stat for some rounds and records how far it moved it. While it holds, pushes that hurt the
+# bearer are blocked and pushes that help still land; on expiry or removal its own change is undone (clamped). Skolja
+# cleanses harmful holds; Stabilize dispels helpful ones. A held stat can't take a second hold (aimed or landing).
+# level None: the stat stays where it is (Steadfast). rounds None: the landing's stacks (Steadfast 2: two rounds).
+HOLDS = {
+    "Disarmed":  dict(stat="ATK", level=-3, rounds=3, harmful=True),     # Disarm: Feeble 3 for 3 rounds
+    "Steadfast": dict(stat="DEF", level=None, rounds=None, harmful=False),  # set feet: DEF can't be lowered (Mot)
+}
+HOLD_ROUNDS = 3            # Gyllenlykt: its printed EVA +3, held for this many rounds
+# Step 6 (Nov 22): Skolja washes every harmful ailment (and, Nov 24, every harmful hold), the bespoke harmful ones too
+# (Scorched, Frozen, Stunned, Bound), but not stats; Lonnskolja, its designated rider, also lifts every lowered stat to 0.
+HELPFUL_STATUSES = ("Song",)
 # Step 5 (Nov 22): parents hit, children twist. In the new game no element carries an automatic rider; a child
 # element's plain spell is its twist, and a foe's child-element attack becomes its Styng form: a hit at STYNG_POWER of
 # the spell and the twist, certain on a clean hit (Allhrim becomes Allstynghrim). Blixt stays a parent's spike: its
@@ -437,7 +447,6 @@ HELPFUL_STATUSES = ("Song", "Steadfast")
 CHILD_TWIST = {"Reyk": "Blinded", "Hrim": "Chilled", "Gro": "Poisoned", "Aska": "Cursed"}
 CHAIN_AT = 2   # Nov 22, after the gauntlet: a chill freezes only a target already Chilled 2 (the third chill), not the second;
                # and only a single-target chill freezes: a row or All chill only stacks Chilled (a wave chills, a punch freezes)
-NEW_GAME_STAT_NAMES = {"MAT": ("Waning", "Waxing"), "MDF": ("Hexed", "Warded")}   # named in the new game only
 NEW_GAME_STAT_SOURCES = {"Pinned": {}, "Chilled": {}}    # the new game's override of a status row's "stats"
 STACKS_BY_TIER = {"Halv": 1, "Base": 1, "Mer": 2, "Jatte": 3, "Ur": 3}   # a status move's stacks (Mer adds two)
 FADE = (1.0, 0.5, 0.2)    # the fade shape: Frozen's chance to hold, action by action; Scorched's tick, round by round

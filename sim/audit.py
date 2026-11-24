@@ -124,7 +124,7 @@ def payoffs():
                     ("Evasive", "hits on you graze (1/2, 3/4, all)"), ("Keen", "your hits crit (1/3, 2/3, all), never graze"),
                     ("Quick", "you act sooner"), ("Poisoned", "ticks each round"), ("Bleeding", "ticks when it acts"),
                     ("Stunned", "may cost an action"), ("Bound", "costs an action"), ("Silenced", "blocks every MP move"),
-                    ("Disarmed", "ATK and MAT down"), ("Cursed", "two stages down"), ("Feared", "acts late")):
+                    ("Disarmed", "offense held at Feeble 3 for 3 rounds"), ("Cursed", "Sundered and Poisoned"), ("Feared", "acts late, and Sundered")):
         out[nm].append(txt)
     return out
 

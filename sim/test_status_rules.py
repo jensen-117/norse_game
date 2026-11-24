@@ -17,24 +17,33 @@ class TheTierSetsTheStep(unittest.TestCase):
     def test_base_one_mer_two_jatte_three(self):
         self.assertEqual((STACKS_BY_TIER["Base"], STACKS_BY_TIER["Mer"], STACKS_BY_TIER["Jatte"]), (1, 2, 3))
 
-class TheStaircase(unittest.TestCase):
-    """Joseph's worked example: a buffer keeps the Vasara at Mighty 2, turns away, and it steps down."""
+class StatsPersist(unittest.TestCase):
+    """Wave B (Nov 24, D2): stats last the fight. Joseph's buffer example, now: Mighty 2 stays Mighty 2."""
     def test_the_buffer_and_the_vasara(self):
         v = hero("Vasara", "Krosh"); d = hero("Dagskald", "Aukraft"); e = dummy()
         b = fight([v, d], [e])
         go = lambda: orders(b, {d.uid: (key(d, "Aukraft"), v.uid), v.uid: ("guard", None)})
-        go(); self.assertEqual(v.stage("ATK"), 1)            # R1: Mighty 1, held through the round's end (it was moved)
-        go(); self.assertEqual(v.stage("ATK"), 2)            # R2: Mighty 2, no step down
-        orders(b, {d.uid: ("guard", None), v.uid: ("guard", None)})
-        self.assertEqual(v.stage("ATK"), 1)                  # R3: nobody moved it: Mighty 1
-        orders(b, {d.uid: ("guard", None), v.uid: ("guard", None)})
-        self.assertEqual(v.stage("ATK"), 0)                  # R4: gone
+        go(); go(); self.assertEqual(v.stage("ATK"), 2)
+        for _ in range(3): orders(b, {d.uid: ("guard", None), v.uid: ("guard", None)})
+        self.assertEqual(v.stage("ATK"), 2)                  # nobody moved it, and it stays
 
-    def test_an_opposite_pull_counts_as_moving_it(self):
+    def test_opposites_cancel(self):
         v = hero("Vasara", "Krosh"); e = dummy(); b = fight([v], [e])
-        v.stages["ATK"] = -2                                  # Feeble 2
-        b.push(v, "ATK", 1); b.end_round()
-        self.assertEqual(v.stage("ATK"), -1)                  # pulled to Feeble 1, and no second drop that round
+        v.stages["ATK"] = -2; b.push(v, "ATK", 1); b.end_round()
+        self.assertEqual(v.stage("ATK"), -1)
+
+    def test_one_offense_one_defense(self):
+        v = hero("Vasara", "Krosh"); e = dummy(); b = fight([v], [e])
+        b.push(v, "MAT", 1); self.assertEqual((v.stage("ATK"), v.stage("MAT")), (1, 1))     # Mighty covers spells
+        b.push(v, "MDF", -2); self.assertEqual((v.stage("DEF"), v.counter_name("MDF")), (-2, "Sundered 2"))
+
+    def test_a_new_fight_starts_clean(self):
+        v = hero("Vasara", "Krosh"); b = fight([v], [dummy()]); b.push(v, "ATK", 2)
+        fight([v], [dummy()]); self.assertEqual(v.stage("ATK"), 0)
+
+    def test_the_old_game_keeps_its_staircase(self):
+        v = hero("Vasara", "Krosh"); e = dummy(); b = Battle([v], [e], random.Random(1), profile="legacy")
+        b.push(v, "ATK", 2); b.end_round(); b.end_round(); self.assertEqual(v.stages["ATK"], 1)
 
 class APrintedSizeWins(unittest.TestCase):
     def test_gyllenlykt_gives_evasive_3(self):
@@ -161,53 +170,72 @@ class FrozenReplacesChilled(unittest.TestCase):
         b.apply_status(e, u, "Pinned", 1.0); self.assertEqual(u.stage("SPD"), -1)
 
 # ------------------------------------------------------------------ step 4: bundles
-class Bundles(unittest.TestCase):
+class Shorthand(unittest.TestCase):
+    """Wave B (Nov 24, D4): a bundle lands its parts; each lives by its own rule."""
     def setUp(self):
         self.u = hero("Ullar", "Skott"); self.e = dummy(); self.b = ng(self.u, self.e)
 
     def land(self, s, n=1): return self.b.apply_status(self.u, self.e, s, 1.0, n)
 
-    def test_stat_parts_are_as_big_as_the_number(self):
-        self.land("Cursed", 2); self.assertEqual(self.e.stage("MDF"), -2); self.assertEqual(self.e.counter_name("MDF"), "Hexed 2")
-        self.land("Disarmed", 3); self.assertEqual(self.e.status["Disarmed"]["rounds"], 3)          # to 3, as all
-        self.assertEqual((self.e.stage("ATK"), self.e.stage("MAT")), (-3, -3))
-
-    def test_it_steps_down_like_an_ailment(self):
-        self.land("Cursed", 2); self.b.end_round(); self.assertEqual(self.e.status["Cursed"]["rounds"], 2)
-        self.b.end_round(); self.assertEqual(self.e.stage("MDF"), -1)
-        self.b.end_round(); self.assertNotIn("Cursed", self.e.status)
-
-    def test_its_ailment_parts_are_on_while_it_lasts_and_dont_double(self):
-        self.land("Cursed"); self.land("Poisoned"); hp = self.e.hp
-        self.assertTrue(self.b.tick_statuses(self.e, "round_start"))
-        self.assertEqual(hp - self.e.hp, max(1, int(self.e.maxhp * STATUSES["Poisoned"]["tick"]["share"])))   # one tick
-        self.assertTrue(self.b.wears(self.e, "Poisoned"))
-        del self.e.status["Poisoned"]; self.assertTrue(self.b.wears(self.e, "Poisoned"))   # Cursed alone keeps it on
-
-    def test_venom_poisons_and_bleeds(self):
-        self.land("Venom"); self.assertTrue(self.b.wears(self.e, "Poisoned")); self.assertTrue(self.b.wears(self.e, "Bleeding"))
-
-    def test_opposites_pull_stack_for_stack(self):
-        self.land("Feared", 2); self.land("Steadfast", 1)
-        self.assertEqual(self.e.status["Feared"]["rounds"], 1); self.assertNotIn("Steadfast", self.e.status)
-        self.land("Steadfast", 3)
-        self.assertNotIn("Feared", self.e.status); self.assertEqual(self.e.status["Steadfast"]["rounds"], 2)
-
-    def test_feared_is_late_and_drops_the_guard(self):
-        self.land("Feared", 2); self.assertEqual(self.e.stage("DEF"), -2)
+    def test_feared_is_late_and_sundered(self):
+        self.land("Feared", 2)
+        self.assertNotIn("Feared", self.e.status); self.assertEqual(self.e.status["Reeling"]["rounds"], 2)
+        self.assertEqual(self.e.stage("DEF"), -2)
         self.assertEqual(self.b.group_of(self.e, dict(kind="damage")), FEAR_GROUP)
+        for _ in range(4): self.b.end_round()
+        self.assertNotIn("Reeling", self.e.status); self.assertEqual(self.e.stage("DEF"), -2)   # the Late fades; the DEF stays
 
-    def test_steadfast_blocks_late_and_shoves_but_not_the_cold(self):
-        self.land("Steadfast"); self.land("Reeling")
-        self.assertEqual(self.b.group_of(self.e, dict(kind="damage")), 0)
-        self.assertTrue(self.b.unshoved(self.e))
-        for _ in range(3): self.land("Chilled")
-        self.assertIn("Frozen", self.e.status)
+    def test_cursed_and_venom(self):
+        self.land("Cursed"); self.assertEqual(self.e.stage("DEF"), -1); self.assertIn("Poisoned", self.e.status)
+        self.land("Venom"); self.assertTrue(self.b.wears(self.e, "Bleeding"))
+        self.assertEqual(self.e.status["Poisoned"]["rounds"], 2)       # one Poison, two landings: two rounds
 
-    def test_the_old_game_keeps_its_curse(self):
+class Holds(unittest.TestCase):
+    """Wave B (Nov 24, D3): one rule. A hold blocks pushes that hurt, lets help land, and undoes its own change."""
+    def setUp(self):
+        self.u = hero("Ullar", "Skott"); self.e = dummy(); self.b = ng(self.u, self.e)
+
+    def land(self, s, n=1): return self.b.apply_status(self.u, self.e, s, 1.0, n)
+
+    def test_disarm_restores_honestly(self):                  # Joseph's worked cases
+        for before, mid, after in ((-2, 0, -2), (3, 0, 3), (1, 6, 3)):
+            e = dummy(); b = ng(self.u, e); e.stages["ATK"] = before
+            b.apply_status(self.u, e, "Disarmed", 1.0); self.assertEqual(e.stage("ATK"), -3)
+            self.assertFalse(b.push(e, "ATK", -1))               # no Feeble under it
+            if mid: b.push(e, "ATK", 3); b.push(e, "ATK", 3)     # fights up to Mighty 3
+            for _ in range(4): b.end_round()
+            self.assertNotIn("ATK", e.held); self.assertEqual(e.stage("ATK"), after)
+
+    def test_it_lasts_its_rounds_not_the_landing_one(self):
+        self.land("Disarmed"); self.b.end_round(); self.b.end_round(); self.b.end_round()
+        self.assertIn("ATK", self.e.held); self.b.end_round(); self.assertNotIn("ATK", self.e.held)
+
+    def test_a_held_stat_takes_no_second_hold(self):
+        self.assertTrue(self.land("Disarmed")); self.assertTrue(self.b.capped(self.e, "Disarmed"))
+        self.assertFalse(self.land("Disarmed")); self.assertEqual(self.e.held["ATK"]["rounds"], 3)   # no refresh
+
+    def test_steadfast_holds_the_guard_but_not_the_tempo(self):
+        self.land("Steadfast", 2); self.land("Feared")
+        self.assertEqual(self.e.stage("DEF"), 0)                 # the DEF part is blocked
+        self.assertEqual(self.b.group_of(self.e, dict(kind="damage")), FEAR_GROUP)   # still Late
+        self.assertFalse(self.b.unshoved(self.e))                # and it can be shoved now
+        self.b.push(self.e, "DEF", 1); self.assertEqual(self.e.stage("DEF"), 1)    # help still lands
+
+    def test_gyllenlykt_holds_evasive(self):
+        d = hero("Dagskald", ("Lak", dict(lonn=True))); b = fight([d], [dummy()])
+        orders(b, {d.uid: (key(d, "Gyllenlykt"), d.uid)})
+        self.assertEqual(d.stage("EVA"), 3); self.assertIn("EVA", d.held)
+        self.assertFalse(b.apply_status(b.enemies[0], d, "Marked", 1.0)); self.assertEqual(d.stage("EVA"), 3)
+
+    def test_skolja_lifts_a_harmful_hold(self):
+        d = hero("Dagskald", "Skolja"); v = hero("Vasara", "Krosh"); b = fight([d, v], [dummy()])
+        v.stages["ATK"] = 1; b.apply_status(b.enemies[0], v, "Disarmed", 1.0)
+        orders(b, {d.uid: (key(d, "Skolja"), v.uid), v.uid: ("guard", None)})
+        self.assertNotIn("ATK", v.held); self.assertEqual(v.stage("ATK"), 1)
+
+    def test_the_old_game_keeps_its_bundles(self):
         b = Battle([self.u], [self.e], random.Random(1), profile="legacy")
         b.apply_status(self.u, self.e, "Cursed", 1.0); self.assertIn("stats", self.e.status["Cursed"])    # the rolled pick
-        self.assertIsNone(self.e.counter_name("MDF") if self.e.stage("MDF") == 0 else None)
 
 # ------------------------------------------------------------------ step 5: parents hit, children twist
 class ParentsHitChildrenTwist(unittest.TestCase):
@@ -253,10 +281,10 @@ class Skolja(unittest.TestCase):
         orders(b, {d.uid: (key(d, compile_verb("Skolja", lonn=lonn)["name"]), v.uid), v.uid: ("guard", None)})
         return v
 
-    def test_skolja_washes_ailments_and_bundles_not_stats(self):
+    def test_skolja_washes_ailments_not_stats(self):
         v = self.wash(False)
         self.assertEqual(set(v.status), {"Song"})                    # the helpful stays
-        self.assertEqual(v.stage("ATK"), -1)                         # Feeble 2 still there (it stepped down at the round's end)
+        self.assertEqual(v.stage("ATK"), -2)                         # Feeble 2 still there: Skolja washes ailments, not stats
 
     def test_lonnskolja_also_lifts_lowered_stats(self):
         v = self.wash(True)

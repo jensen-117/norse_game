@@ -140,7 +140,7 @@ def plain(a):
         if a.get("item"): return f"Restores {PLAIN_SHARE.get(a.get('amount'), 'some of')} one ally's HP."
         who = "a row of allies" if a.get("shape") == "row" else who_ally
         s = f"{PLAIN_TIER.get(tier, 'Average')} healing for {who}."
-        return s + (" The light leaves them Evasive: attacks on them miss 1 in 3." if a.get("also") else "")
+        return s + (" The light holds them Evasive 3 for three rounds: hits on them graze, and nothing can Mark them." if a.get("also") else "")
     if k == "song":
         who = "every ally" if a["all"] else "a row of allies" if a.get("shape") == "row" else "one ally"
         return (f"Adds {'two stacks' if tier == 'Mer' else 'a stack'} of Song to {who}, up to three: at the start of each round, "
@@ -201,6 +201,7 @@ class Unit:
         self.body = {}
         self.stages = {k: 0 for k in ["ATK", "DEF", "MAT", "MDF", "ACC", "EVA", "SPD"]}   # each stat's own stacks
         self.pushed = set()       # stats pushed this round: they don't step toward zero at its end
+        self.held = {}            # the new game's holds (D3): stat -> dict(name, rounds, delta, harmful, touched)
         self.status = {}          # name -> dict(rounds=..., ...)
         self.defending = False
         self.taunted_by = None    # Egga this round: this unit's single-target attacks go to her, if they can reach her
@@ -239,6 +240,10 @@ class Unit:
         self.maxhp *= self.b("HP"); self.hp = self.maxhp
 
     def stage(self, stat):
+        if getattr(self, "new_game", False):         # D2: offense and defense are one counter each (Nov 24)
+            k = COMBINED_STAT.get(stat, stat)
+            src = status_stat(self, k) + sum(status_stat(self, m) for m, c in COMBINED_STAT.items() if c == k)
+            return clamp(self.stages[k] + src, -STACK_CAP, STACK_CAP)
         return clamp(self.stages[stat] + status_stat(self, stat), -STACK_CAP, STACK_CAP)
 
     def has_flag(self, flag):
@@ -252,8 +257,9 @@ class Unit:
 
     def counter_name(self, stat):
         """The name a stat's counter shows (Blinded 2, Quick 1), or None at zero or for an unnamed stat."""
+        if getattr(self, "new_game", False): stat = COMBINED_STAT.get(stat, stat)   # D2: Mighty covers spells too
         n = self.stage(stat)
-        names = NEW_GAME_STAT_NAMES.get(stat, STAT_NAMES[stat]) if getattr(self, "new_game", False) else STAT_NAMES[stat]
+        names = STAT_NAMES[stat]
         name = names[0 if n < 0 else 1] if n else None
         return f"{name} {abs(n)}" if name else None
 
@@ -286,8 +292,6 @@ def status_stat(u, stat):
     n, ng = 0, getattr(u, "new_game", False)
     for s, inst in u.status.items():
         row = STATUSES.get(s, {})
-        if ng and s in BUNDLES:                         # a bundle's stat parts are as big as its number (step 4)
-            n += BUNDLES[s].get("stats", {}).get(stat, 0) * inst.get("rounds", 1); continue
         n += (NEW_GAME_STAT_SOURCES[s] if ng and s in NEW_GAME_STAT_SOURCES else row.get("stats", {})).get(stat, 0)
         if "pick" in row: n -= inst.get("stats", []).count(stat)
     return n
@@ -505,6 +509,9 @@ class Battle:
         self.new_game = self.profile == "new"
         for p in party: p.last_hp, p.overpaid = self.new_game, False   # the last-HP rule is the new game's (Nov 21)
         for x in list(party) + list(enemies): x.new_game = self.new_game  # what a unit's statuses do reads it (step 3)
+        if self.new_game:                            # D2: stats last the fight and wash when it ends (a new fight starts clean)
+            for x in list(party) + list(enemies):
+                x.stages = {k: 0 for k in x.stages}; x.pushed = set(); x.held = {}
         if self.new_game:                            # the new game's tuning: enemy damage, and HP by tier
             for e in enemies: self.new_game_enemy(e)
         if USE_BOARD:
@@ -616,6 +623,7 @@ class Battle:
                 self.die(t, "falls while Wounded"); return
             t.state, t.breaths, t.fell_round, t.hp = "dying", HERO_BREATHS, self.round, 0
             t.status = {}; t.stats["downs"] += 1
+            if self.new_game: self.release_all(t, why="ends as they fall")
             self.emit("dying", f"      {t.name} falls, dying! ({t.breaths} breaths)", unit=t.name, breaths=t.breaths)
             return
         if fam == "Draugr" and by not in DRAUGR_FINAL and not getattr(t, "crawling", False):
@@ -798,11 +806,52 @@ class Battle:
 
     # ------------------------------------------------------------ statuses
     def push(self, t, stat, n):
-        """Move a stat's counter n stacks (up and down cancel), capped; it holds this round."""
+        """Move a stat's counter n stacks (up and down cancel), capped; it holds this round. In the new game MAT and MDF
+        are ATK and DEF (D2), and a hold blocks a push that would lower its stat (D3). Returns whether it moved."""
+        if self.new_game:
+            stat = COMBINED_STAT.get(stat, stat)
+            if n < 0 and stat in t.held: return False
         t.stages[stat] = clamp(t.stages[stat] + n, -STACK_CAP, STACK_CAP); t.pushed.add(stat)
+        return True
+
+    # ------------------------------------------------------------ holds (D3, Nov 24)
+    def hold_stat(self, status): return HOLDS[status]["stat"] if status in HOLDS else None
+
+    def hold(self, src, t, name, stat, level, rounds, harmful):
+        """Set t's stat to level (None: where it is) for rounds, recording the change to undo. A stat already held
+        takes no second hold: the move fizzles (aimed or landing, Joseph's heads-up: Cover, rows, two Disarms)."""
+        stat = COMBINED_STAT.get(stat, stat)
+        if stat in t.held:
+            self.emit("held", f"      {t.name}'s {stat} is already held: {name} does nothing.", unit=t.name, status=name, src=src.name)
+            return False
+        before = t.stages[stat]
+        after = before if level is None else clamp(level, -STACK_CAP, STACK_CAP)
+        t.stages[stat] = after; t.pushed.add(stat)
+        t.held[stat] = dict(name=name, rounds=max(1, rounds), delta=after - before, harmful=harmful, touched=True)
+        src.stats["statuses"] += 1
+        self.emit("status", f"      {t.name} is {name}! ({t.counter_name(stat) or stat}, held {rounds})", unit=t.name,
+                  status=name, stat=stat, stacks=t.stage(stat), rounds=rounds, src=src.name)
+        return True
+
+    def release(self, t, stat, why="fades"):
+        """A hold ends (expiry, Skolja, Stabilize, a fall): its own change is undone, clamped."""
+        h = t.held.pop(stat, None)
+        if h is None: return
+        t.stages[stat] = clamp(t.stages[stat] - h["delta"], -STACK_CAP, STACK_CAP)
+        self.emit("unheld", f"      {t.name}'s {h['name']} {why}.", unit=t.name, status=h["name"], stat=stat, stacks=t.stage(stat))
+
+    def release_all(self, t, harmful=None, why="fades"):
+        for st in [st for st, h in t.held.items() if harmful is None or h["harmful"] == harmful]: self.release(t, st, why)
 
     def capped(self, t, status):
-        """Is a counter status already as deep as it goes on t (Blinded 3)? Then landing it again does nothing."""
+        """Is a counter status already as deep as it goes on t (Blinded 3)? Then landing it again does nothing.
+        New game: a hold on a held stat, a lowering counter on a held stat, a shorthand whose parts all are (D3, D4)."""
+        if getattr(self, "new_game", False):
+            if status in HOLDS: return COMBINED_STAT.get(HOLDS[status]["stat"], HOLDS[status]["stat"]) in t.held
+            if status in SHORTHAND: return all(self.capped(t, p) for p, _ in SHORTHAND[status])
+            if status in COUNTER_OF:
+                stat, sign = COUNTER_OF[status]
+                if sign < 0 and COMBINED_STAT.get(stat, stat) in t.held: return True
         if status not in COUNTER_OF:
             if self.stacked(status): return t.status.get(status, {}).get("rounds", 0) >= self.cap_of(status)
             return status in t.status
@@ -827,15 +876,14 @@ class Battle:
     def stacked(self, status):
         """Is this status, in this fight, one whose number counts (the new game, Nov 22): a flat ailment, where it
         is rounds, or a bundle, where it is also the size of its stat parts?"""
-        return getattr(self, "new_game", False) and (status in STACKED_AILMENTS or status in BUNDLES)
+        return getattr(self, "new_game", False) and status in STACKED_AILMENTS
 
     def cap_of(self, status):
-        return BUNDLES.get(status, {}).get("cap", STACK_CAP) if getattr(self, "new_game", False) else STACK_CAP
+        return STACK_CAP
 
     def wears(self, u, ailment):
         """Is u under this ailment, by itself or as part of a bundle (Cursed's Poison)? Flat: on or off."""
-        if ailment in u.status: return True
-        return getattr(self, "new_game", False) and any(ailment in BUNDLES[b].get("ailments", ()) for b in u.status if b in BUNDLES)
+        return ailment in u.status                          # bundles are shorthand now (D4): their parts are worn as themselves
 
     def reapplied(self, status, old, new):
         """The one re-application policy, read by the engine and the AI alike (review C17). None: refused."""
@@ -871,9 +919,19 @@ class Battle:
         if self.new_game and status == "Frozen": tgt.status.pop("Chilled", None)   # ...and Frozen replaces it
         if not self.new_game and STATUSES.get(status, {}).get("boss_immune") and getattr(tgt, "rank", None) == "Drott":
             self.emit("immune", f"      {tgt.name} shrugs off {status}.", unit=tgt.name, status=status); return False
+        if self.new_game and status in SHORTHAND:       # D4: the label lands its parts, each by its own rule
+            self.emit("status", f"      {tgt.name} is {status}!", unit=tgt.name, status=status, src=src.name, shorthand=True)
+            landed = [self.apply_status(src, tgt, p, 1.0, n * stacks, tier, move) for p, n in SHORTHAND[status]]
+            return any(landed)
+        if self.new_game and status in HOLDS:           # D3: Disarm, Steadfast
+            h = HOLDS[status]
+            return self.hold(src, tgt, status, h["stat"], h["level"], h["rounds"] or stacks, h["harmful"])
         if status in COUNTER_OF:                        # a named counter: Blinded is ACC down
             stat, sign = COUNTER_OF[status]
-            self.push(tgt, stat, sign * stacks)
+            if not self.push(tgt, stat, sign * stacks):  # a hold keeps it from falling (D3)
+                self.emit("held", f"      {tgt.name}'s {tgt.held[COMBINED_STAT.get(stat, stat)]['name']} holds: no {status}.",
+                          unit=tgt.name, status=status, src=src.name)
+                return False
             src.stats["statuses"] += 1
             shown = tgt.counter_name(stat) or STAT_NAMES[stat][0 if sign < 0 else 1] or status
             self.emit("status", f"      {tgt.name} is {shown}!", unit=tgt.name, status=STAT_NAMES[stat][0 if sign < 0 else 1] or status,
@@ -887,13 +945,6 @@ class Battle:
         else:
             row = STATUSES.get(status, dict(duration=STATUS_DURATION, reapply="refuse"))
             if row["reapply"] == "refuse" and status in tgt.status and not self.stacked(status): return False
-            opp = BUNDLE_OPPOSITE.get(status) if self.new_game else None
-            if opp and opp in tgt.status:                # opposite bundles pull stack for stack (Feared, Steadfast)
-                o = tgt.status[opp]; pulled = min(o["rounds"], stacks)
-                o["rounds"] -= pulled; o["touched"] = True; stacks -= pulled
-                if o["rounds"] <= 0: del tgt.status[opp]
-                self.emit("status", f"      {tgt.name}'s {opp} pulls against it.", unit=tgt.name, status=opp, src=src.name)
-                if stacks <= 0: return True
             inst = self.reapplied(status, tgt.status.get(status), self.status_instance(src, tgt, status, stacks, tier, move, self.rng))
             tgt.status[status] = inst
         src.stats["statuses"] += 1
@@ -1237,6 +1288,9 @@ class Battle:
                       unit=u.name, move=a["name"], element=a["element"], targets=healed)
             for st, d in a.get("also") or []:              # Gyllenlykt: the light makes them harder to hit
                 n = 1 if self.new_game else STACKS_BY_TIER.get(a["tier"], 1)   # new game: a printed size wins (Nov 22)
+                if self.new_game:                           # D3: the light holds EVA at its printed size, then lifts
+                    for t in tgts: self.hold(u, t, "Gyllenlykt", st, d * n, HOLD_ROUNDS, False)
+                    continue
                 for t in tgts:
                     self.push(t, st, d * n)
                     self.emit("status", f"      {t.name} is {t.counter_name(st) or st}!", unit=t.name,
@@ -1271,6 +1325,7 @@ class Battle:
             for t in tgts:
                 if self.new_game:                       # step 6: ailments and bundles; Lonnskolja also lifts stats
                     t.status = {s: v for s, v in t.status.items() if s in HELPFUL_STATUSES}
+                    self.release_all(t, harmful=True, why="is washed away")     # D3: Skolja lifts Disarm
                     if a.get("lift"):
                         for s in t.stages: t.stages[s] = max(0, t.stages[s])
                     continue
@@ -1415,7 +1470,7 @@ class Battle:
 
     def unshoved(self, x):
         """Can no shove move x? Pinned (rooted), or, in the new game, Steadfast (set feet: step 4)."""
-        return x.rooted or (getattr(self, "new_game", False) and "Steadfast" in x.status)
+        return x.rooted                                  # Steadfast no longer stops a shove (Nov 24, D3)
 
     def bumped(self, src, x, y):
         dmg = self.bump(x, y); x.hp -= dmg; src.stats["dealt"] += dmg
@@ -1763,7 +1818,8 @@ class Battle:
                                     * (self.shape_mult(a, i) if len(hit) > 1 else 1.0) for i, x in enumerate(hit))
                         else:
                             s = self.expected_damage(u, f, a) * self.reach_mult(u, a, f)
-                        if f.affinity(a["element"]) == "weak": s *= 1.5     # tempo value
+                        if f.affinity(a["element"]) == "weak":            # tempo value: the Bonus Round, if it doesn't graze
+                            s *= 1 + 0.5 * ((1 - self.odds(u, f, a)[1]) if self.new_game else 1.0)
                         if s >= f.hp: s *= 1.3
                         if a.get("rider_sure") and getattr(self, "new_game", False) and a["status"] in COUNTER_OF:
                             s += self.counter_value(u, f, a["status"], STACKS_BY_TIER.get(a["tier"], 1))   # Brakrosh: Sundered
@@ -1773,7 +1829,7 @@ class Battle:
             elif a["kind"] == "heal":
                 hurt = [x for x in self.allies(u) if x.hp < 0.5 * x.maxhp]
                 bright = lambda xs: sum(0.15 * ref for x in xs for st, d in (a.get("also") or [])
-                                        if x.stage(st) * d < STACK_CAP)          # Gyllenlykt's Evasive on those it reaches
+                                        if x.stage(st) * d < STACK_CAP and COMBINED_STAT.get(st, st) not in x.held)   # Gyllenlykt's Evasive
                 if a["all"]:
                     xs = self.allies(u)
                     s = sum(min(self.heal_amount(u, a), x.maxhp - x.hp) for x in xs if x.hp < 0.7 * x.maxhp)
@@ -1827,12 +1883,14 @@ class Battle:
                 pool = self.allies(u) if a["direction"] > 0 else self.foes(u)
                 for x in pool:
                     if x.stage(a["stat"]) * a["direction"] >= STACK_CAP: continue   # already as far as it goes
+                    if a["direction"] < 0 and getattr(self, "new_game", False) and COMBINED_STAT.get(a["stat"], a["stat"]) in x.held: continue
                     options.append((0.8 * ref - cost_pen, a, x))
             elif a["kind"] == "cleanse":
                 ng = getattr(self, "new_game", False)
                 def burden(x):
                     if not ng: return len(x.status) + sum(-v for v in x.stages.values() if v < 0)
-                    return sum(s not in HELPFUL_STATUSES for s in x.status) + (sum(-v for v in x.stages.values() if v < 0) if a.get("lift") else 0)
+                    return (sum(s not in HELPFUL_STATUSES for s in x.status) + sum(h["harmful"] for h in x.held.values())
+                            + (sum(-v for v in x.stages.values() if v < 0) if a.get("lift") else 0))
                 pool = [x for x in self.allies(u) if burden(x) > 0]
                 if a["all"] and pool:
                     options.append((0.5 * ref * sum(burden(x) for x in pool) - cost_pen, a, None))
@@ -1928,6 +1986,9 @@ class Battle:
         """What pushing a named counter on f is worth for about a round (new game): the change in what our side's
         best blows do to it (DEF, EVA, MDF down), or in its best blow on us (ATK, ACC, MAT down). SPD: neither."""
         stat, sign = COUNTER_OF[status]
+        if getattr(self, "new_game", False):
+            stat = COMBINED_STAT.get(stat, stat)                  # D2: one offense, one defense counter
+            if sign < 0 and stat in f.held: return 0.0             # D3: a hold keeps it up
         if f.stage(stat) * sign >= STACK_CAP or stat == "SPD": return 0.0
         mine = stat in ("DEF", "EVA", "MDF")
         def dealt():
@@ -1953,6 +2014,15 @@ class Battle:
         a counter, what its stacks change; a burn, what it adds over what's still burning; a refresh, the rounds it
         adds; a refused status, nothing."""
         st, ng = a["status"], getattr(self, "new_game", False)
+        if ng and st in SHORTHAND:                     # D4: what its parts add, each as itself
+            parts = [self.status_gain(u, dict(a, status=p, also_status=None), f, n * stacks, ref) for p, n in SHORTHAND[st]]
+            return sum(v for v, _, _ in parts), any(l for _, l, _ in parts), max((sh for _, _, sh in parts), default=0.0)
+        if ng and st in HOLDS:                         # D3: a hold on a held stat does nothing
+            h = HOLDS[st]
+            if self.capped(f, st): return 0.0, False, 0.0
+            if h["level"] is None: return 0.6 * ref, True, 1.0               # Steadfast: a guard against the next drop
+            name = STAT_NAMES[h["stat"]][0 if h["level"] < 0 else 1]
+            return self.counter_value(u, f, name, max(0, f.stage(h["stat"]) - h["level"])), True, 1.0
         if st in COUNTER_OF:
             if ng: return self.counter_value(u, f, st, stacks), True, 1.0
             return (0.0, True, 0.0) if self.capped(f, st) else (0.9 * ref, True, 1.0)
@@ -1981,7 +2051,7 @@ class Battle:
         if a.get("also_status") and lands: s += self.also_value(u, f, a, ref) * chance
         if share and any(m.get("pays_on") == a["status"] for x in self.allies(u) for m in x.actions):
             s += AI_PAYOFF_VALUE * ref * chance * share
-        if weak and s > 0: s *= 1.5                        # tempo: the Bonus Round
+        if weak and s > 0: s *= 1 + 0.5 * (chance if getattr(self, "new_game", False) else 1.0)   # tempo: the Bonus Round
         return s + self.styng_value(u, a, f)
 
     def reason(self, u, a, t):
@@ -2109,7 +2179,7 @@ class Battle:
         """The speed group an action resolves in (combat_spec Part 3)."""
         g = a.get("group", SPEED_GROUP_BY_KIND.get(a["kind"], 0))
         if g < PROTECT_GROUP and getattr(self, "new_game", False):   # Late, one primitive (Nov 22, step 3)
-            if any(s in u.status for s in LATE_STATUSES) and "Steadfast" not in u.status: g = min(g, FEAR_GROUP)
+            if any(s in u.status for s in LATE_STATUSES): g = min(g, FEAR_GROUP)
             return g
         if g < PROTECT_GROUP:                       # Fear drops anything below protection
             for s in u.status:
@@ -2289,10 +2359,15 @@ class Battle:
                     self.emit("song_fades", f"  {u.name}'s {s_} fades to {inst['stacks']}.", unit=u.name, status=s_, stacks=inst["stacks"])
                     if inst["stacks"] <= 0: del u.status[s_]; continue
                 inst["touched"] = False
-        for u in self.units:      # counters nobody pushed this round step toward zero
-            for st, v in u.stages.items():
-                if v and st not in u.pushed: u.stages[st] = v - 1 if v > 0 else v + 1
+        for u in self.units:      # counters nobody pushed this round step toward zero (old game; the new game's persist, D2)
+            if not self.new_game:
+                for st, v in u.stages.items():
+                    if v and st not in u.pushed: u.stages[st] = v - 1 if v > 0 else v + 1
             u.pushed = set()
+            for st, h in list(u.held.items()):           # holds tick like ailments: never the round they land (D3)
+                if h.pop("touched", False): continue
+                h["rounds"] -= 1
+                if h["rounds"] <= 0: self.release(u, st)
         for u in self.units:      # only numbered rounds tick durations
             for s in list(u.status):
                 if self.stacked(s) and u.status[s].pop("touched", False): continue   # added to this round: holds

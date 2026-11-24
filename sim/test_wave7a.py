@@ -81,7 +81,7 @@ class AGrazeIsAFloor(unittest.TestCase):
         from words import compile_verb
         v = hero("Vasara", "Krosh")
         e = dummy(aff={"Crush": "weak"}, **({} if guards else dict(actions=[compile_verb("Krosh", tier="Halv")])))
-        e.stages["EVA"] = eva; b = fight([v], [e]); b.rng = random.Random(3)
+        b = fight([v], [e]); e.stages["EVA"] = eva; b.rng = random.Random(3)   # after the fight starts (it washes stats)
         for uid in b.awaiting(): b.submit(uid, key(v, "Krosh"), e.uid)
         b.commit(); return b.phase == "bonus"
 
@@ -91,13 +91,16 @@ class AGrazeIsAFloor(unittest.TestCase):
 
 class NoForcedAdvance(unittest.TestCase):
     """D6 (Nov 24): an empty Front costs nobody their turn; the Rear is exposed, and stepping up is a choice."""
-    def test_the_rear_keeps_its_turn(self):
-        u = hero("Vasara", "Krosh"); e = dummy(); f = dummy(); b = fight([u], [e, f])
-        e.cell, f.cell = ("rear", 0), ("rear", 1)
-        self.assertEqual(b.advancers([e, f]) if not b.new_game else set(), set())
-        b2 = Battle([hero("Vasara", "Krosh")], [dummy()], random.Random(1), events=True)
-        b2.enemies[0].cell = ("rear", 0); b2.begin("party")
-        self.assertFalse(any(d and d[0].get("name") == "Advance" for _, _, d in b2.remaining))
+    def test_the_foes_keep_their_turn(self):
+        b = Battle([hero("Vasara", "Krosh")], [dummy()], random.Random(1), events=True)
+        b.enemies[0].cell = ("rear", 0); b.begin("party")
+        self.assertFalse(any(d and d[0].get("name") == "Advance" for _, _, d in b.remaining))
+
+    def test_a_rear_melee_hero_still_takes_orders(self):     # Joseph's review: the hero side too
+        v = hero("Vasara", "Krosh"); u = hero("Ullar", "Skott")
+        b = Battle([v, u], [dummy()], random.Random(1), events=True)
+        v.cell, u.cell = ("rear", 0), ("rear", 1); b.begin("party")
+        self.assertIn(v.uid, b.awaiting())
 
 class NothingAffordableGuards(unittest.TestCase):
     """D7 (Nov 24, Joseph): a foe or hero with nothing it can pay for Guards, rather than losing the turn."""
