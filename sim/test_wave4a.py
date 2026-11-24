@@ -254,11 +254,17 @@ class StatusMoves(unittest.TestCase):
         self.assertTrue(evs(b, "taunt"))
 
     def test_reyk_on_the_reyk_weak(self):
-        """Always lands, a stack deeper, and the Bonus Round (classes.md Part 2)."""
-        u = hero("Brennumar", "Reyk"); e = dummy(aff={"Reyk": "weak"}); b = fight([u], [e])
-        for uid in b.awaiting(): b.submit(uid, key(u, "Reyk"), e.uid)
-        b.commit()
-        self.assertEqual(e.counter_name("ACC"), "Blinded 2"); self.assertEqual(b.phase, "bonus")
+        """Always lands, a stack deeper, and the Bonus Round (classes.md Part 2), unless the target Guards
+        (Battle_Refactor_Current D5, Nov 24: the dummy's quiet action is Defend)."""
+        from words import compile_verb
+        for guards in (False, True):
+            u = hero("Brennumar", "Reyk")
+            e = dummy(aff={"Reyk": "weak"}, **({} if guards else dict(actions=[compile_verb("Krosh", tier="Halv")])))
+            b = fight([u], [e])
+            for uid in b.awaiting(): b.submit(uid, key(u, "Reyk"), e.uid)
+            b.commit()
+            self.assertEqual(e.counter_name("ACC"), "Blinded 2")
+            self.assertEqual(b.phase == "bonus", not guards, guards)
 
     def test_old_fights_keep_the_roll(self):
         u = birth("Brennumar", 30, random.Random(1)); u.actions = [status_spell("Blinded", "Base")]

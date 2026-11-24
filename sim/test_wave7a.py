@@ -8,7 +8,7 @@ from engine import *
 from test_wave4a import hero, dummy, fight, orders, key, evs
 
 class ZeroRng(random.Random):
-    """Every roll comes up 0.0: the first outcome on the list (a whiff, when there's one)."""
+    """Every roll comes up 0.0: the first outcome on the list (a graze, when behind)."""
     def random(self): return 0.0
 
 def battle(*units):
@@ -16,62 +16,94 @@ def battle(*units):
     return Battle(party, foes, random.Random(1), profile="new")
 
 class TheOdds(unittest.TestCase):
+    """The ladder (Nov 24, Battle_Refactor_Current D1): ahead, crits 1/3, 2/3, all; behind, grazes 1/2, 3/4, all; even,
+    no graze and the base crit. No whiffs."""
     def setUp(self):
         self.u = hero("Vasara", "Krosh"); self.e = dummy(); self.b = battle(self.u, self.e)
         self.krosh = next(a for a in self.u.actions if a["name"] == "Krosh")
 
     def odds(self): return self.b.odds(self.u, self.e, self.krosh)
 
-    def test_even_is_the_plain_roll(self):
-        w, g, c = self.odds(); self.assertEqual((w, g), (0.0, GRAZE_BASE)); self.assertGreater(c, 0)
+    def test_even_never_grazes(self):
+        w, g, c = self.odds(); self.assertEqual((w, g), (0.0, 0.0)); self.assertGreater(c, CRIT_BASE - 1e-9)
 
-    def test_a_nimble_target_whiffs_one_in_three(self):
+    def test_ahead_the_crit_ladder(self):
+        for n, want in ((1, 1 / 3), (2, 2 / 3), (3, 1.0)):
+            self.e.stages["EVA"] = -n; self.assertEqual(self.odds(), (0.0, 0.0, want))
+
+    def test_behind_the_graze_ladder(self):
+        base = self.odds()[2]
+        for n, want in ((1, 0.5), (2, 0.75), (3, 1.0)):
+            self.e.stages["EVA"] = n; w, g, c = self.odds()
+            self.assertEqual((w, g), (0.0, want)); self.assertAlmostEqual(c, base * (1 - want))
+
+    def test_the_net_is_clamped_to_three(self):
+        self.u.stages["ACC"] = 3; self.e.stages["EVA"] = -3; self.assertEqual(self.odds()[2], 1.0)
+        self.u.stages["ACC"] = -3; self.e.stages["EVA"] = 3; self.assertEqual(self.odds()[1], 1.0)
+
+    def test_the_ai_sees_the_ladder(self):
         plain = self.b.expected_roll_mult(self.u, self.e, self.krosh)
         self.e.stages["EVA"] = 1
-        self.assertAlmostEqual(self.odds()[0], 1 / 3)
-        self.assertAlmostEqual(self.b.expected_roll_mult(self.u, self.e, self.krosh) / plain, 2 / 3)   # the AI sees two-thirds
-
-    def test_a_marked_target_crits_one_in_three_and_never_grazes(self):
-        self.e.stages["EVA"] = -1; self.assertEqual(self.odds(), (0.0, 0.0, AHEAD_CRIT))
-
-    def test_stacks_are_duration_not_strength(self):
-        self.e.stages["EVA"] = 3; self.assertAlmostEqual(self.odds()[0], 1 / 3)
-        self.e.stages["EVA"] = -3; self.assertEqual(self.odds()[2], AHEAD_CRIT)
+        self.assertLess(self.b.expected_roll_mult(self.u, self.e, self.krosh), plain)
+        self.e.stages["EVA"] = 3; self.assertAlmostEqual(self.b.expected_roll_mult(self.u, self.e, self.krosh), GRAZE_MULT)
 
     def test_the_tug_of_war(self):
-        self.u.stages["ACC"] = 1; self.e.stages["EVA"] = 1          # Keen on Nimble: even
-        self.assertEqual(self.odds()[:2], (0.0, GRAZE_BASE))
-        self.u.stages["ACC"] = -1; self.e.stages["EVA"] = -1        # Blinded on Marked: even
-        self.assertEqual(self.odds()[:2], (0.0, GRAZE_BASE))
-        self.u.stages["ACC"] = 1; self.e.stages["EVA"] = 3          # Keen 1 on Nimble 3: behind
-        self.assertAlmostEqual(self.odds()[0], 1 / 3)
+        self.u.stages["ACC"] = 1; self.e.stages["EVA"] = 1          # Keen on Evasive: even
+        self.assertEqual(self.odds()[:2], (0.0, 0.0))
+        self.u.stages["ACC"] = 1; self.e.stages["EVA"] = 3          # Keen 1 on Evasive 3: two behind
+        self.assertEqual(self.odds()[1], 0.75)
 
     def test_speed_is_out_of_the_roll(self):
         self.u.stages["SPD"] = 3; self.e.stages["SPD"] = -3
-        self.assertEqual(self.odds()[:2], (0.0, GRAZE_BASE))
+        self.assertEqual(self.odds()[:2], (0.0, 0.0))
 
-    def test_a_status_move_rolls_as_a_hit(self):            # Nov 22, Joseph: the accuracy roll is the only gamble
+    def test_a_status_move_rolls_as_a_hit(self):            # Nov 22: the accuracy roll is the only gamble
         self.e.stages["EVA"] = 3
-        self.assertEqual(self.b.odds(self.u, self.e, None)[0], 0.0)
+        self.assertEqual(self.b.odds(self.u, self.e, None)[:2], (0.0, 0.0))
         nagl = next(a for a in hero("Ullar", "Naglskott").actions if a["name"] == "Naglskott")
-        self.assertAlmostEqual(self.b.odds(self.u, self.e, nagl)[0], 1 / 3)
+        self.assertEqual(self.b.odds(self.u, self.e, nagl)[1], 1.0)
 
-    def test_a_sure_strike_never_misses(self):
+    def test_a_sure_strike_never_grazes(self):
         s = hero("Skurmar", "Blixt"); e = dummy(); b = battle(s, e); s.knots = 2
         e.stages["EVA"] = 3
         self.assertEqual(b.odds(s, e, next(a for a in s.actions if a["name"] == "Blixt"))[:2], (0.0, 0.0))
 
-class AWhiffLandsNothing(unittest.TestCase):
-    def test_no_damage_no_rider(self):
+class AGrazeIsAFloor(unittest.TestCase):
+    """Behind, a hit grazes: half damage, no rider, no Bonus Round (D1). Guard denies the Bonus Round too (D5)."""
+    def test_half_damage_no_rider(self):
         v = hero("Vasara", ("Krosh", dict(lonn=True))); e = dummy(); b = fight([v], [e])
         e.stages["EVA"] = 3; b.rng = ZeroRng()
         orders(b, {v.uid: (key(v, "Brakrosh"), e.uid)})
-        self.assertTrue(evs(b, "whiff", unit=e.name)); self.assertFalse(evs(b, "hit", src=v.name))
-        self.assertEqual(e.hp, e.maxhp); self.assertEqual(e.stage("DEF"), 0)       # no Sundered
-        self.assertEqual(v.stats["whiff"], 1)
+        self.assertFalse(evs(b, "whiff")); self.assertTrue(evs(b, "hit", src=v.name))
+        self.assertLess(e.hp, e.maxhp); self.assertEqual(e.stage("DEF"), 0)        # no Sundered
 
-    def test_the_page_hears_it(self):
-        self.assertIn("whiff", open("../fight_lab/screen.js").read())
+    def weak_round(self, eva, guards):
+        from words import compile_verb
+        v = hero("Vasara", "Krosh")
+        e = dummy(aff={"Crush": "weak"}, **({} if guards else dict(actions=[compile_verb("Krosh", tier="Halv")])))
+        e.stages["EVA"] = eva; b = fight([v], [e]); b.rng = random.Random(3)
+        for uid in b.awaiting(): b.submit(uid, key(v, "Krosh"), e.uid)
+        b.commit(); return b.phase == "bonus"
+
+    def test_a_weak_hit_earns_the_bonus_round(self): self.assertTrue(self.weak_round(0, False))
+    def test_a_grazing_weak_hit_does_not(self): self.assertFalse(self.weak_round(3, False))
+    def test_guard_denies_it(self): self.assertFalse(self.weak_round(0, True))
+
+class NoForcedAdvance(unittest.TestCase):
+    """D6 (Nov 24): an empty Front costs nobody their turn; the Rear is exposed, and stepping up is a choice."""
+    def test_the_rear_keeps_its_turn(self):
+        u = hero("Vasara", "Krosh"); e = dummy(); f = dummy(); b = fight([u], [e, f])
+        e.cell, f.cell = ("rear", 0), ("rear", 1)
+        self.assertEqual(b.advancers([e, f]) if not b.new_game else set(), set())
+        b2 = Battle([hero("Vasara", "Krosh")], [dummy()], random.Random(1), events=True)
+        b2.enemies[0].cell = ("rear", 0); b2.begin("party")
+        self.assertFalse(any(d and d[0].get("name") == "Advance" for _, _, d in b2.remaining))
+
+class NothingAffordableGuards(unittest.TestCase):
+    """D7 (Nov 24, Joseph): a foe or hero with nothing it can pay for Guards, rather than losing the turn."""
+    def test_guard(self):
+        u = hero("Vasara", "Krosh"); e = dummy(actions=[]); b = battle(u, e)
+        a, t = b.declare(e); self.assertEqual((a["kind"], t), ("defend", e))
 
 class Drif(unittest.TestCase):
     def test_the_chain_reads_no_stages(self):

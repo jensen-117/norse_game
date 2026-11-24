@@ -99,12 +99,13 @@ class TheRollIsTheOnlyGamble(unittest.TestCase):
     def test_a_clean_hit_lands_it_for_certain(self):
         e, b = self.pin(0, 0.5); self.assertIn("Pinned", e.status)
 
-    def test_behind_it_can_whiff(self):
-        e, b = self.pin(1, 0.0); self.assertNotIn("Pinned", e.status)
-        self.assertTrue(evs(b, "whiff", unit=e.name))
+    def test_even_it_always_lands(self):                    # Nov 24, D1: no graze at even
+        e, b = self.pin(0, 0.0); self.assertIn("Pinned", e.status)
 
-    def test_a_graze_shrugs_it_off(self):
-        e, b = self.pin(0, 0.0); self.assertNotIn("Pinned", e.status)                  # even: 0.0 is a graze
+    def test_behind_a_graze_shrugs_it_off(self):            # Nov 24, D1: behind, grazes by the net; no whiffs
+        e, b = self.pin(1, 0.0); self.assertNotIn("Pinned", e.status)
+        self.assertFalse(evs(b, "whiff", unit=e.name))
+        e, b = self.pin(1, 0.6); self.assertIn("Pinned", e.status)                    # half graze at -1: 0.6 lands
 
     def test_a_rider_lands_on_every_clean_hit(self):
         u = hero("Ullar", ("Skott", dict(lonn=True))); e = dummy(); b = fight([u], [e]); b.rng = Rng(0.5)

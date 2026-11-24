@@ -671,22 +671,22 @@ class Battle:
                      - dfn.stage("EVA"), -5, 5)
 
     def odds(self, att, dfn, a=None):
-        """The new game's roll (Nov 21, classes.md 7d), as chances: (whiff, graze, crit). A damage hit reads the
-        attacker's ACC against the target's EVA: ahead, crits 1 in 3 and no graze; behind, whiffs 1 in 3 (then the
-        plain roll); even, the plain roll. A move that can't miss (Blixt on two knots) neither whiffs nor grazes.
-        A status move rolls the same way (Nov 22, Joseph: the accuracy roll is the only gamble); anything else
-        (a = None) takes the plain roll."""
+        """The new game's roll, as chances: (whiff, graze, crit). The ladder (Nov 24, Battle_Refactor_Current D1): the
+        attacker's ACC minus the target's EVA, -3..+3. Ahead, crits 1/3, 2/3, all, and no graze; even, no graze and
+        the base crit; behind, grazes 1/2, 3/4, all, and the base crit on the rest. No whiffs (the first number stays
+        for its callers, always 0). A move that can't miss (Blixt on two knots) never grazes. Damage and status moves
+        read the net; anything else (a = None) takes the even roll."""
         a = a or {}
         sure = self.sure_strike(att, a)
         bonus = a.get("crit_bonus", 0.0)
-        graze, crit = (0.0 if sure else GRAZE_BASE), CRIT_BASE + att.attrs["DEX"] / 20 / 100 + bonus
-        if a.get("kind") not in ("damage", "status"): return 0.0, graze, crit   # Nov 22: a status move rolls as a hit
-        net = self.net_stage(att, dfn)
-        if net >= 1: return 0.0, 0.0, AHEAD_CRIT + bonus
+        crit = CRIT_BASE + att.attrs["DEX"] / 20 / 100 + bonus
+        if a.get("kind") not in ("damage", "status"): return 0.0, 0.0, crit
+        net = int(clamp(self.net_stage(att, dfn), -3, 3))
+        if net >= 1: return 0.0, 0.0, min(1.0, CRIT_BY_NET[net] + bonus)
         if net <= -1 and not sure:
-            k = 1 - WHIFF_CHANCE
-            return WHIFF_CHANCE, graze * k, crit * k
-        return 0.0, graze, crit
+            g = GRAZE_BY_NET[net]
+            return 0.0, g, crit * (1 - g)
+        return 0.0, 0.0, crit
 
     def sure_strike(self, att, a):
         """Two knots held: Blixt can't graze (the Skurmar's lightning finds its mark)."""
@@ -1374,7 +1374,8 @@ class Battle:
         self.emit("hit", f"      {label} on {t.name}: {total:.0f}.{extra} ({max(0, t.hp):.0f}/{t.maxhp:.0f})", src=u.name, unit=t.name, element=a["element"], results=results, affinity=aff, dmg=round(total), hp=max(0, round(t.hp)), maxhp=round(t.maxhp),
                   parts=split_shown(parts, total) if len(parts) > 1 else None)
         if aff == "null": self.barred.add(u)
-        if (aff == "weak" or (CRIT_EARNS_BONUS and "crit" in results)) and not bonus:
+        earns = not self.new_game or (not t.defending and any(r in ("hit", "crit") for r in results))   # D1, D5 (Nov 24)
+        if (aff == "weak" or (CRIT_EARNS_BONUS and "crit" in results)) and not bonus and earns:
             self.eligible.add(u)
             if aff == "weak": u.stats["weak"] += 1
         if not t.alive:
@@ -1476,9 +1477,9 @@ class Battle:
             self.emit("whiff", f"      Miss! {t.name} dodges it.", src=u.name, unit=t.name, element=a["element"]); return
         if res == "graze":
             self.emit("resist", f"      {t.name} shrugs it off.", unit=t.name); return
-        if res == "crit" and CRIT_EARNS_BONUS and not bonus: self.eligible.add(u)
+        if res == "crit" and CRIT_EARNS_BONUS and not bonus and not t.defending: self.eligible.add(u)
         if self.status_weak(u, a, t):                   # the weakness pays status moves too (classes.md: Reyk)
-            if not bonus: self.eligible.add(u); u.stats["weak"] += 1
+            if not bonus and not t.defending: self.eligible.add(u); u.stats["weak"] += 1   # Guard denies it (D5)
             self.emit("weak", f"      {t.name} is weak to it: it takes hold!", unit=t.name, src=u.name, element=a["element"])
         main = stacks + (1 if self.status_weak(u, a, t) else 0)   # the weakness deepens the main status only
         chance = 1.0
@@ -1650,7 +1651,7 @@ class Battle:
             if i == 0 and dmg > 0: t.hits_taken += 1                   # one attack, one hit taken (Hevn)
             self.emit("hit", f"      {res.capitalize()} on {t.name}: {dmg:.0f}.{' Weak!' if aff == 'weak' else ''} ({max(0, t.hp):.0f}/{t.maxhp:.0f})", src=u.name, unit=t.name, element=a["element"], results=[res], affinity=aff, dmg=round(dmg), hp=max(0, round(t.hp)), maxhp=round(t.maxhp))
             if aff == "null": self.barred.add(u); return
-            if aff == "weak" and not bonus:
+            if aff == "weak" and not bonus and (not self.new_game or (res != "graze" and not t.defending)):   # D1, D5
                 if u not in self.eligible: u.stats["weak"] += 1
                 self.eligible.add(u)
             if not t.alive:
@@ -1867,8 +1868,8 @@ class Battle:
             options += self.board_options(u, ref)
         options = [(sc * (AI_ITEM_THRIFT if a.get("item") and a["kind"] in ("damage", "stat") else 1.0), a, t)
                    for sc, a, t in options]
-        if not options:
-            return u.actions[0], None
+        if not options:                                          # nothing affordable: Guard (D7, Joseph), not a skipped turn
+            return (act("defend", "Guard", target="self"), u) if self.new_game else (u.actions[0], None)
         options.sort(key=lambda o: -o[0])
         pick = options[0] if self.rng.random() < 0.8 else self.rng.choice(options[:3])
         return pick[1], pick[2]
@@ -1906,7 +1907,8 @@ class Battle:
             if k >= 2:
                 f0 = max(self.foes(u), key=lambda f: f.hp, default=None)
                 if f0 is not None:
-                    graze = max(0.0, GRAZE_BASE - STEP * self.net_stage(u, f0))
+                    graze = (self.odds(u, f0, dict(kind="damage", element="Blast"))[1] if self.new_game   # D7: the roll itself
+                             else max(0.0, GRAZE_BASE - STEP * self.net_stage(u, f0)))
                     v += best("Blixt") * graze * (1 - GRAZE_MULT)
             if k >= KNOT_CAP and getattr(u, "maxmp", 0):
                 v += 0.5 * AI_MEDITATE_VALUE * ref * KNOT_MP * mp_need(u)   # a better Meditate, some rounds
@@ -2141,7 +2143,7 @@ class Battle:
         """Declare a phase. Units we control leave an empty slot (filled by submit); everyone else declares now.
         Units act once per cost point; everyone's first actions resolve before anyone's second."""
         remaining = []
-        advancers = self.advancers(actors) if USE_BOARD else set()
+        advancers = self.advancers(actors) if USE_BOARD and not self.new_game else set()   # D6: nobody loses a turn stepping up
         locked = set()
         if not bonus:          # last round's wind-ups fire this round, in place of the unit's first action
             for u in self.units:
@@ -2459,7 +2461,8 @@ class Battle:
             rows.append(dict(id=u.uid, name=u.name, side=u.side, move=self.shown(u, a) if a else None, group=g, k=k,
                              speed=round(u.speed(), 2), ordered=a is not None))
         for r in rows: r["coin"] = self.coin.get(r["id"], 0.5)
-        rows.sort(key=lambda r: (-r["group"], r["k"], -r["speed"], r["coin"]))
+        party_first = getattr(self, "new_game", False)      # D7: the same tie-break as order() (a tie goes to the party)
+        rows.sort(key=lambda r: (-r["group"], r["k"], -r["speed"], (0 if r["side"] == "party" else 1) if party_first else 0, r["coin"]))
         for i, r in enumerate(rows):       # tied on speed: the coin already decided, but say so on hover
             r["tie"] = any(o is not r and (o["group"], o["k"], o["speed"]) == (r["group"], r["k"], r["speed"]) for o in rows)
             del r["coin"]

@@ -114,8 +114,13 @@ GRAZE_MULT, CRIT_MULT = 0.5, 1.5
 # The new game's accuracy (Nov 21, classes.md 7d): the attacker's ACC minus the target's EVA. Ahead (Keen, or a Marked
 # target): a hit crits 1 in 3 and never grazes. Behind (Blinded, or an Evasive target): a hit whiffs 1 in 3 (lands nothing).
 # Even: the plain roll (a flat graze, the base crit). Speed is out of the roll; damage hits only (status moves keep theirs).
-WHIFF_CHANCE = 1 / 3
+WHIFF_CHANCE = 1 / 3          # (Nov 21's roll; replaced Nov 24 by the ladder below: no whiffs in the new game)
 AHEAD_CRIT = 1 / 3
+# The ladder (Nov 24, Battle_Refactor_Current D1): the net is ACC minus EVA, -3..+3. Ahead: crits by the net, no graze.
+# Even: no graze, the base crit (5% and a touch of DEX). Behind: grazes by the net (half damage, no riders, no Bonus
+# Round; a status move shrugs it off), the base crit on what doesn't graze. No whiffs.
+CRIT_BY_NET = {1: 1 / 3, 2: 2 / 3, 3: 1.0}
+GRAZE_BY_NET = {-1: 0.5, -2: 0.75, -3: 1.0}
 
 # ---------------------------------------------------------------- enemies
 # Authored creatures. genes default to average (15.5).

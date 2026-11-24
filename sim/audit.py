@@ -115,13 +115,13 @@ def payoffs():
         if row.get("chain"): out[s].append(f"a second chill turns it into {row['chain']}")
         if row.get("rooted"): out[s].append("it can't step away from a taunt or a hammer; a shove crashes into it")
     out["Sundered"].append(f"every hit lands harder; Pierce finds the gaps (+{round(PIERCE_GAP * 100)}% a stack)")
-    out["Marked"].append("every hit on it crits 1 in 3 and never grazes")
-    out["Blinded"].append("its own hits whiff 1 in 3")
+    out["Marked"].append("every hit on it crits (1/3, 2/3, all) and never grazes")
+    out["Blinded"].append("its own hits graze (1/2, 3/4, all)")
     out["Feeble"].append("its own hits land softer")
     out["Slowed"].append("it acts later in the round")
     out["Song"].append("heals each round at the start")
     for nm, txt in (("Mighty", "your hits land harder"), ("Fortified", "hits on you land softer"),
-                    ("Evasive", "hits on you whiff 1 in 3"), ("Keen", "your hits crit 1 in 3, never graze"),
+                    ("Evasive", "hits on you graze (1/2, 3/4, all)"), ("Keen", "your hits crit (1/3, 2/3, all), never graze"),
                     ("Quick", "you act sooner"), ("Poisoned", "ticks each round"), ("Bleeding", "ticks when it acts"),
                     ("Stunned", "may cost an action"), ("Bound", "costs an action"), ("Silenced", "blocks every MP move"),
                     ("Disarmed", "ATK and MAT down"), ("Cursed", "two stages down"), ("Feared", "acts late")):

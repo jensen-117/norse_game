@@ -24,7 +24,7 @@ The battle is a conversation between tactical JRPGs (SMT, Persona, Etrian Odysse
 
 Each entry: **Direction** (what and why), **Today** (what the code and docs do now), **Toward implementation** (notes, not pseudocode).
 
-### D1. Accuracy: the crit and graze ladder (Decided; IDE ADR-01)
+### D1. Accuracy: the crit and graze ladder (Built Nov 24, Wave A; IDE ADR-01)
 
 **Direction.** The net is the attacker's ACC minus the target's EVA, from −3 to +3.
 
@@ -90,7 +90,7 @@ Each entry: **Direction** (what and why), **Today** (what the code and docs do n
 
 **Toward implementation.** `apply_status` expands a bundle into its parts; `BUNDLE_OPPOSITE` and the bundle stat path in `status_stat` go. The page shows the parts, not the label (the move's card keeps the label).
 
-### D5. Guard (Decided; IDE ADR-08)
+### D5. Guard (Built Nov 24, Wave A; IDE ADR-08)
 
 **Direction.** Guard halves damage **and a weak hit on a Guarding target earns no Bonus Round.** Guard does nothing to stats: stats are answered by counter magic, opposite moves and items. *Why:* a telegraphed weakness intent becomes a three-way puzzle for every hero (kill or interrupt it, Cover it with a resistant tank, or Guard to deny the tempo).
 
@@ -98,7 +98,7 @@ Each entry: **Direction** (what and why), **Today** (what the code and docs do n
 
 **Toward implementation.** Gate `self.eligible.add` on `not t.defending` in `land`, `flurry` and `status_lands`. The AI values a weak hit on a Guarding hero without the Bonus Round.
 
-### D6. No forced Advance (Decided; IDE ADR-09)
+### D6. No forced Advance (Built Nov 24, Wave A; IDE ADR-09)
 
 **Direction.** When a side's Front falls, nobody loses a turn stepping up. The empty Front already exposes the Rear (`eff_front`); a melee unit left in the Rear hits at half (`REAR_MELEE_MULT`) until it **chooses** to step up. *Why:* the formation already punishes a collapse; confiscating the turn on top of that takes away the crisis turn.
 
@@ -106,7 +106,7 @@ Each entry: **Direction** (what and why), **Today** (what the code and docs do n
 
 **Toward implementation.** Skip `advancers` in the new game, both sides. The AI needs a rule to step up when it's melee in an exposed Rear (or its foes will sit there at half). The page shows a Rear melee unit as exposed. Old tests that assert auto-advance stay under the old profile.
 
-### D7. Code leaks (Decided; IDE review)
+### D7. Code leaks (Built Nov 24, Wave A, but the paint line; IDE review)
 
 - `preview_order` doesn't share `order`'s tie-break (an exact SPD tie goes to the party): one sort key.
 - `knot_hold` still prices grazes by the old formula (`GRAZE_BASE − STEP × net`): read `odds()`.
@@ -221,7 +221,7 @@ The gauntlet's per-hero Rest (D9). The enemy pass restores family bodies' HP (cl
 ## Part 5: Order of work
 
 1. **This record**, and pointers from the docs it supersedes. *(Nov 24.)*
-2. **Wave A:** D1 accuracy, D5 Guard, D6 no forced Advance, D7 leaks.
+2. **Wave A: built (Nov 24).** D1 accuracy, D5 Guard, D6 no forced Advance, D7 leaks. `data.CRIT_BY_NET`, `GRAZE_BY_NET`; `Battle.odds` the ladder (no whiffs; DEX keeps its small touch on the 5% base crit); a graze or a Guarding target earns no Bonus Round (`land`, `flurry`, `status_lands`); no `advancers` in the new game (the AI's step-up option already scores taking an empty Front); `knot_hold` reads `odds`; `preview_order` shares `order`'s tie-break; nothing affordable Guards. Tests: `test_wave7a.py` (the ladder, a graze as a floor, Guard, no forced Advance, the Guard fallback), `test_status_rules.py`, `test_wave4a.py`; 408 pass. Old fights identical (fingerprint 288, regress 3bdf6771deb1, golden 4535). Glossary and audit wording updated. **Measured** (150 mirrored rooms a kind, Dagskald, Skurmar, Vasara at leg 2; before / after): Elite 97% / 98% won in 8.4 / 6.8 rounds, end HP Vasara 40% / 39%, Skurmar 71% / 69%, Dagskald 90% / 89%; Boss 96% / 94% in 11.2 / 9.9 rounds, 33% / 34%, 61% / 59%, 79% / 77%; the gauntlet's Elite cleared 81 of 191 / 73 of 194. **As predicted, fights are shorter (both sides hit about 11% harder) and where the damage lands barely moved.** The yardstick retune waits for Wave B (one retune, not two).
 3. **Wave B:** D2 persistent combined stats, D3 held stats, D4 bundles as shorthand.
 4. **Wave C:** D8 sustain (Meditate, Djupanda found, Lak 75/12, no Halv auto-fill, Knots 3 MP) and D9's Rest in the gauntlet.
 5. **The Beinar pilot resumes** (beinar_pilot.md, "What the build needs"): D10 intercession, the kits, the brains and team plans with D11's wants and the reset as Stabilize; then the gauntlet against Joseph's damage picture and his calibration fights *(scope calibration here to Leg 1, or pull O3 rider/`Gyllenlykt` costing ahead of Leg 2–3 calibration so Legs 2–3 aren't tuned twice)*.
