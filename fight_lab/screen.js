@@ -363,10 +363,15 @@ const Screen = (() => {
       if (u.side === "party" && u.state === "dying") { pc.fillStyle = C.hpLo; for (let i = 0; i < u.breaths; i++) pc.fillRect(bx + i * 4, b.fy + 2, 3, 3); }
       if (u.alive && u.knots) { pc.fillStyle = C.white; for (let i = 0; i < u.knots; i++) pc.fillRect(bx + i * 4, b.fy + 5, 3, 2); }   // the Skurmar's knots
       if (u.alive && u.counters && u.counters.length) {   // the stat counters (Nov 21): a short tag each, green up, red down
-        const UP = { Mighty: 1, Fortified: 1, Evasive: 1, Keen: 1, Quick: 1, Waxing: 1, Warded: 1 };
+        const UP = { Mighty: 1, Fortified: 1, Evasive: 1, Keen: 1, Quick: 1 };
         let ty = b.fy + 5 + (u.knots ? 3 : 0) + (u.song ? 3 : 0), tx = bx;
         for (const c of u.counters.slice(0, 3)) { const [nm, n] = c.split(" "), tag = nm.slice(0, 3).toUpperCase() + n;
           tiny(tx, ty, tag, UP[nm] ? C.heal : C.hpLo); tx += tinyW(tag) + 3; }
+      }
+      if (u.alive && u.held && u.held.length) {           // holds (Nov 24, D3): a short tag and the rounds left, under the counters
+        let ty = b.fy + 5 + (u.knots ? 3 : 0) + (u.song ? 3 : 0) + (u.counters && u.counters.length ? 6 : 0), tx = bx;
+        for (const h of u.held) { const tag = h.name.slice(0, 3).toUpperCase() + h.rounds;
+          tiny(tx, ty, tag, h.harmful ? C.hpLo : C.gold); tx += tinyW(tag) + 3; }
       }
       if (u.alive && u.song) { pc.fillStyle = C.gold; const sy = b.fy + (u.knots ? 8 : 5); for (let i = 0; i < u.song; i++) pc.fillRect(bx + i * 4, sy, 3, 2); }   // the Song's verses (gold)
       const top = headTop(u, b);
@@ -706,7 +711,8 @@ const Screen = (() => {
       if (u && u.intent && c.side === "enemy" && badge(u.intent, x1 - 24, y - 4)) {}
       tiny(x0 + 6, y, "INTENDS " + (c.intent.shown + (c.intent.target ? " > " + c.intent.target : "")).slice(0, 44), C.white); y += 7;
     }
-    const st = Object.entries(c.status).map(([k, v]) => `${k} ${v}`).concat(Object.entries(c.stages).map(([k, v]) => `${k} ${v > 0 ? "+" : ""}${v}`));
+    const st = Object.entries(c.status).map(([k, v]) => `${k} ${v}`).concat(Object.entries(c.stages).map(([k, v]) => `${k} ${v > 0 ? "+" : ""}${v}`))
+      .concat(Object.entries(c.held || {}).map(([k, h]) => `${k}: ${h.stat} held, ${h.rounds} round${h.rounds === 1 ? "" : "s"}`));   // holds (D3)
     if (st.length) { tiny(x0 + 6, y, st.join("  ").slice(0, 56), C.hpMid); y += 7; }
     y += 2;
     const affs = Object.entries(c.affinities), cols = 4;
@@ -856,7 +862,7 @@ const Screen = (() => {
   }
   const HIT_FX = { Slash: "hit_slash", Crush: "hit_crush2", Pierce: "hit_pierce2" };
   const fxFor = el => HIT_FX[el] || (FX["burst:" + el] ? "burst:" + el : "burst:Martial");
-  const NARRATE = new Set(["act", "transform", "hit", "absorb", "heal", "stat", "status", "resist", "defend", "cover", "covered", "move", "windup", "bide_lost",
+  const NARRATE = new Set(["held", "unheld", "act", "transform", "hit", "absorb", "heal", "stat", "status", "resist", "defend", "cover", "covered", "move", "windup", "bide_lost",
     "paint", "skip", "silenced", "tick", "down", "reform", "crawl", "pile", "scatter", "reassemble", "dying", "breath", "dead", "revive",
     "stabilised", "item", "mp", "fled", "flee_failed", "retarget", "fizzle", "shatter", "flurry", "cleanse", "immune", "thaw",
     "taunt", "drawn", "flare", "rooted", "weak", "out_of_reach", "song", "song_fades", "knot", "follow", "wall", "spent", "whiff"]);

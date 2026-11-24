@@ -22,6 +22,7 @@ def settle(u):
     """What doesn't carry out of a fight (HP, MP, the pouch and Wounded do)."""
     u.status, u.pushed = {}, set()
     u.stages = {k: 0 for k in u.stages}
+    u.held = {}
     u.bide = u.charge = None
     u.hits_taken, u.overpaid = 0, False
     for k in ("taunted_by", "defending", "crawling"):

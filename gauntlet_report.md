@@ -7,52 +7,52 @@
 | Room | Reached | Won | Brings HP | Brings MP | Rounds (wins) | Falls | Items left after |
 |---|---|---|---|---|---|---|---|
 | Fodder | 100% | 100% | 100% | 100% | 2.5 | 0.00 | 2.1 |
-| Regulars | 100% | 72% | 86% | 89% | 7.6 | 1.26 | 0.8 |
-| Elite | 72% | 32% | 47% | 56% | 8.4 | 1.78 | 0.6 |
-| Boss | 32% | 4% | 38% | 29% | 15.5 | 2.06 | 0.4 |
+| Regulars | 100% | 75% | 86% | 89% | 7.9 | 1.17 | 0.8 |
+| Elite | 75% | 34% | 47% | 55% | 9.6 | 1.76 | 0.6 |
+| Boss | 34% | 4% | 36% | 28% | 15.0 | 2.12 | 0.4 |
 
 **Dagskald / Skurmar / Vasara, kit leg 2:**
 
 | Room | Reached | Won | Brings HP | Brings MP | Rounds (wins) | Falls | Items left after |
 |---|---|---|---|---|---|---|---|
 | Fodder | 100% | 100% | 100% | 100% | 2.6 | 0.00 | 2.6 |
-| Regulars | 100% | 79% | 83% | 88% | 8.5 | 1.07 | 0.8 |
-| Elite | 79% | 30% | 45% | 51% | 8.8 | 1.92 | 0.5 |
-| Boss | 30% | 2% | 28% | 22% | 8.5 | 1.80 | 0.2 |
+| Regulars | 100% | 78% | 83% | 88% | 8.7 | 1.11 | 0.8 |
+| Elite | 78% | 26% | 45% | 50% | 9.2 | 1.97 | 0.5 |
+| Boss | 26% | 2% | 29% | 23% | 8.0 | 1.73 | 0.2 |
 
 **Dagskald / Skurmar / Vasara, kit leg 3:**
 
 | Room | Reached | Won | Brings HP | Brings MP | Rounds (wins) | Falls | Items left after |
 |---|---|---|---|---|---|---|---|
 | Fodder | 100% | 100% | 100% | 100% | 2.9 | 0.00 | 2.7 |
-| Regulars | 100% | 89% | 83% | 83% | 8.0 | 0.87 | 0.7 |
-| Elite | 89% | 45% | 54% | 39% | 10.7 | 1.49 | 0.3 |
-| Boss | 45% | 3% | 41% | 15% | 9.7 | 1.73 | 0.2 |
+| Regulars | 100% | 91% | 83% | 83% | 8.5 | 0.83 | 0.7 |
+| Elite | 91% | 47% | 55% | 38% | 10.4 | 1.47 | 0.3 |
+| Boss | 47% | 4% | 41% | 15% | 9.8 | 1.72 | 0.2 |
 
 **Vasara / Ullar / Brennumar, kit leg 1:**
 
 | Room | Reached | Won | Brings HP | Brings MP | Rounds (wins) | Falls | Items left after |
 |---|---|---|---|---|---|---|---|
 | Fodder | 100% | 100% | 100% | 100% | 2.3 | 0.00 | 2.0 |
-| Regulars | 100% | 78% | 84% | 91% | 7.9 | 1.35 | 0.4 |
-| Elite | 78% | 14% | 37% | 53% | 5.8 | 2.29 | 0.2 |
-| Boss | 14% | 0% | 21% | 46% | 0.0 | 2.71 | 0.0 |
+| Regulars | 100% | 81% | 84% | 91% | 7.7 | 1.27 | 0.4 |
+| Elite | 81% | 17% | 37% | 55% | 5.6 | 2.23 | 0.2 |
+| Boss | 17% | 0% | 21% | 43% | 0.0 | 2.71 | 0.1 |
 
 **Vasara / Ullar / Brennumar, kit leg 2:**
 
 | Room | Reached | Won | Brings HP | Brings MP | Rounds (wins) | Falls | Items left after |
 |---|---|---|---|---|---|---|---|
 | Fodder | 100% | 100% | 100% | 100% | 2.4 | 0.01 | 2.0 |
-| Regulars | 100% | 75% | 79% | 87% | 7.2 | 1.51 | 0.4 |
-| Elite | 75% | 13% | 33% | 28% | 7.2 | 2.39 | 0.2 |
-| Boss | 13% | 0% | 17% | 9% | 0.0 | 2.23 | 0.1 |
+| Regulars | 100% | 76% | 79% | 87% | 7.1 | 1.51 | 0.4 |
+| Elite | 76% | 15% | 32% | 28% | 6.1 | 2.32 | 0.2 |
+| Boss | 15% | 0% | 17% | 11% | 0.0 | 2.40 | 0.2 |
 
 **Vasara / Ullar / Brennumar, kit leg 3:**
 
 | Room | Reached | Won | Brings HP | Brings MP | Rounds (wins) | Falls | Items left after |
 |---|---|---|---|---|---|---|---|
 | Fodder | 100% | 100% | 100% | 100% | 2.4 | 0.03 | 2.8 |
-| Regulars | 100% | 82% | 77% | 79% | 6.9 | 1.37 | 1.4 |
-| Elite | 82% | 25% | 33% | 25% | 5.7 | 2.15 | 0.7 |
-| Boss | 25% | 0% | 17% | 21% | 0.0 | 2.40 | 0.3 |
+| Regulars | 100% | 79% | 77% | 79% | 6.9 | 1.38 | 1.5 |
+| Elite | 79% | 26% | 34% | 25% | 5.6 | 2.10 | 0.8 |
+| Boss | 26% | 0% | 17% | 17% | 0.0 | 2.50 | 0.3 |
 

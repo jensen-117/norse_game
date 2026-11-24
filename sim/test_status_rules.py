@@ -237,6 +237,69 @@ class Holds(unittest.TestCase):
         b = Battle([self.u], [self.e], random.Random(1), profile="legacy")
         b.apply_status(self.u, self.e, "Cursed", 1.0); self.assertIn("stats", self.e.status["Cursed"])    # the rolled pick
 
+class WaveBReview(unittest.TestCase):
+    """Joseph's Wave B review (Nov 24): six quiet leaks, and the floor of foes' wants (D11)."""
+    def setUp(self):
+        self.u = hero("Ullar", "Skott"); self.e = dummy(); self.b = ng(self.u, self.e)
+
+    def test_a_pure_hold_isnt_offered_at_a_held_stat(self):
+        disarm = dict(kind="status", status="Disarmed", target="enemy", all=False, element="Natt", tier="Base")
+        self.assertIn(self.e, self.b.legal(self.u, disarm))
+        self.b.apply_status(self.u, self.e, "Disarmed", 1.0)
+        self.assertNotIn(self.e, self.b.legal(self.u, disarm))
+
+    def test_gyllenlykt_still_aims_at_a_held_ally(self):
+        d = hero("Dagskald", ("Lak", dict(lonn=True))); v = hero("Vasara", "Krosh"); b = ng(d, v, dummy())
+        b.hold(d, v, "Gyllenlykt", "EVA", 3, 3, False)
+        g = next(a for a in d.actions if a["name"] == "Gyllenlykt")
+        self.assertIn(v, b.legal(d, g))
+
+    def test_the_fallen_carry_no_holds(self):
+        self.b.apply_status(self.u, self.e, "Disarmed", 1.0); self.e.hp = 0; self.b.downed(self.e)
+        self.assertEqual(self.e.held, {})
+        self.b.events = []; self.b.end_round(); self.assertFalse([x for x in self.b.events if x.get("kind") == "unheld"])
+
+    def test_a_shorthand_that_cant_land_says_nothing(self):
+        self.b.apply_status(self.u, self.e, "Steadfast", 1.0, 2)
+        self.b.apply_status(self.u, self.e, "Reeling", 1.0, 3)
+        self.b.events = []
+        self.assertFalse(self.b.apply_status(self.u, self.e, "Feared", 1.0))
+        self.assertFalse([x for x in self.b.events if x.get("status") == "Feared"])
+
+    def test_a_stat_move_says_when_a_hold_blocks_it(self):
+        from words import compile_verb
+        self.b.apply_status(self.u, self.e, "Steadfast", 1.0, 2)
+        a = dict(compile_verb("Aukskold"), direction=-1, target="enemy", name="Nedskold")
+        self.b.events = []; self.u.mp = self.u.hp = 10 ** 6
+        self.b.resolve(self.u, a, self.e, False)
+        self.assertTrue([x for x in self.b.events if x.get("kind") == "held"]); self.assertEqual(self.e.stage("DEF"), 0)
+
+    def test_a_raising_hold_is_valued(self):          # the sign fix: a hold with a positive level isn't scored 0
+        HOLDS["_Lit"] = dict(stat="EVA", level=3, rounds=3, harmful=False)
+        try:
+            v = hero("Vasara", "Krosh"); b = ng(v, dummy())
+            a = dict(kind="status", status="_Lit", tier="Base", target="ally")
+            val, lands, _ = b.status_gain(v, a, v, 1, 100.0)
+            self.assertTrue(lands)
+        finally:
+            del HOLDS["_Lit"]
+
+    def test_a_foe_stops_at_its_want(self):
+        v = hero("Vasara", "Krosh"); f = dummy(); b = ng(v, f)
+        fear = dict(kind="status", status="Feared", tier="Mer", target="enemy", element="Natt", all=False)
+        self.assertGreater(b.status_gain(f, fear, v, 2, 100.0)[0], 0)
+        b.push(v, "DEF", -1)
+        self.assertEqual(b.status_gain(f, fear, v, 2, 100.0)[0], 0.0)       # Sundered 1: Fear isn't recast for its Late
+        f.wants = {"Sundered": 2}; self.assertGreater(b.status_gain(f, fear, v, 2, 100.0)[0], 0)
+
+    def test_heroes_are_untouched(self):
+        v = hero("Vasara", "Krosh"); f = dummy(); b = ng(v, f); b.push(f, "DEF", -2)
+        self.assertFalse(b.wanted(v, f, "Sundered"))
+
+    def test_the_page_and_the_card_see_holds(self):
+        self.b.apply_status(self.u, self.e, "Disarmed", 1.0)
+        self.assertEqual(self.b.inspect(self.e.uid)["held"]["Disarmed"]["rounds"], 3)
+
 # ------------------------------------------------------------------ step 5: parents hit, children twist
 class ParentsHitChildrenTwist(unittest.TestCase):
     def foes(self, *names):

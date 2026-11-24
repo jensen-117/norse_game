@@ -437,6 +437,9 @@ HOLDS = {
     "Steadfast": dict(stat="DEF", level=None, rounds=None, harmful=False),  # set feet: DEF can't be lowered (Mot)
 }
 HOLD_ROUNDS = 3            # Gyllenlykt: its printed EVA +3, held for this many rounds
+# D11 (Nov 24), the floor of foes' wants: a foe stops lowering a hero's stat once it's this far down (Sundered 1,
+# Blinded 1...), unless its kit says otherwise (a unit's `wants`, e.g. {"Blinded": 2}). Shorthand counts by its stat parts.
+DEFAULT_WANT = 1
 # Step 6 (Nov 22): Skolja washes every harmful ailment (and, Nov 24, every harmful hold), the bespoke harmful ones too
 # (Scorched, Frozen, Stunned, Bound), but not stats; Lonnskolja, its designated rider, also lifts every lowered stat to 0.
 HELPFUL_STATUSES = ("Song",)

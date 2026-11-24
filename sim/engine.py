@@ -634,12 +634,12 @@ class Battle:
                       hp=round(t.hp), maxhp=round(t.maxhp))
             return
         if fam == "Bein" and by != "Crush" and not getattr(t, "piled", False):
-            t.piled = True; self.piles[t] = BEIN_PILE_ROUNDS; t.stats["downs"] += 1
+            t.piled = True; self.piles[t] = BEIN_PILE_ROUNDS; t.stats["downs"] += 1; t.held = {}
             self.emit("pile", f"      {t.name} falls into a pile of bones.", unit=t.name, rounds=BEIN_PILE_ROUNDS)
             return
         nxt = MOGEL_REFORM.get(getattr(t, "mogel_rank", None)) if fam == "Mogel" else None
         if not nxt:
-            self.emit("down", f"      {t.name} is down!", unit=t.name); t.stats["downs"] += 1
+            self.emit("down", f"      {t.name} is down!", unit=t.name); t.stats["downs"] += 1; t.held = {}
             return
         old = t.name
         fresh = spawn_mogel(nxt, t.element, t.level)
@@ -920,6 +920,7 @@ class Battle:
         if not self.new_game and STATUSES.get(status, {}).get("boss_immune") and getattr(tgt, "rank", None) == "Drott":
             self.emit("immune", f"      {tgt.name} shrugs off {status}.", unit=tgt.name, status=status); return False
         if self.new_game and status in SHORTHAND:       # D4: the label lands its parts, each by its own rule
+            if self.capped(tgt, status): return False   # every part already as far as it goes, or held (Joseph's review)
             self.emit("status", f"      {tgt.name} is {status}!", unit=tgt.name, status=status, src=src.name, shorthand=True)
             landed = [self.apply_status(src, tgt, p, 1.0, n * stacks, tier, move) for p, n in SHORTHAND[status]]
             return any(landed)
@@ -993,6 +994,7 @@ class Battle:
     def die(self, t, why):
         self.interrupt(t, "dead")
         t.state, t.breaths, t.hp = "dead", 0, 0
+        t.held = {}                                     # the dead carry no holds (Joseph's Wave B review)
         self.emit("dead", f"      {t.name} dies ({why}).", unit=t.name, why=why)
 
     def dying(self): return [x for x in self.party if x.state == "dying"]
@@ -1317,9 +1319,12 @@ class Battle:
             n = STACKS_BY_TIER.get(a["tier"], 1)
             # the move's own stat moves by its tier; in the new game a rider's printed size wins (Nov 22, Joseph)
             changes = [(a["stat"], a["direction"] * n)] + [(st, d if self.new_game else d * n) for st, d in a.get("also") or []]
-            for t in tgts:
-                for st, d in changes: self.push(t, st, d)
+            blocked = [(t, st) for t in tgts for st, d in changes if not self.push(t, st, d)]
             self.emit("stat", f"    {u.name} casts {self.shown(u, a)} on {', '.join(t.name for t in tgts)}.{tag}", unit=u.name, move=a["name"], shown=self.shown(u, a), stat=a["stat"], direction=a["direction"], also=[list(c) for c in changes[1:]] or None, targets=[t.name for t in tgts])
+            for t, st in blocked:                           # a hold kept it from falling (D3; Joseph's review)
+                k = COMBINED_STAT.get(st, st)
+                self.emit("held", f"      {t.name}'s {t.held[k]['name']} holds: their {k} doesn't fall.", unit=t.name,
+                          status=t.held[k]["name"], src=u.name)
             return
         if a["kind"] == "cleanse":
             for t in tgts:
@@ -1822,7 +1827,8 @@ class Battle:
                             s *= 1 + 0.5 * ((1 - self.odds(u, f, a)[1]) if self.new_game else 1.0)
                         if s >= f.hp: s *= 1.3
                         if a.get("rider_sure") and getattr(self, "new_game", False) and a["status"] in COUNTER_OF:
-                            s += self.counter_value(u, f, a["status"], STACKS_BY_TIER.get(a["tier"], 1))   # Brakrosh: Sundered
+                            if not self.wanted(u, f, a["status"]):
+                                s += self.counter_value(u, f, a["status"], STACKS_BY_TIER.get(a["tier"], 1))   # Brakrosh: Sundered
                         elif a["status"] and not self.capped(f, a["status"]): s += 0.4 * ref
                         s *= AI_MANNER_VALUE.get((a.get("parts") or {}).get("manner"), 1.0)
                         options.append((s - cost_pen, a, f))
@@ -2014,6 +2020,7 @@ class Battle:
         a counter, what its stacks change; a burn, what it adds over what's still burning; a refresh, the rounds it
         adds; a refused status, nothing."""
         st, ng = a["status"], getattr(self, "new_game", False)
+        if ng and self.wanted(u, f, st): return 0.0, False, 0.0   # D11: it's where this foe wants it
         if ng and st in SHORTHAND:                     # D4: what its parts add, each as itself
             parts = [self.status_gain(u, dict(a, status=p, also_status=None), f, n * stacks, ref) for p, n in SHORTHAND[st]]
             return sum(v for v, _, _ in parts), any(l for _, l, _ in parts), max((sh for _, _, sh in parts), default=0.0)
@@ -2022,7 +2029,8 @@ class Battle:
             if self.capped(f, st): return 0.0, False, 0.0
             if h["level"] is None: return 0.6 * ref, True, 1.0               # Steadfast: a guard against the next drop
             name = STAT_NAMES[h["stat"]][0 if h["level"] < 0 else 1]
-            return self.counter_value(u, f, name, max(0, f.stage(h["stat"]) - h["level"])), True, 1.0
+            gap = (h["level"] - f.stage(h["stat"])) * (1 if h["level"] > 0 else -1)   # steps toward its level, either way
+            return self.counter_value(u, f, name, max(0, gap)), True, 1.0
         if st in COUNTER_OF:
             if ng: return self.counter_value(u, f, st, stacks), True, 1.0
             return (0.0, True, 0.0) if self.capped(f, st) else (0.9 * ref, True, 1.0)
@@ -2037,6 +2045,18 @@ class Battle:
             return AI_DOT_VALUE * min(f.hp, gain), True, gain / total if total else 0.0
         share = 1.0 if old is None else max(0, new["rounds"] - old["rounds"]) / max(1, fresh["rounds"])
         return 0.9 * ref * share, True, share
+
+    def wanted(self, u, f, status):
+        """D11 (Nov 24), the floor of foes' wants: a foe stops lowering a hero's stat once it's at the foe's want for
+        that counter (its `wants`, else DEFAULT_WANT: Sundered 1, Blinded 1...). A shorthand counts by its stat parts,
+        so a Fear isn't recast for its Late alone (Joseph's review). Heroes' AI is untouched."""
+        if u.side != "enemy" or f.side == u.side: return False
+        if status in SHORTHAND: return any(self.wanted(u, f, p) for p, _ in SHORTHAND[status] if p in COUNTER_OF)
+        if status not in COUNTER_OF: return False
+        stat, sign = COUNTER_OF[status]
+        if sign > 0: return False
+        want = (getattr(u, "wants", None) or {}).get(status, DEFAULT_WANT)
+        return f.stage(stat) <= -want
 
     def status_value(self, u, a, f, ref):
         """What a status move on f is worth to the AI, the whole move (C17): the chance the main status lands times what
@@ -2364,7 +2384,7 @@ class Battle:
                 for st, v in u.stages.items():
                     if v and st not in u.pushed: u.stages[st] = v - 1 if v > 0 else v + 1
             u.pushed = set()
-            for st, h in list(u.held.items()):           # holds tick like ailments: never the round they land (D3)
+            for st, h in (list(u.held.items()) if u.alive else []):   # holds tick like ailments: never the round they land (D3)
                 if h.pop("touched", False): continue
                 h["rounds"] -= 1
                 if h["rounds"] <= 0: self.release(u, st)
@@ -2426,15 +2446,17 @@ class Battle:
         if a["target"] == "self": return [u]
         if a["target"] == "fallen":
             return [x for x in self.team_of(u) if x.state == "dying" or (x.state == "dead" and a.get("reaches") == "Dead")]
+        held = lambda xs: [x for x in xs if not self.capped(x, a["status"])] \
+            if self.new_game and a["kind"] == "status" and a.get("status") in HOLDS else xs    # D3: aimed, not just landing
         if a["target"] == "ally":
             pool = [x for x in self.allies(u) if not (a["kind"] == "cover" and x is u)]
-            return pool
+            return held(pool)
         pool = [x for x in self.foes(u) if self.reach_mult(u, a, x) is not None]
         if a["kind"] == "displace" and not a.get("styng"):          # a shove past the edge does nothing: not offered
             pool = [x for x in pool if self.shove_cell(x, a.get("push")) is not None]
         if a["kind"] == "damage" and not a["all"]:
             pool += [p for p in self.piles if self.pile_reach(u, a, p) is not None]
-        return pool
+        return held(pool)
 
     def describe(self, u, a, key, slot):
         silenced = u.silenced and a["cost_type"] == "MP" and a["cost"] > 0
@@ -2554,6 +2576,7 @@ class Battle:
                     state=u.state, breaths=u.breaths, wounded=u.wounded, cell=list(u.cell) if getattr(u, "cell", None) else None,
                     piled=u in self.piles, crawling=getattr(u, "crawling", False),
                     status={k: v.get("stacks", v["rounds"]) for k, v in u.status.items()}, stages={k: v for k, v in u.stages.items() if v},
+                    held={h["name"]: dict(stat=st, rounds=h["rounds"], harmful=h["harmful"]) for st, h in getattr(u, "held", {}).items()},
                     affinities={e: u.affinity(e) for e in dtypes}, moves=[self.shown(u, a) for a in u.actions],
                     move_lines=[dict(name=self.shown(u, a), plain=plain(a)) for a in u.actions],
                     intent=self.intents.get(uid), winding=self.shown(u, u.bide[0]) if u.bide else None,
