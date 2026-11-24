@@ -77,7 +77,7 @@ def predict(base, die, d0, p, d, tier):
 # ---------------------------------------------------------------- Layer 2: rooms, played
 CAT = catalog()
 def room(rng, where, kind, L, budget=6, add=None):
-    return spawn_pack(shaped_room(rng, CAT, where, kind, budget, add), L)     # composer.shaped_room: shared with the Lab
+    return spawn_pack(shaped_room(rng, CAT, where, kind, budget, add, mirrored=True), L)   # shared with the Lab; mirrored (Nov 23)
 
 SHAPES = [("fodder", 3), ("fodder", 4), ("fodder", 5), ("fodder", 6), ("elite", 4), ("elite", 5), ("elite", 6),
           ("boss", 4), ("boss", 5), ("boss", 6)]

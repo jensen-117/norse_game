@@ -107,7 +107,41 @@ def gate(cat, **g):
 
 DEFAULT_RULES = dict(budget=6, max_units=6, banned_costs=(), cost_caps={}, family_max={}, family_min={},
                      family_weight={}, ranged=None)   # ranged: "include" (at least one unit that reaches our Rear),
-                                                      # "exclude" (none: the pure-melee pack), None (whatever rolls)
+                                                      # "exclude" (none: the pure-melee pack), "mirror" (mirror()),
+                                                      # None (whatever rolls)
+
+# ---------------------------------------------------------------- the mirror (beinar_pilot Part 2, section 8; Nov 23)
+MIRROR_EVERY = 3              # one reach slot per this many units, rounded up
+MIRROR_SKIP = 1 / 8           # a brute room: no reach slots reserved
+MIRROR_SKIP_TRASH = 1 / 2     # a room of Trash only reserves them half the time
+
+def reach_slots(n): return -(-n // MIRROR_EVERY)
+
+def mirror(rng, picks, pool, log=None):
+    """Most hero squads reach the Rear, so most packs do too: a pack of N reserves ceil(N/3) reach slots, within its
+    budget. While the pack is short, the cheapest unit that can't reach our Rear is swapped for one that can, of the same
+    cost and tier, so the room keeps its price and its shape (weighted like the composer's own picks). A brute room
+    (1 in 8; a room of Trash, 1 in 2) reserves none. Units stand where their role puts them (a Mogel reaches from the
+    Front). Returns a new list; a pool with nothing to swap in leaves the pack short, and says so in the log."""
+    picks = list(picks)
+    skip = MIRROR_SKIP_TRASH if all(tier_of(e) == "Trash" for e in picks) else MIRROR_SKIP
+    if rng.random() < skip:
+        if log is not None: log.append("mirror: a brute room")
+        return picks
+    need = reach_slots(len(picks)) - sum(e["ranged"] for e in picks)
+    while need > 0:
+        order = sorted((i for i, e in enumerate(picks) if not e["ranged"]), key=lambda i: (picks[i]["cost"], i))
+        for i in order:
+            out = picks[i]
+            cands = [e for e in pool if e["ranged"] and e["cost"] == out["cost"] and tier_of(e) == tier_of(out)]
+            if cands:
+                picks[i] = rng.choices(cands, weights=[e["weight"] for e in cands])[0]
+                if log is not None: log.append(f"mirror: {out['rank']} -> {picks[i]['rank']}")
+                need -= 1; break
+        else:
+            if log is not None: log.append(f"mirror: {need} reach slot(s) short, nothing to swap in")
+            break
+    return picks
 
 def _fillable(remaining, costs, caps, units_left):
     """Can `remaining` be met exactly with the allowed costs, the caps and the unit limit?"""
@@ -152,6 +186,8 @@ def compose(rng, pool, rules=None, log=None, tries=200):
     The ranged rule: "exclude" gates out every unit that reaches our Rear; "include" re-rolls until the
     pack has one (if the pool holds no ranged unit at all, it raises)."""
     R = dict(DEFAULT_RULES); R.update(rules or {})
+    if R["ranged"] == "mirror":
+        return mirror(rng, compose(rng, pool, dict(R, ranged=None), log, tries), pool, log)
     if R["ranged"] == "exclude":
         pool = [e for e in pool if not e["ranged"]]
     if R["ranged"] == "include":
@@ -226,10 +262,11 @@ def tier_of(e):
     return "Boss" if e["cost"] >= 3 else "Trash" if e["rank"].startswith(("Halv", "Litel")) else \
         "Elite" if e["rank"].startswith("Stor") else "Regular"
 
-def shaped_room(rng, cat, where, kind, budget, add=None):
+def shaped_room(rng, cat, where, kind, budget, add=None, mirrored=False):
     """One room of a shape (sweep.py; the Lab's calibration rooms; checks/adds_sweep.py): a fodder, elite or boss room
     of `budget` slots from the place's pool (odd sizes fill with Trash), and optionally two more Trash or Regulars
-    from the same pool. Returns the placed picks; the same rng state gives the same room everywhere."""
+    from the same pool. Returns the placed picks; the same rng state gives the same room everywhere.
+    mirrored: the new game's rooms reserve reach slots (mirror()), counted over the adds too; off for the old checks."""
     pool = habitat(cat, where)
     for _ in range(200):
         picks = compose(rng, [e for e in pool if tier_of(e) in ROOM_KINDS[kind]], dict(budget=budget, cost_caps={3: 1}))
@@ -239,6 +276,7 @@ def shaped_room(rng, cat, where, kind, budget, add=None):
         if add:
             extra = [e for e in pool if tier_of(e) == add]
             picks = picks + [rng.choice(extra) for _ in range(2)]
+        if mirrored: picks = mirror(rng, picks, pool)
         return place(picks)
     raise CompositionError(f"no {kind} room in {where}")
 

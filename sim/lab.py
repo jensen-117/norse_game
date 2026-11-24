@@ -92,7 +92,7 @@ def calib_room(kind, budget, add, n):
     turn, at the enemies' level; add: "" (as rolled), "Trash" or "Regular" (two more)."""
     n = max(1, int(n)); rng = random.Random(CALIB_SEED + n - 1); where = CALIB_PLACES[(n - 1) % len(CALIB_PLACES)]
     try:
-        picks = shaped_room(rng, CAT, where, kind, int(budget), add or None)
+        picks = shaped_room(rng, CAT, where, kind, int(budget), add or None, mirrored=True)
     except CompositionError as e:
         return _j(dict(error=str(e)))
     S["pack_spec"] = dict(placed=[(r, l, e) for r, l, e in picks], level=ENEMY_LEVEL,
