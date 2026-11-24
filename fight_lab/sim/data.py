@@ -593,6 +593,7 @@ DRAUGR_FINAL = {"Slash", "Eld"}
 USE_DYING = True
 HERO_BREATHS = 5              # a hero at 0 HP is Dying: a breath goes at the end of each round (not the one they fell in) and with each hit
 WOUNDED_CUT = 0.25            # Wounded: max HP and MP cut by this share until Rest; Dying again while Wounded is death
+REST_SHARE = 2 / 3             # D9 (Nov 24): a hero who Rests gets back this share of max HP and MP, and Wounded heals
 AI_FINISH_VALUE = 1.5         # AI: x ref damage / breaths left, for a finishing blow on the Dying (worth most when it kills)
 VAKNA = {                     # the revive ladder: who it reaches, what they stand up with, whether they're Wounded
     "Halv":  dict(reaches="Dying", hp=0.0,  wound=False),   # stabilises at 1 HP
@@ -645,7 +646,8 @@ KNOW_MP_KILLS = 40          # ...and its MP
 # halv (it has a Halv fork: damage verbs only, Nov 20, Joseph: a free attack is fine, a free heal, taunt or knot breaks
 # things); manner_power (this verb's own multiplier for a manner: Hevn's Bid doubles, the rest keep MANNERS').
 # Kinds the engine doesn't resolve yet (song, knot, displace) arrive in Waves 4b and 4c.
-DJUPANDA_SHARE = 0.40     # Djupanda: a wind-up (Bid), then this share of max MP
+ANDA_SHARE = 0.13         # Anda ("breathe", D8, Nov 24): a found move, this share of max MP back now. Djupanda is Anda + Bid
+                          # (its byname): Bid scales it x2.6, about a third. The AI values MP in Andas.
 KVAD_SHARE = 4 / 9        # each stack heals its ally this share of the singer's Base Lak at round start (single target;
                           # Flokvad and Allkvad take their reach's share: a third, and ALL_SHARE of 4/9)
 VERBS = {
@@ -654,7 +656,7 @@ VERBS = {
     "Reyk":     dict(cost=3, targets=("Flok", "All"), cls="Brennumar", kind="status", element="Reyk", status="Blinded", rider=("Poisoned", "Eitr"), styng=True),
     "Sveda":    dict(cost=6, targets=("Flok", "All"), cls="Brennumar", kind="status", element="Eld", status="Scorched", rider=("Feeble", "Lam"), styng=True),
     "Aukseid":  dict(cost=3, cls="Brennumar", kind="stat", stat="MAT", up=True, target="self"),
-    "Djupanda": dict(cls=None, kind="windfall", manners=("Bid",), free=True, target="self", amount=DJUPANDA_SHARE),   # any magical
+    "Anda":     dict(cls=None, kind="windfall", free=True, target="self", amount=ANDA_SHARE),   # any magical; found, not universal (D8)
     # Ullar (Bow; martial)
     "Skott":    dict(cost=16, halv=True, targets=("Flok", "All"), cls="Ullar", kind="damage", root="Skott", element="Pierce", rider=("Bleeding", "Blot"),
                      riders=(("Silenced", "Bann"),)),   # Bannskott: a shot that Silences (Nov 21, Joseph)
@@ -671,7 +673,7 @@ VERBS = {
     "Hevn":     dict(cost=16, cls="Vasara", kind="damage", answer=True, root="Krosh", element="Crush", halv=True,
                      manner_power={"Bid": 2.0}),   # +HEVN_PER_HIT a hit taken; Bidhevn releases double (Nov 20)
     # Dagskald (Sol school, child Lak; magical)
-    "Lak":      dict(cost=8, targets=("Flok", "All"), cls="Dagskald", kind="heal", element="Lak", target="ally", rider=(("EVA", 3), "Sol")),   # Gyllenlykt: and Evasive 3 (Nov 21: the panic button)
+    "Lak":      dict(cost=12, rider_price=8, targets=("Flok", "All"), cls="Dagskald", kind="heal", element="Lak", target="ally", rider=(("EVA", 3), "Sol")),   # Gyllenlykt: and Evasive 3 (Nov 21: the panic button)
     "Sol":      dict(cost=6, halv=True, targets=("Flok", "All"), cls="Dagskald", kind="damage", element="Sol", rider=("Blinded", "Blinda")),   # Blindasol
     "Kvad":     dict(cost=6, targets=("Flok", "All"), cls="Dagskald", kind="song", target="ally"),   # a Song stack a tier on one ally (Nov 20)
     "Skolja":   dict(cost=6, targets=("All",), cls="Dagskald", kind="cleanse", target="ally", rider=("Lift", "Lonn")),   # Lonnskolja: also lifts lowered stats (Nov 22)
@@ -702,7 +704,8 @@ CAPSTONES = {            # name: (verb, its parts as a frozen set). Holm and Has
 # parts each verb accepts settles in the mutation session; then every reachable long name needs a byname here.
 BYNAME_LETTERS = 15
 BYNAMES = {
-    "Geirskott": ("Naglskott", frozenset({"Mer", "Styng"})),   # ON geirr, "spear": a pike-length shaft that pins the leg
+    "Geirskott": ("Naglskott", frozenset({"Mer", "Styng"})),
+    "Djupanda": ("Anda", frozenset({"Bid"})),                 # the deep breath: Anda wound up (D8, Nov 24; the Waterfall Rune does it for free)   # ON geirr, "spear": a pike-length shaft that pins the leg
 }
 # Root names (Nov 21, Joseph): a verb and some of its parts get a word of their own, and further parts attach to it
 # (Merdaska, Snargenomskott). An exact capstone or byname still wins. A rider with its own spoken part (Brak, Blot, Lam,
@@ -725,7 +728,7 @@ SOURCE_TIER = {"carve": "Mer", "find": "Jatte", "gear": "Ur"}
 # Bid is timing, not speed: Bid with one speed manner is the meteor (Bid + Tung lands Heavy).
 SCALES = {"damage", "heal"}                           # effects with a power the manners can scale (Hevn is damage)
 HITS = {"damage"}                                     # effects that roll hits (crits, flurries)
-MANNER_NEEDS = {"Snar": None, "Tung": SCALES, "Bid": SCALES, "Jarf": HITS, "Drif": HITS}
+MANNER_NEEDS = {"Snar": None, "Tung": SCALES, "Bid": SCALES | {"windfall"}, "Jarf": HITS, "Drif": HITS}
 SPEED_MANNERS = {"Snar", "Tung"}
 TARGET_PARTS = {"Flok", "All"}                        # the target parts a class verb can carve (Mark is enemies' paint)
 # Reach is a real choice (Nov 20, Joseph): Flok a row at 75% each for one step; All everyone at 60% each for two steps;
@@ -755,9 +758,9 @@ KITS = {
                   3: [W("Skott", lonn=True, tier="Mer"), W("Naglskott", styng=True), W("Peka", lonn=True), W("Fangskott")]},
     "Brennumar": {1: [W("Eld"), W("Reyk")],
                   2: [W("Eld"), W("Reyk"), W("Sveda"), W("Eld", target="All")],
-                  3: [W("Eld", tier="Mer"), W("Eld", target="All"), W("Sveda", lonn=True), W("Djupanda")]},
+                  3: [W("Eld", tier="Mer"), W("Eld", target="All"), W("Sveda", lonn=True), W("Anda", manners=("Bid",))]},
     "Dagskald":  {1: [W("Lak"), W("Sol")],
-                  2: [W("Lak"), W("Sol"), W("Kvad")],
+                  2: [W("Lak"), W("Sol"), W("Kvad"), W("Skolja", lonn=True)],   # Lonnskolja: the party's answer to a lasting debuff (Wave C)
                   3: [W("Lak", lonn=True), W("Sol"), W("Kvad", tier="Mer"), W("Aukraft", target="All")]},   # Merkvad: bank it on the tank (Nov 20, measured)
     "Skurmar":   {1: [W("Blast"), W("Knyta")],
                   2: [W("Blast"), W("Knyta"), W("Kuling"), W("Blixt")],
@@ -775,7 +778,7 @@ CLASS_AFFINITY = {
     "Vasara": dict(weak=["Pierce", "Blixt"], resist=["Eld"]),   # the anvil shrugs off fire; lightning finds the iron
 }
 BASIC_VERB = {"Vasara": "Krosh", "Ullar": "Skott", "Brennumar": "Eld", "Dagskald": "Sol", "Skurmar": "Blast"}  # its free Halv
-MEDITATE_SHARE = 0.15     # Meditate: this share of max MP back; magicals only, a universal action (a knob: the sweep tunes)
+MEDITATE_SHARE = 0.15     # Meditate: the old universal action, gone in the new game (D8: Anda, found, took its place)
 AI_MEDITATE_VALUE = 1.2   # AI: x ref x the MP share it would restore
 AI_TAUNT_VALUE = 0.6      # AI: x ref per ally Egga would shield (hurt, or a wind-up's target)
 
@@ -788,7 +791,8 @@ AI_ALSO_VALUE = 0.4       # AI: x ref for a second status riding the first (Lonn
 AI_PAYOFF_VALUE = 0.5     # AI: x ref for a status someone on the side can cash in (Pinned, with a Fangskott)
 KNOT_CAP = 3              # Knots (Wave 4c; classes.md Part 7): a pool on the Skurmar, tied by Knyta (a knot a tier), spent by
 KNOT_BLAST = 1.25         # the untie spells, for this fight only (Nov 21, Joseph). Held: 1+ Blast hits harder (x this);
-KNOT_MP = 0.5             # 2+ Blixt can't graze; 3: each MP-recovering move of his (Meditate, Djupanda) restores this share
+KNOT_MP = 0.5             # (Nov 21: three knots deepened his Meditate; retired Nov 24)
+KNOT_MP_ROUND = 0.04      # D8 (Nov 24): three knots held, this share of max MP back at each round's start (4 of 100: under a Blast's 6)
                           # of a Meditate more (Meditate 15% -> 22.5%, Djupanda 40% -> 47.5%). No MP on its own.
 BUMP_SHARE = 0.05         # Kasta and Svepa (Nov 20, Joseph): in a crash, each of the two takes this share of its own max HP
                           # plus this share of the other's: damage relative to both bodies, so small things are bowled over
@@ -810,7 +814,7 @@ ENEMY_LEVEL = 50
 # is anchored, not tuned by a knob: his class's share-1.0 move lands KROSH_CLEAN on the plain foe at SHEET_LEVEL
 # (engine.anchor_mult), and a base Lak heals LAK_CLEAN. Pools are written at SHEET_LEVEL and scale with level.
 KROSH_CLEAN = 104          # a clean Krosh on the plain foe: the measure of everything
-LAK_CLEAN = 100            # a base Lak's heal: one Krosh, one and a half normal foe hits
+LAK_CLEAN = 75             # a base Lak's heal (D8, Nov 24: was 100): about one Regular's hit; a full bar is under one Rest
 PLAIN_GUARD = 60           # the plain foe's DEF and MDF (yardstick.py): no affinities, no body
 HERO_POOLS = {"Vasara": (1000, 0), "Ullar": (600, 0), "Brennumar": (500, 150), "Dagskald": (700, 200), "Skurmar": (600, 100)}
 CLASS_SHARE = {"Vasara": 1.0, "Ullar": 0.75, "Brennumar": 0.9, "Dagskald": 0.9, "Skurmar": 0.9}   # melee, ranged, magic

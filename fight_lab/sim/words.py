@@ -168,6 +168,8 @@ def normalize(verb, tier=None, target=None, manners=(), styng=False, lonn=False,
     manners = tuple(manners)
     for mn in manners:
         if mn not in MANNERS or mn is None: raise ValueError(f"unknown manner {mn!r}")
+    order = [m for m in MANNERS if m]                    # one spelling whatever order they're carved in (Snar, Tung, Bid,
+    manners = tuple(sorted(manners, key=order.index))    # Jarf, Drif: the name's order; the workbench's too)
     if len(set(manners)) != len(manners): raise ValueError(f"{verb}: a manner can't be carved twice ({manners})")
     if len(SPEED_MANNERS & set(manners)) > 1: raise ValueError(f"{verb}: Swift and Heavy contradict each other")
     for mn in manners:
@@ -267,6 +269,7 @@ def compile_verb(verb, tier=None, target=None, manners=(), styng=False, lonn=Fal
     a["designated"] = True                                               # riders are the verb's own: no element rider (Blixt's Stun is Lonn's)
     for k in ("root", "knots", "follow", "pays_on", "pays_below", "pays", "answer", "amount", "push"):
         if k in v: a[k] = v[k]
+    if kind == "windfall": a["amount"] = v["amount"] * mpower   # Djupanda: Anda wound up, x2.6 (D8)
     if "group" in v: a["group"] = v["group"]
     if eff in v.get("tier_group", {}): a["group"] = v["tier_group"][eff]   # a tier that takes longer (Merknyta: Late)
     a.update(mkw)
@@ -280,6 +283,8 @@ def compile_verb(verb, tier=None, target=None, manners=(), styng=False, lonn=Fal
         + TARGET_STEPS.get(n["target"], 0) + len(n["manners"]) + int(n["styng"]) + int(n["lonn"]) \
         + v.get("weight", 0) - v.get("knots", 0)
     if v.get("free"): price = 0
+    elif n["lonn"] and v.get("rider_price"):         # a verb may print its rider's price: a flat step, not a doubling
+        price = v["cost"] * 2 ** (steps - 1) + v["rider_price"]   # (Lak's lantern: Gyllenlykt 12 + 8 = 20; O3 may generalize)
     else: price = (HALV_COST[a["cost_type"]] if eff == "Halv" else v["cost"]) * 2 ** steps
     a["price"], a["cost"] = price, 0                                     # the ladder number at SHEET_LEVEL (engine.price_bars)
     a["parts"] = dict(verb=verb, tier=n["tier"], target=n["target"], manners=n["manners"], styng=n["styng"], lonn=n["lonn"],

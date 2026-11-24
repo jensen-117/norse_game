@@ -5,13 +5,10 @@ from engine import *
 import lab
 
 class TheHalvIsAPick(unittest.TestCase):
-    def test_only_in_a_free_slot(self):
+    def test_never_filled_in(self):          # D8 (Nov 24): an empty slot stays empty until you pack or carve
         for cls in KITS:
             for leg in KITS[cls]:
-                has = any(a.get("basic") for a in build_hero(cls, leg).actions)
-                self.assertEqual(has, len(KITS[cls][leg]) < KIT_SLOTS, (cls, leg))
-        self.assertTrue(all(any(a.get("basic") for a in build_hero(c, 1).actions) for c in KITS))        # every leg 1
-        self.assertFalse(any(any(a.get("basic") for a in build_hero(c, 3).actions) for c in KITS))       # no leg 3
+                self.assertFalse(any(a.get("basic") for a in build_hero(cls, leg).actions), (cls, leg))
 
     def test_the_menu_has_no_halv_slot_then(self):
         v = build_hero("Vasara", 3); b = Battle([v], [spawn_dummy()], random.Random(1), profile="new"); b.begin(control="party")

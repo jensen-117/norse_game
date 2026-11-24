@@ -177,7 +177,7 @@ class A02_ModifierPolicy(unittest.TestCase):
 
     def test_redundant_parts(self):
         with self.assertRaises(ValueError): compile_verb("Egga", manners=("Snar",))       # already First
-        with self.assertRaises(ValueError): compile_verb("Djupanda", manners=("Bid",))    # already Patient
+        with self.assertRaises(ValueError): compile_verb("Anda", manners=("Bid", "Bid"))   # a manner twice
         with self.assertRaises(ValueError): compile_verb("Reyk", manners=("Tung",))       # nothing to make heavier
 
 # ---------------------------------------------------------------- C04-C07

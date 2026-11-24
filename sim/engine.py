@@ -7,6 +7,18 @@ from words import *        # naming, the move record, and the one compiler every
 def clamp(x, lo, hi): return max(lo, min(hi, x))
 def stage_mult(n): return (3 + n) / 3 if n >= 0 else 3 / (3 - n)
 def level_factor(level): return 0.6 + level / 20
+def rest(u):
+    """D9 (Nov 24): a hero who Rests gets back REST_SHARE of max HP and MP, and Wounded heals (its whole pools come
+    back first). The dead stay dead (Vakna and the Mead are for them)."""
+    if getattr(u, "state", "up") == "dead": return
+    if getattr(u, "wounded", False):
+        u.maxhp, mx = getattr(u, "unwounded", (u.maxhp / (1 - WOUNDED_CUT), getattr(u, "maxmp", 0) / (1 - WOUNDED_CUT)))
+        if getattr(u, "maxmp", 0): u.maxmp = mx
+        u.wounded = False
+    u.hp = min(u.maxhp, max(u.hp, 0) + REST_SHARE * u.maxhp)
+    if getattr(u, "maxmp", 0): u.mp = min(u.maxmp, u.mp + REST_SHARE * u.maxmp)
+    if getattr(u, "state", "up") == "dying": u.state, u.breaths = "up", 0
+
 def mp_need(u):
     """How much of its MP pool a unit is missing, 0..1 (Nov 21): a unit with no pool (a martial hero) misses nothing,
     so whatever values getting MP back sees nothing to gain."""
@@ -162,13 +174,15 @@ def plain(a):
         return s
     if k == "knot":
         return (f"Tie {'two knots' if tier == 'Mer' else 'a knot'} of wind (up to three, this fight). Held: 1, Blast hits harder; "
-                "2, Blixt never grazes; 3, Meditate and Djupanda restore more.")
+                "2, Blixt never grazes; 3, a little MP comes back each round.")
     if k == "displace":
         s = (f"Shove one foe a row {'back' if a.get('push') else 'forward'}. Into an occupied space the two swap places and both "
              "are slammed, each by a share of both bodies. A Pinned unit is a wall.")
         return s + (" The gust batters it first." if a.get("styng") else "")
     if k == "glide": return "Swift. Step to your other row, or trade places with an ally; gain Evasive."
-    if k == "windfall": return "Patient: breathe deep this turn, and a large share of your MP comes back next turn."
+    if k == "windfall":
+        if a.get("bide"): return "Patient: breathe deep this turn, and about a third of your MP comes back next turn."
+        return "Breathe: a little of your MP comes back now."
     if k == "cleanse": return f"Washes ailments and lowered stats off {who_ally}."
     if k == "revive":
         reach = "a Dying or Dead ally" if a.get("reaches") == "Dead" else "a Dying ally"
@@ -397,9 +411,7 @@ def build_hero(cls, leg=1, level=None, playable=True, name=None, kit=None):
     if playable: kit = [a for a in kit if not a["unresolved"]]
     # the Halv is a kit pick (Nov 21, Wave 7 phase B): it takes a free slot, and never bumps a move from an
     # established kit; a full kit (KIT_SLOTS moves) has none
-    basic = []
-    if picks < KIT_SLOTS:
-        basic = [compile_verb(BASIC_VERB[cls], tier="Halv")]; basic[0]["basic"] = True
+    basic = []                  # D8 (Nov 24): no auto-filled Halv; an empty slot stays empty until you pack or carve
     u = Unit(name or cls, "party", L, sheet_attrs(cls, L), c["atk"], c["mat"], sheet_affinity(cls), basic + kit, cls=cls)
     for a in u.actions:                    # a martial verb's range: its root in this class's weapon (Skott on a Bow: Long)
         if a.get("root") and c.get("weapon"):                  # damage, and a status move's arrow (Naglskott, Peka)
@@ -1017,6 +1029,7 @@ class Battle:
                 t.cell = next(((r, l) for r in (t.cell[0], "rear" if t.cell[0] == "front" else "front")
                                for l in range(3) if (r, l) not in taken), t.cell)
         if wound and not t.wounded:
+            t.unwounded = (t.maxhp, getattr(t, "maxmp", 0))   # D9: a Rest restores these (Joseph's pre-flight)
             t.wounded = True; t.maxhp *= 1 - WOUNDED_CUT; t.maxmp = getattr(t, "maxmp", 0) * (1 - WOUNDED_CUT)
             t.mp = min(getattr(t, "mp", 0), t.maxmp)
         t.state, t.breaths = "up", 0
@@ -1267,7 +1280,7 @@ class Battle:
             return
         if a["kind"] == "glide":
             self.glide(u, a, tag); return
-        if a["kind"] == "windfall":                         # Djupanda's release: the deep breath lands
+        if a["kind"] == "windfall":                         # Anda, or Djupanda's release: the breath lands
             got = min(self.recovery(u, a["amount"]) * u.maxmp, u.maxmp - u.mp); u.mp += got
             self.emit("mp", f"    {u.name} breathes out: {got:.0f} MP back.{tag}", unit=u.name, amount=round(got), move=a["name"]); return
         if a["kind"] == "meditate":
@@ -1674,7 +1687,7 @@ class Battle:
         if p is None: return 0.0
         a, t = p
         if a["kind"] == "damage": return self.expected_damage(f, t, a) if t is not None else 0.0
-        if a["kind"] == "windfall": return AI_MEDITATE_VALUE * ref * a["amount"] / MEDITATE_SHARE * mp_need(f)
+        if a["kind"] == "windfall": return AI_MEDITATE_VALUE * ref * a["amount"] / ANDA_SHARE * mp_need(f)
         return 0.8 * ref
 
     def transform(self, u, job):
@@ -1889,6 +1902,10 @@ class Battle:
                 pool = self.allies(u) if a["direction"] > 0 else self.foes(u)
                 for x in pool:
                     if x.stage(a["stat"]) * a["direction"] >= STACK_CAP: continue   # already as far as it goes
+                    if getattr(self, "new_game", False):         # stats last (D2): lifting a drop is worth most, each
+                        lvl = x.stage(a["stat"]) * a["direction"]   # step up after that less (no Aukskold to +3 on a whim)
+                        if a["direction"] > 0:
+                            options.append(((0.9 if lvl < 0 else 0.8 * (1 - lvl / STACK_CAP)) * ref - cost_pen, a, x)); continue
                     if a["direction"] < 0 and getattr(self, "new_game", False) and COMBINED_STAT.get(a["stat"], a["stat"]) in x.held: continue
                     options.append((0.8 * ref - cost_pen, a, x))
             elif a["kind"] == "cleanse":
@@ -1921,9 +1938,10 @@ class Battle:
                 if cell is not None:
                     nimble = 0.15 * ref if u.stage(a["stat"]) < STACK_CAP else 0.0
                     options.append((AI_GLIDE_VALUE * ref + nimble - cost_pen, dict(a, cell=cell), u))
-            elif a["kind"] == "windfall":                       # Djupanda: Meditate's worth, larger, over two turns
+            elif a["kind"] == "windfall":                       # Anda now; Djupanda (Anda + Bid) larger, over two turns
                 if u.mp < 0.5 * u.maxmp:
-                    s = AI_MEDITATE_VALUE * ref * self.recovery(u, a["amount"]) / MEDITATE_SHARE * mp_need(u) * AI_MANNER_VALUE["Bid"]
+                    s = AI_MEDITATE_VALUE * ref * self.recovery(u, a["amount"]) / ANDA_SHARE * mp_need(u) \
+                        * (AI_MANNER_VALUE["Bid"] if a.get("bide") else 1.0)
                     options.append((s - cost_pen, a, u))
         if self.can_meditate(u) and u.mp < u.maxmp:                # the universal Meditate
             share = min(self.recovery(u, MEDITATE_SHARE), mp_need(u))   # three knots: a deeper breath
@@ -1956,11 +1974,11 @@ class Battle:
     def recovery(self, u, share):
         """An MP-recovering move's share of max MP: three knots add KNOT_MP of a Meditate (Nov 21, Joseph: the wind-witch's
         focus; moves only, not items)."""
-        return share + (KNOT_MP * MEDITATE_SHARE if getattr(u, "knots", 0) >= KNOT_CAP else 0.0)
+        return share                                    # D8 (Nov 24): the knots' MP is a trickle at round start now
 
     def knot_hold(self, u, k, ref):
         """What holding k knots pays u per round (Wave 4c): 1+, a quarter more on his best Blast; 2+, his best Blixt never
-        grazes; 3, half a Meditate (valued as the AI values Meditate)."""
+        grazes; 3, a trickle of MP each round (D8)."""
         if k <= 0: return 0.0
         held, u.knots = u.knots, 0                          # the blows as they'd land without knots
         try:
@@ -1975,7 +1993,7 @@ class Battle:
                              else max(0.0, GRAZE_BASE - STEP * self.net_stage(u, f0)))
                     v += best("Blixt") * graze * (1 - GRAZE_MULT)
             if k >= KNOT_CAP and getattr(u, "maxmp", 0):
-                v += 0.5 * AI_MEDITATE_VALUE * ref * KNOT_MP * mp_need(u)   # a better Meditate, some rounds
+                v += AI_MEDITATE_VALUE * ref * KNOT_MP_ROUND / ANDA_SHARE * mp_need(u)   # the round's trickle, in Andas
             return v
         finally:
             u.knots = held
@@ -2340,6 +2358,12 @@ class Battle:
         for u in self.units:
             if u.alive: self.tick_statuses(u, "round_start")
         self.sing()                                        # Kvad (Wave 4b): after the ticks
+        for u in self.units:                               # D8: three knots held, a trickle of MP (under a Blast's cost)
+            if u.alive and getattr(u, "knots", 0) >= KNOT_CAP and getattr(u, "maxmp", 0):
+                got = min(KNOT_MP_ROUND * u.maxmp, u.maxmp - u.mp)
+                if got > 0:
+                    u.mp += got
+                    self.emit("mp", f"    {u.name}'s knots hum: {got:.0f} MP back.", unit=u.name, amount=round(got), move="Knots")
         self.tick_spots(); self.tick_piles()
         self.eligible, self.barred = set(), set()
         for u in self.units: u.defending, u.covered_by, u.taunted_by = False, None, None
@@ -2415,8 +2439,8 @@ class Battle:
     def unit(self, uid): return self.by_uid[uid]
 
     def can_meditate(self, u):
-        """Meditate is universal for the new game's magicals (pillars Part 5); old recruits and enemies don't."""
-        return getattr(u, "kit_leg", None) is not None and CLASSES.get(u.cls, {}).get("kind") == "magical"
+        """Meditate was universal for the new game's magicals (pillars Part 5); D8 (Nov 24) retired it: Anda is found."""
+        return False
 
     def flee_chance(self, u):
         if self.no_flee: return 0.0

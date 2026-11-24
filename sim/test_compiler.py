@@ -6,7 +6,7 @@ SPELLED = {   # the kits as classes.md and the Nov 20 kit list spell them
     "Vasara":    {1: "Krosh Egga", 2: "Krosh Egga Brakrosh Lya", 3: "Snarbrakrosh Rodegga Lya Hevn"},
     "Ullar":     {1: "Skott Naglskott", 2: "Blotskott Naglskott Peka", 3: "Merblotskott Genomskott Genomskoda Fangskott"},
     "Brennumar": {1: "Eld Reyk", 2: "Eld Reyk Sveda Alleld", 3: "Mereld Alleld Lamsveda Djupanda"},
-    "Dagskald":  {1: "Lak Sol", 2: "Lak Sol Kvad", 3: "Gyllenlykt Sol Merkvad Allaukraft"},
+    "Dagskald":  {1: "Lak Sol", 2: "Lak Sol Kvad Lonnskolja", 3: "Gyllenlykt Sol Merkvad Allaukraft"},
     "Skurmar":   {1: "Blast Knyta", 2: "Blast Knyta Kuling Blixt", 3: "Blast Merknyta Storm Stelblixt"},   # names: Nov 21
 }
 
@@ -75,8 +75,8 @@ class TestPrice(unittest.TestCase):     # the cost ladder (Nov 21, classes.md Pa
         self.assertEqual([self.P("Eld", tier="Halv"), self.P("Reyk"), self.P("Eld"), self.P("Eld", tier="Mer"),
                           self.P("Eld", target="Flok"), self.P("Eld", target="All")], [2, 3, 6, 12, 24, 48])
         self.assertEqual(self.P("Eld", tier="Jatte", source="find"), 24)
-        self.assertEqual(self.P("Djupanda"), 0)
-        self.assertEqual((self.P("Lak"), self.P("Lak", lonn=True), self.P("Kvad"), self.P("Kvad", tier="Mer")), (8, 16, 6, 12))
+        self.assertEqual(self.P("Anda", manners=("Bid",)), 0)
+        self.assertEqual((self.P("Lak"), self.P("Lak", lonn=True), self.P("Kvad"), self.P("Kvad", tier="Mer")), (12, 20, 6, 12))   # D8: Lak 12; Gyllenlykt 20 (its rider's own price)
         self.assertEqual((self.P("Blixt"), self.P("Blixt", lonn=True), self.P("Knyta"), self.P("Knyta", tier="Mer")), (8, 16, 3, 6))
 
     def test_knots_pay_steps(self):     # All 3 steps, Mer 1, a follow-up 1; each knot spent pays one: all three 24
@@ -106,7 +106,7 @@ class TestKeywords(unittest.TestCase):
 
     def test_a_meteor_lands_heavy(self):
         m = compile_verb("Eld", manners=("Bid", "Tung"))
-        self.assertEqual(m["name"], "Bidtungeld")
+        self.assertEqual(m["name"], "Tungbideld")   # one spelling, whatever the carving order (Nov 24)
         self.assertEqual((m.get("group"), m["release_group"]), (None, -2))
         self.assertEqual(m["keywords"], ["Heavy", "Patient"])
         rng = random.Random(1)

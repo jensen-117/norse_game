@@ -27,7 +27,7 @@ class Tuning(unittest.TestCase):
     def test_damage_both_ways(self):
         h, e = build_hero("Ullar"), spawn_family("Draugr", "Draugr", 50)
         plain = build_hero("Ullar"); plain.dmg_mult = 1.0
-        b = Battle([h], [e], random.Random(1)); skott = h.actions[1]
+        b = Battle([h], [e], random.Random(1)); skott = next(a for a in h.actions if a["name"] == "Skott")
         self.assertAlmostEqual(b.raw_damage(h, e, skott) / b.raw_damage(plain, e, skott), anchor_mult("Ullar")[0])   # the anchor (Nov 21)
         claw = e.actions[0]; e2 = spawn_family("Draugr", "Draugr", 50)
         self.assertAlmostEqual(b.raw_damage(e, h, claw) / b.raw_damage(e2, h, claw), ENEMY_DAMAGE)

@@ -11,7 +11,9 @@ QUIET = [act("defend", "Defend", target="self")]
 
 def hero(cls, *kit):
     """A sheet hero with exactly this kit: each item a verb name or (verb, parts)."""
-    return build_hero(cls, kit=[(k, {}) if isinstance(k, str) else k for k in kit])
+    # Wave C (Nov 24): no Halv is filled in any more; the test heroes pack their class's Halv first, as a player may,
+    # so a kit move sits at actions[1] as it always has
+    return build_hero(cls, kit=[(BASIC_VERB[cls], dict(tier="Halv"))] + [(k, {}) if isinstance(k, str) else k for k in kit])
 
 def dummy(hp=10 ** 6, actions=QUIET, **kw):
     e = spawn_family("Drattr", "Drattr", SHEET_LEVEL, job="Spear"); e.maxhp = e.hp = hp
@@ -317,15 +319,15 @@ class Gliding(unittest.TestCase):
 
 class Breathing(unittest.TestCase):
     def test_djupanda_winds_up_then_lands(self):
-        u = hero("Brennumar", "Djupanda"); u.mp = 0; b = fight([u], [dummy()])
+        u = hero("Brennumar", ("Anda", dict(manners=("Bid",)))); u.mp = 0; b = fight([u], [dummy()])
         orders(b, {u.uid: (key(u, "Djupanda"), None)})
         self.assertEqual(u.mp, 0); self.assertTrue(evs(b, "windup", unit=u.name))
         orders(b, {})
-        self.assertAlmostEqual(u.mp, DJUPANDA_SHARE * u.maxmp)
+        self.assertAlmostEqual(u.mp, ANDA_SHARE * MANNERS["Bid"]["power"] * u.maxmp)   # Anda wound up (D8)
         self.assertIn("Patient", u.actions[1]["keywords"]); self.assertEqual(u.actions[1]["cost"], 0)
 
     def test_a_stun_breaks_the_breath(self):
-        u = hero("Brennumar", "Djupanda"); u.mp = 0; b = fight([u], [dummy()])
+        u = hero("Brennumar", ("Anda", dict(manners=("Bid",)))); u.mp = 0; b = fight([u], [dummy()])
         orders(b, {u.uid: (key(u, "Djupanda"), None)})
         u.status["Stunned"] = dict(rounds=3)
         orders(b, {}); self.assertEqual(u.mp, 0); self.assertTrue(evs(b, "bide_lost", unit=u.name))
@@ -363,8 +365,8 @@ class TheAIUsesThem(unittest.TestCase):
         self.assertIn("Rodegga", picks)
 
     def test_a_low_brennumar_breathes_deep(self):
-        """Djupanda over Meditate when the MP is low: it's worth more, over two turns."""
-        u = hero("Brennumar", "Djupanda"); u.mp = 0.1 * u.maxmp
+        """Djupanda when the MP is low (D8: no Meditate; it's the breath he carries)."""
+        u = hero("Brennumar", ("Anda", dict(manners=("Bid",)))); u.mp = 0.1 * u.maxmp
         b = Battle([u], [dummy(aff={"Eld": "null"})], random.Random(1))     # nothing to burn: it's MP or nothing
         picks = [b.declare(u)[0]["name"] for _ in range(20)]
         self.assertEqual(max(set(picks), key=picks.count), "Djupanda")

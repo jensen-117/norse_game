@@ -9,7 +9,7 @@ from engine import *
 from words import compile_verb
 
 QUIET = [act("defend", "Defend", target="self")]
-def hero(cls, *kit): return build_hero(cls, kit=[(k, {}) if isinstance(k, str) else k for k in kit])
+def hero(cls, *kit): return build_hero(cls, kit=[(BASIC_VERB[cls], dict(tier="Halv"))] + [(k, {}) if isinstance(k, str) else k for k in kit])   # packs its Halv (Wave C)
 def dummy(hp=10 ** 6, actions=QUIET, **kw):
     e = spawn_family("Drattr", "Drattr", SHEET_LEVEL, job="Spear"); e.maxhp = e.hp = hp
     e.actions = [dict(a) for a in actions]; e.aff = {}

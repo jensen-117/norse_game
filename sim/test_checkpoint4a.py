@@ -8,7 +8,7 @@ from words import compile_verb
 QUIET = [act("defend", "Defend", target="self")]
 
 def hero(cls, *kit):
-    return build_hero(cls, kit=[(k, {}) if isinstance(k, str) else k for k in kit])
+    return build_hero(cls, kit=[(BASIC_VERB[cls], dict(tier="Halv"))] + [(k, {}) if isinstance(k, str) else k for k in kit])   # packs its Halv (Wave C)
 
 def dummy(hp=10 ** 6, actions=QUIET, job="Spear", level=SHEET_LEVEL, **kw):
     e = spawn_family("Drattr", "Drattr", level, job=job); e.maxhp = e.hp = hp
@@ -33,7 +33,7 @@ class C16_NonDamageWindUps(unittest.TestCase):
         self.assertTrue(evs(b, "windup", unit=br.name))
 
     def test_the_net_values_stopping_djupanda(self):
-        br = hero("Brennumar", "Djupanda"); br.mp = 0; e = dummy(job="Net")
+        br = hero("Brennumar", ("Anda", dict(manners=("Bid",)))); br.mp = 0; e = dummy(job="Net")
         b = Battle([br], [e], random.Random(1)); dj = br.actions[1]
         ref = 20 * level_factor(e.level) * getattr(e, "dmg_mult", 1.0)
         calm = b.bind_value(e, br, ref)
@@ -115,7 +115,7 @@ class C12_TauntCatchesFinishingBlows(unittest.TestCase):
 
     def test_the_reachable_taunter_takes_it(self):
         b, v, d, e = self.fixture()
-        hp = v.hp; b.submit(v.uid, "m2", e.uid); b.commit()             # m2: Egga
+        hp = v.hp; b.submit(v.uid, key(v, "Egga"), e.uid); b.commit()
         self.assertEqual(d.state, "dying"); self.assertEqual(d.breaths, 1)   # only the end-of-round breath
         self.assertLess(v.hp, hp); self.assertTrue(evs(b, "drawn"))
 
@@ -127,7 +127,7 @@ class C12_TauntCatchesFinishingBlows(unittest.TestCase):
         b = Battle([v, d, u], [e], random.Random(1), events=True)
         v.cell, d.cell, u.cell = ("rear", 0), ("front", 0), ("front", 1)
         d.hp = 0; b.downed(d); d.breaths = 3; b.begin("party")
-        b.submit(v.uid, "m2", e.uid); guard_rest(b); b.commit()
+        b.submit(v.uid, key(v, "Egga"), e.uid); guard_rest(b); b.commit()
         self.assertFalse(evs(b, "drawn"))
         self.assertTrue(any(x["kind"] == "breath" and x.get("src") == e.name for x in b.events))
 
@@ -136,7 +136,7 @@ class C12_TauntCatchesFinishingBlows(unittest.TestCase):
         e2 = spawn_family("Drattr", "Drattr", 15, job="Spear"); e2.actions = [dict(strike("Pierce", power=1), cost=0, reach="any")]
         b2 = Battle([build_hero("Vasara"), build_hero("Dagskald")], [e, e2], random.Random(1), events=True)
         v2, d2 = b2.party; d2.hp = 0; b2.downed(d2); d2.breaths = 3; b2.begin("party")
-        b2.submit(v2.uid, "m2", e.uid); b2.commit()                       # e taunted, e2 not
+        b2.submit(v2.uid, key(v2, "Egga"), e.uid); b2.commit()                       # e taunted, e2 not
         self.assertTrue(any(x["kind"] == "breath" and x.get("src") == e2.name for x in b2.events))
 
 # ================================================================ C17: the AI scores the whole move
@@ -278,7 +278,7 @@ class C15_TheRulesAreNamed(unittest.TestCase):
 # ================================================================ the agreed rules (Nov 20): Halv, Pin and Cover
 class Nov20Rules(unittest.TestCase):
     def test_halv_only_on_attacks(self):
-        for v in ("Lak", "Vakna", "Skolja", "Sveda", "Reyk", "Naglskott", "Egga", "Knyta", "Kvad", "Aukskold", "Skrida", "Djupanda"):
+        for v in ("Lak", "Vakna", "Skolja", "Sveda", "Reyk", "Naglskott", "Egga", "Knyta", "Kvad", "Aukskold", "Skrida", "Anda"):
             with self.assertRaises(ValueError, msg=v): compile_verb(v, tier="Halv")
         for v in ("Eld", "Skott", "Krosh", "Sol", "Blast", "Blixt", "Fangskott", "Avliva", "Hevn"):
             h = compile_verb(v, tier="Halv"); self.assertEqual(h["price"], HALV_COST[h["cost_type"]], v)   # Nov 21: Halv's own rung

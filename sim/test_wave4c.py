@@ -9,7 +9,7 @@ from engine import *
 from words import compile_verb
 
 QUIET = [act("defend", "Defend", target="self")]
-def hero(cls, *kit): return build_hero(cls, kit=[(k, {}) if isinstance(k, str) else k for k in kit])
+def hero(cls, *kit): return build_hero(cls, kit=[(BASIC_VERB[cls], dict(tier="Halv"))] + [(k, {}) if isinstance(k, str) else k for k in kit])   # packs its Halv (Wave C)
 def dummy(hp=10 ** 6, actions=QUIET, **kw):
     e = spawn_family("Drattr", "Drattr", SHEET_LEVEL, job="Spear"); e.maxhp = e.hp = hp
     e.actions = [dict(a) for a in actions]; e.aff = {}
@@ -50,14 +50,13 @@ class Knots(unittest.TestCase):
         self.assertNotIn("graze", {b.roll(s, e, bx) for _ in range(500)})
         self.assertIn("graze", {b.roll(s, e, s.actions[0]) for _ in range(200)})            # Blast still grazes
 
-    def test_three_knots_deepen_his_recovery(self):
-        """Nov 21 (Joseph): no MP on their own; Meditate and Djupanda restore half a Meditate more. Moves, not items."""
-        s = hero("Skurmar", "Blast", "Djupanda"); b = fight([s], [dummy()]); s.knots = 3; s.mp = 0
-        orders(b, {}); self.assertEqual(s.mp, 0)                                            # nothing for free
-        orders(b, {s.uid: ("meditate", None)}); self.assertAlmostEqual(s.mp, (MEDITATE_SHARE + KNOT_MP * MEDITATE_SHARE) * s.maxmp)
-        s.mp = 0; orders(b, {s.uid: (key(s, "Djupanda"), None)}); orders(b, {})
-        self.assertAlmostEqual(s.mp, (DJUPANDA_SHARE + KNOT_MP * MEDITATE_SHARE) * s.maxmp)
-        s.knots = 2; s.mp = 0; orders(b, {s.uid: ("meditate", None)}); self.assertAlmostEqual(s.mp, MEDITATE_SHARE * s.maxmp)
+    def test_three_knots_trickle_mp(self):
+        """D8 (Nov 24): three knots held, a trickle of MP at each round's start (under a Blast's cost); Anda isn't deepened."""
+        s = hero("Skurmar", "Blast", "Anda"); b = fight([s], [dummy()]); s.mp = 0
+        s.knots = 2; orders(b, {}); self.assertEqual(s.mp, 0)                               # two knots: nothing
+        s.knots = 3; orders(b, {}); self.assertAlmostEqual(s.mp, KNOT_MP_ROUND * s.maxmp)
+        self.assertLess(KNOT_MP_ROUND * s.maxmp, compile_verb("Blast")["price"])
+        s.mp = 0; s.knots = 0; orders(b, {s.uid: (key(s, "Anda"), None)}); self.assertAlmostEqual(s.mp, ANDA_SHARE * s.maxmp)
 
     def test_knots_are_this_fights(self):
         s = hero("Skurmar", "Knyta"); fight([s], [dummy()]); s.knots = 3
