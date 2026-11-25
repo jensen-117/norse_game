@@ -17,9 +17,8 @@ class Kits(unittest.TestCase):
         b, _, (bryn, seidr, orv, forn) = bein("Beinbryn", "Beinseidr", "Beinorv", "Fornbein")
         self.assertEqual(names(bryn), ["Cover", "Hew", "Fortify"])
         self.assertEqual(names(seidr), ["Frost Bolt", "Silence", "Curse"])     # the twist keeps the foes' name
-        self.assertEqual(names(orv)[:3], ["Arrow", "Pinning Shot", "Killing Shot"])
-        self.assertIn(names(orv)[3], ("Barbed Arrow", "Poison Arrow"))          # the quiver
-        self.assertEqual(names(forn), ["Cleaver", "Great Carve", "Rally", "Ogn"])
+        self.assertEqual(names(orv), ["Arrow", "Pinning Shot", "Killing Shot"])  # no quiver (Nov 25)
+        self.assertEqual(names(forn), ["Downward Slash", "Cleaver", "Great Carve", "Rally", "Ogn"])
         self.assertTrue(bryn.guard); self.assertFalse(forn.guard)               # the commander doesn't Cover
 
     def test_the_old_game_keeps_the_generated_bein(self):
@@ -31,7 +30,7 @@ class Kits(unittest.TestCase):
     def test_each_move_names_its_twin(self):
         _, _, (orv,) = bein("Storbeinorv")
         twins = {a["name"]: a.get("twin") for a in orv.actions}
-        self.assertEqual(twins["Pinning Shot"], "Genomskott"); self.assertEqual(twins["Killing Shot"], "Merfangskott")
+        self.assertEqual(twins["Pinning Shot"], "Genomskott"); self.assertEqual(twins["Killing Shot"], "Merbidfangskott")
 
     def test_the_grave_bolt_is_plain_aska(self):
         _, _, (s,) = bein("Beinseidr", element="Aska")
@@ -39,12 +38,14 @@ class Kits(unittest.TestCase):
 
     def test_the_cleaver_winds_up_a_row(self):
         _, _, (f,) = bein("Fornbein")
-        c = f.actions[0]; self.assertTrue(c["bide"]); self.assertEqual(c["shape"], "row")
+        c = f.actions[1]; self.assertTrue(c["bide"]); self.assertEqual(c["shape"], "row")
+        d = f.actions[0]; self.assertTrue(d["bide"]); self.assertEqual(round(d["power"], 1), 98.8)   # Downward Slash: 99
 
     def test_killing_shot_pays_on_the_pinned(self):
         _, _, (orv,) = bein("Beinorv")
         ks = next(a for a in orv.actions if a["name"] == "Killing Shot")
         self.assertEqual((ks["pays_on"], ks["pays"]), ("Pinned", 1.5))
+        self.assertTrue(ks["bide"]); self.assertEqual(round(ks["power"] * ks["pays"]), 78)   # a wind-up: 78 on the Pinned
 
 class Windows(unittest.TestCase):
     def test_pinning_shot_pins_for_two_and_cant_be_added_to(self):

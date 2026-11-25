@@ -653,3 +653,21 @@ The gauntlet's rule counts (gauntlet_report.md): fallbacks 14% for the Beinbryn,
 - **The calibration Elite is near Joseph's picture** (tank ~25%, others 60-90%): 30%, 80%, 89%. The Boss isn't ("a second hero near 25%, or someone falls"): 25%, 74%, 78%.
 
 **Next (the pilot's follow-ups):** settle the Silence lock and the Cleaver, then room sizes (the adds dial), the Draugr (Part 4) and Joseph's play in the Barrow.
+
+## Decided (Nov 25, Joseph: after step 3)
+
+- **Silence stays** as it is: the Seidr re-Silences the strongest caster when it wears off. Humans will answer it differently (kill the Seidr, Bannskott it back).
+- **Every setup gets a telegraphed payoff** (the cadence both jobs teach: something's being set up; break it, or brace):
+  - **The Beinorv: Pin, then wind up Killing Shot.** Killing Shot becomes a wind-up (Bidfangskott; the grammar puts the manner first), x1.5 on the Pinned: 78 at Base (109 at Mer) against 60 for two plain Killing Shots. The faster archer claims the Pin; the other winds up on that hero the same round; a Pinned 2 holds through the next two rounds, so the shot lands inside the window. A lone archer pins, then winds up. Answers: Skolja the Pin (it still lands, x1), Lya, Guard, stun the archer, kill it. Otherwise the archer harasses: finish anyone in killing range, shoot the focus.
+  - **The quiver comes off** (Barbed and Poison Arrow, and the claim-and-feed rule): it distracted the archers. A later job can carry it (the Spettbein).
+  - **The Fornbein: Ogn, then Downward Slash.** Downward Slash is a Jattebidskar wind-up, 99 on one hero (about 49 a round against Great Carve's 38), wound up on a Frightened (Reeling) focus.
+  - **The Cleaver stays in its back pocket:** wound up on any row it can reach holding two or three heroes (39 a round at two, 58 at three; 20 at one, so never then). Great Carve is its plain single-target blow.
+- **Kits now:** Beinorv Halv: Arrow, Called Shot. Regular: Arrow, Pinning Shot, Killing Shot (wind-up). Elite: Rapid Arrows, Pinning Shot, Killing Shot (Mer wind-up), Volley, Sharpen Sight. Fornbein: Downward Slash, Cleaver, Great Carve, Rally, Ogn.
+- **Their rules now:** Beinorv: finish; Called Shot an unmarked focus; wind up Killing Shot on a focus that's Pinned or whose Pin is claimed this round; Pin a clean focus (claimed); shoot the focus. Fornbein: Downward Slash on a Reeling focus (the payoff beats the setup); Rally; Ogn a focus that isn't Sundered or Reeling; the Cleaver on a reachable row of two or more; Great Carve the focus.
+
+**Built (Nov 25).** The kits and rules above, plus two fixes found watching fights: an archer winds up Killing Shot only if the Pin still holds when the shot lands (a Pin claimed this round, or one with 2 rounds left; at 1 left it shoots instead); and **desperation stops setups, never payoffs** (a rule marked `payoff` still fires when the pack or the unit is Desperate: a boss at half HP still brings Downward Slash down on the Frightened hero). The wound-up Killing Shot hits hard: 212 of the Dagskald's 700.
+
+**Measured:**
+- Bein Regular room: the Vasara, Skurmar and Dagskald end at 46%, 100%, 88% (step 3: 61%, 100%, 70%): a Pin, a wind-up and the shot take an archer two or three rounds, in fights under five.
+- Gauntlet: Regulars 191 of 240, Elite 78 of 191, Boss 38 of 78. Calibration Elite 30%, 80%, 91%; Boss 26%, 74%, 78%.
+- **The payoffs land where the boss lives long enough:** with the Fornbein and three Regulars (the room table's boss room), Killing Shot lands 237 of 239 wind-ups, Downward Slash 94 of 115 (the rest lost as the Fornbein falls), the Cleaver 6 of 7 (fronts of two); the party wins 29 of 100 there. With the Fornbein and one Halv (the yardstick's size), it's killed in about 3.4 rounds and loses 49 of 50 Downward Slashes: the counterplay (kill it before it lands) works too well when the boss is that soft. Room size is the lever (the adds dial).

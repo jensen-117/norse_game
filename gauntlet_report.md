@@ -7,54 +7,54 @@
 | Room | Reached | Won | Brings HP | Brings MP | Rounds (wins) | Falls | Items left after |
 |---|---|---|---|---|---|---|---|
 | Fodder | 100% | 100% | 100% | 100% | 2.5 | 0.00 | 2.0 |
-| Regulars | 100% | 79% | 88% | 89% | 8.1 | 1.17 | 0.9 |
-| Elite | 79% | 28% | 46% | 54% | 6.9 | 1.78 | 0.5 |
-| Boss | 28% | 14% | 86% | 89% | 8.9 | 1.89 | 0.2 |
+| Regulars | 100% | 79% | 88% | 89% | 8.0 | 1.14 | 0.8 |
+| Elite | 79% | 32% | 49% | 54% | 7.0 | 1.68 | 0.4 |
+| Boss | 32% | 15% | 83% | 87% | 9.4 | 1.94 | 0.1 |
 
 **Dagskald / Skurmar / Vasara, kit leg 2:**
 
 | Room | Reached | Won | Brings HP | Brings MP | Rounds (wins) | Falls | Items left after |
 |---|---|---|---|---|---|---|---|
 | Fodder | 100% | 100% | 100% | 100% | 2.6 | 0.00 | 2.6 |
-| Regulars | 100% | 85% | 85% | 88% | 7.7 | 0.92 | 0.8 |
-| Elite | 85% | 38% | 49% | 53% | 6.6 | 1.81 | 0.3 |
-| Boss | 38% | 24% | 76% | 87% | 6.3 | 1.53 | 0.2 |
+| Regulars | 100% | 85% | 86% | 88% | 7.8 | 0.93 | 0.7 |
+| Elite | 85% | 37% | 50% | 53% | 6.9 | 1.86 | 0.3 |
+| Boss | 37% | 20% | 74% | 86% | 6.2 | 1.57 | 0.3 |
 
 **Dagskald / Skurmar / Vasara, kit leg 3:**
 
 | Room | Reached | Won | Brings HP | Brings MP | Rounds (wins) | Falls | Items left after |
 |---|---|---|---|---|---|---|---|
 | Fodder | 100% | 100% | 100% | 100% | 2.8 | 0.00 | 2.7 |
-| Regulars | 100% | 86% | 85% | 85% | 7.8 | 0.82 | 0.6 |
-| Elite | 86% | 31% | 55% | 42% | 7.4 | 1.79 | 0.1 |
-| Boss | 31% | 16% | 77% | 83% | 6.0 | 1.61 | 0.1 |
+| Regulars | 100% | 85% | 85% | 84% | 7.6 | 0.79 | 0.7 |
+| Elite | 85% | 28% | 57% | 42% | 7.3 | 1.79 | 0.1 |
+| Boss | 28% | 17% | 76% | 82% | 6.5 | 1.43 | 0.1 |
 
 **Vasara / Ullar / Brennumar, kit leg 1:**
 
 | Room | Reached | Won | Brings HP | Brings MP | Rounds (wins) | Falls | Items left after |
 |---|---|---|---|---|---|---|---|
 | Fodder | 100% | 100% | 100% | 100% | 2.3 | 0.00 | 2.0 |
-| Regulars | 100% | 83% | 87% | 92% | 7.6 | 0.95 | 0.5 |
-| Elite | 83% | 30% | 42% | 55% | 7.0 | 2.11 | 0.2 |
-| Boss | 30% | 14% | 70% | 86% | 6.9 | 2.17 | 0.0 |
+| Regulars | 100% | 81% | 86% | 92% | 7.7 | 0.99 | 0.5 |
+| Elite | 81% | 31% | 43% | 56% | 6.7 | 2.05 | 0.2 |
+| Boss | 31% | 18% | 76% | 87% | 7.5 | 2.06 | 0.0 |
 
 **Vasara / Ullar / Brennumar, kit leg 2:**
 
 | Room | Reached | Won | Brings HP | Brings MP | Rounds (wins) | Falls | Items left after |
 |---|---|---|---|---|---|---|---|
 | Fodder | 100% | 100% | 100% | 100% | 2.4 | 0.01 | 2.0 |
-| Regulars | 100% | 79% | 81% | 89% | 7.3 | 1.31 | 0.3 |
-| Elite | 79% | 15% | 38% | 38% | 4.8 | 2.37 | 0.2 |
-| Boss | 15% | 11% | 77% | 87% | 5.1 | 2.20 | 0.1 |
+| Regulars | 100% | 81% | 81% | 89% | 7.3 | 1.30 | 0.3 |
+| Elite | 81% | 16% | 37% | 38% | 5.1 | 2.37 | 0.2 |
+| Boss | 16% | 10% | 75% | 88% | 5.1 | 2.44 | 0.1 |
 
 **Vasara / Ullar / Brennumar, kit leg 3:**
 
 | Room | Reached | Won | Brings HP | Brings MP | Rounds (wins) | Falls | Items left after |
 |---|---|---|---|---|---|---|---|
 | Fodder | 100% | 100% | 100% | 100% | 2.4 | 0.04 | 2.8 |
-| Regulars | 100% | 88% | 80% | 79% | 6.8 | 1.04 | 1.4 |
-| Elite | 88% | 34% | 39% | 30% | 5.6 | 2.08 | 0.7 |
-| Boss | 34% | 25% | 72% | 72% | 4.3 | 1.59 | 0.6 |
+| Regulars | 100% | 87% | 80% | 79% | 6.8 | 1.05 | 1.3 |
+| Elite | 87% | 32% | 40% | 31% | 5.7 | 2.14 | 0.7 |
+| Boss | 32% | 23% | 71% | 72% | 4.6 | 1.59 | 0.6 |
 
 ## The brains (step 3)
 
@@ -62,31 +62,31 @@ How often each pack plan was taken (picked or switched to), and each Bein job's 
 
 | Who | Rule | Times | Share |
 |---|---|---|---|
-| Beinbryn | best_strike on focus | 272 | 31% |
-| Beinbryn | desperate | 258 | 29% |
-| Beinbryn | Fortify on self | 179 | 20% |
-| Beinbryn | fallback | 128 | 14% |
-| Beinbryn | cover on ward | 49 | 6% |
-| Beinorv | pays:Pinned on focus | 562 | 30% |
-| Beinorv | status:Marked on focus | 485 | 25% |
-| Beinorv | status:Pinned on focus | 308 | 16% |
-| Beinorv | best_strike on killable | 219 | 11% |
-| Beinorv | desperate | 174 | 9% |
-| Beinorv | best_strike on focus | 110 | 6% |
-| Beinorv | fallback | 36 | 2% |
-| Beinorv | quiver on focus | 11 | 1% |
-| Beinseidr | best_strike on cursed_hurt | 375 | 36% |
+| Beinbryn | best_strike on focus | 280 | 31% |
+| Beinbryn | desperate | 271 | 30% |
+| Beinbryn | Fortify on self | 181 | 20% |
+| Beinbryn | fallback | 130 | 14% |
+| Beinbryn | cover on ward | 49 | 5% |
+| Beinorv | status:Marked on focus | 507 | 30% |
+| Beinorv | status:Pinned on focus | 323 | 19% |
+| Beinorv | pays:Pinned on focus | 292 | 17% |
+| Beinorv | best_strike on killable | 178 | 11% |
+| Beinorv | best_strike on focus | 176 | 10% |
+| Beinorv | desperate | 170 | 10% |
+| Beinorv | fallback | 40 | 2% |
+| Beinseidr | best_strike on cursed_hurt | 395 | 38% |
 | Beinseidr | status:Silenced on caster | 320 | 31% |
-| Beinseidr | status:Cursed on focus | 209 | 20% |
-| Beinseidr | desperate | 122 | 12% |
-| Beinseidr | status:Sundered on toughest | 5 | 0% |
-| Fornbein | desperate | 47 | 40% |
-| Fornbein | status:Feared on focus | 25 | 21% |
-| Fornbein | Rally on self | 24 | 20% |
-| Fornbein | best_strike on focus | 19 | 16% |
-| Fornbein | fallback | 3 | 3% |
-| plan | Hunt | 1243 | 33% |
-| plan | Break | 1201 | 32% |
-| plan | Desperate | 987 | 26% |
-| plan | Inflict | 177 | 5% |
-| plan | Stabilize | 118 | 3% |
+| Beinseidr | status:Cursed on focus | 212 | 20% |
+| Beinseidr | desperate | 114 | 11% |
+| Beinseidr | status:Sundered on toughest | 7 | 1% |
+| Fornbein | desperate | 44 | 34% |
+| Fornbein | status:Feared on focus | 32 | 24% |
+| Fornbein | Rally on self | 28 | 21% |
+| Fornbein | Downward Slash on focus | 20 | 15% |
+| Fornbein | best_strike on focus | 4 | 3% |
+| Fornbein | fallback | 3 | 2% |
+| plan | Hunt | 1260 | 33% |
+| plan | Break | 1194 | 32% |
+| plan | Desperate | 999 | 27% |
+| plan | Inflict | 180 | 5% |
+| plan | Stabilize | 130 | 3% |

@@ -70,12 +70,46 @@ class Rules(unittest.TestCase):
         b.pack_plan = dict(head=None, family="Bein", plan=plan, focus=x, since=1, switched=1, cost=9, before=None, true_head=False)
         b.brain_claims = set(); b.brain_stats.clear()      # begin() already planned round 1: start these turns clean
 
-    def test_archers_pin_then_cash_in_and_spread_by_claims(self):
+    def test_one_archer_pins_the_other_winds_up_the_kill(self):
         b, h, (o1, o2) = room(["Beinorv", "Beinorv"]); self.focus(b, h["Dagskald"])
         a, t = b.declare(o1); self.assertEqual((a["name"], t), ("Pinning Shot", h["Dagskald"]))
-        a, t = b.declare(o2); self.assertNotEqual(a["name"], "Pinning Shot")     # claimed
+        a, t = b.declare(o2); self.assertEqual((a["name"], t), ("Killing Shot", h["Dagskald"]))   # on this round's Pin
+        self.assertTrue(a["bide"])
+
+    def test_a_lone_archer_pins_then_winds_up(self):
+        b, h, (o,) = room(["Beinorv"]); self.focus(b, h["Dagskald"])
+        self.assertEqual(b.declare(o)[0]["name"], "Pinning Shot")
         h["Dagskald"].status["Pinned"] = dict(rounds=2); b.brain_claims = set()
-        a, t = b.declare(o1); self.assertEqual((a["name"], t), ("Killing Shot", h["Dagskald"]))
+        self.assertEqual(b.declare(o)[0]["name"], "Killing Shot")
+
+    def test_the_wound_up_shot_pays_on_the_pinned(self):
+        b, h, (o,) = room(["Beinorv"]); d = h["Dagskald"]
+        ks = next(a for a in o.actions if a["name"] == "Killing Shot")
+        plain = b.expected_damage(o, d, ks); d.status["Pinned"] = dict(rounds=2)
+        self.assertAlmostEqual(b.expected_damage(o, d, ks) / plain, 1.5, places=2)
+
+    def test_the_fornbein_frightens_then_winds_up_downward_slash(self):
+        b, h, (f, o) = room(["Fornbein", "Beinorv"]); self.focus(b, h["Vasara"])
+        for x in (f, o): b.hold(f, x, "Rally", "ATK", None, 3, False, lock=False, push=2, rest=2)   # Rally's up
+        self.assertEqual(b.declare(f)[0]["name"], "Ogn")
+        b.apply_status(f, h["Vasara"], "Feared", 1.0); b.brain_claims = set()
+        a, t = b.declare(f); self.assertEqual((a["name"], t), ("Downward Slash", h["Vasara"]))
+
+    def test_no_wind_up_on_a_pin_about_to_end(self):
+        b, h, (o,) = room(["Beinorv"]); self.focus(b, h["Dagskald"])
+        h["Dagskald"].status["Pinned"] = dict(rounds=1)
+        self.assertNotEqual(b.declare(o)[0]["name"], "Killing Shot")
+
+    def test_a_desperate_boss_still_pays_off(self):
+        b, h, (f,) = room(["Fornbein"]); self.focus(b, h["Vasara"])
+        f.hp = 0.3 * f.maxhp; b.apply_status(f, h["Vasara"], "Feared", 1.0); b.brain_claims = set()
+        self.assertEqual(b.declare(f)[0]["name"], "Downward Slash")
+
+    def test_the_cleaver_waits_for_a_row_of_two(self):
+        b, h, (f,) = room(["Fornbein"]); self.focus(b, h["Vasara"])
+        self.assertIsNone(brains.target(b, f, "crowded_row", h["Vasara"]))       # a Front of one
+        h["Skurmar"].cell = ("front", h["Skurmar"].cell[1] if h["Vasara"].cell[1] != h["Skurmar"].cell[1] else 1 - h["Vasara"].cell[1])
+        self.assertIn(brains.target(b, f, "crowded_row", h["Vasara"]), (h["Vasara"], h["Skurmar"]))
 
     def test_the_seidr_silences_a_caster_never_a_martial(self):
         b, h, (s,) = room(["Beinseidr"], party=("Vasara", "Ullar", "Brennumar")); self.focus(b, h["Vasara"])

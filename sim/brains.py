@@ -210,6 +210,14 @@ def target(b, u, how, focus):
     if how == "cursed_hurt":
         cursed = [x for x in hs if x.stage("DEF") < 0 and "Poisoned" in x.status]
         return lowest(b, cursed, frac) if cursed else focus
+    if how == "crowded_row":                             # the row its row strike reaches holding the most heroes, 2 or more
+        rows = {}
+        for a in u.actions:
+            if a["kind"] == "damage" and a.get("shape") == "row":
+                for x in b.legal(u, a):
+                    if up(x) and x.side != u.side: rows.setdefault(x.cell[0], set()).add(x)
+        best = max(rows.values(), key=len, default=set())
+        return (focus if focus in best else lowest(b, list(best), lambda x: x.hp)) if len(best) >= 2 else None
     if how == "ward":                                    # a Beinseidr or the head, likely to be struck and not covered
         head = (b.pack_plan or {}).get("head")
         ws = [x for x in b.allies(u) if x is not u and up(x) and x.covered_by is None
@@ -227,9 +235,7 @@ def move_for(b, u, spec, t):
     if spec == "best_strike":
         ds = [a for a in acts if a["kind"] == "damage" and not a.get("bide") and aimable(a)]
         return max(ds, key=lambda a: b.expected_damage(u, t, a)) if ds else None
-    if spec == "quiver": cands = [a for a in acts if a["kind"] == "damage" and a.get("status") in ("Bleeding", "Poisoned")]
-    elif spec == "bide": cands = [a for a in acts if a["kind"] == "damage" and a.get("bide")]
-    elif spec == "cover": cands = [a for a in acts if a["kind"] == "cover"]
+    if spec == "cover": cands = [a for a in acts if a["kind"] == "cover"]
     elif spec.startswith("status:"): cands = [a for a in acts if a["kind"] == "status" and a.get("status") == spec[7:]]
     elif spec.startswith("pays:"): cands = [a for a in acts if a.get("pays_on") == spec[5:]]
     else: cands = [a for a in acts if a["name"] == spec]
@@ -248,9 +254,8 @@ def fits(b, u, cond, t, rule, a):
         return s not in t.status and not b.capped(t, s)
     if cond.startswith("has:"): return cond[4:] in t.status
     if cond == "unsundered": return t.stage("DEF") >= 0       # D11: never on a hero already Sundered (Joseph, Nov 24)
-    if cond == "unfed":
-        s = a.get("status")
-        return s is not None and not b.capped(t, s)
+    if cond == "pin_set":                    # the Pin still holds when the wound-up shot lands next round
+        return t.status.get("Pinned", {}).get("rounds", 0) >= 2 or ("Pinned", None, t.uid) in b.brain_claims
     if cond == "rally_ready":
         stat = COMBINED_STAT.get(a["stat"], a["stat"])
         if any(x.held.get(stat, {}).get("name") == a["name"] for x in b.allies(u)): return False
@@ -258,9 +263,6 @@ def fits(b, u, cond, t, rule, a):
         if closed is not None and b.round - closed < a.get("ai_rest", 0): return False
         lifters = [x for x in b.allies(u) if any(m["kind"] == "damage" for m in x.actions)]
         return sum(1 for x in lifters if x.stage(stat) < 1) >= max(1, len(lifters) // 2 + 1)
-    if cond == "row_crowded":
-        row = getattr(t, "cell", ("front",))[0]
-        return sum(1 for x in heroes(b) if getattr(x, "cell", ("front",))[0] == row) >= 2
     raise ValueError(f"unknown brain condition {cond}")
 
 def pick(b, u):
@@ -269,8 +271,9 @@ def pick(b, u):
     if job is None: return None
     focus = focus_of(b, u)
     pk = getattr(b, "pack_plan", None)
-    if pk is not None and pk["plan"] == "Desperate" and pk["family"] == "Bein": rules, tag = BRAIN_DESPERATE, "desperate"
-    elif front(u) and frac(u) <= UNIT_DESPERATE: rules, tag = [dict(BRAIN_DESPERATE[0], on="focus")], "desperate"
+    payoffs = [r for r in BRAINS[job] if r.get("payoff")]     # desperate stops setups, never a payoff (Nov 25)
+    if pk is not None and pk["plan"] == "Desperate" and pk["family"] == "Bein": rules, tag = payoffs + BRAIN_DESPERATE, "desperate"
+    elif front(u) and frac(u) <= UNIT_DESPERATE: rules, tag = payoffs + [dict(BRAIN_DESPERATE[0], on="focus")], "desperate"
     else: rules, tag = BRAINS[job], None
     for i, r in enumerate(rules):
         t = target(b, u, r["on"], focus) if r["on"] != "focus" or focus is not None else None
@@ -285,7 +288,7 @@ def pick(b, u):
             if key in b.brain_claims: continue
             b.brain_claims.add(key)
         u.picks[a["name"]] = b.round
-        b.brain_stats[(job, tag or f'{r["move"]} on {r["on"]}')] += 1
+        b.brain_stats[(job, f'{r["move"]} on {r["on"]}' if tag is None or r.get("payoff") else tag)] += 1
         u.brain_why = ("brain" if tag is None else tag, r["say"].format(t=t.name if t is not u else "itself", status=a.get("status") or ""))
         return a, (u if a["all"] and a["target"] != "self" and r["on"] == "self" else t)
     b.brain_stats[(job, "fallback")] += 1

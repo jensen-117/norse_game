@@ -2926,13 +2926,10 @@ def _family_move(m, opts):
     if k == "stat": return stat_spell(m[1], m[2] > 0, m[3], all_=len(m) > 4 and m[4])
 
 def pilot_kit(rank_name, element, rng):
-    """A Bein rank's hand-made kit in the new game (PILOT_KITS): its element's bolt, its quiver arrow rolled now."""
+    """A Bein rank's hand-made kit in the new game (PILOT_KITS), with its element's bolt."""
     out = []
     for m in PILOT_KITS[rank_name]:
-        if m == "quiver":
-            name, status, twin = QUIVER[0 if rng.random() < 0.5 else 1]
-            m = ("strike", "Pierce", name, "Base", False, status, dict(twin=twin) if twin else {})
-        elif "@" in m:
+        if "@" in m:
             el = element or BEINSEIDR_ELEMENTS[0]; tier = m[2]
             bolt = BOLT_NAME.get(el, "Bolt")
             shown = {"Mer": "Hi-" + bolt, "Jatte": "Great " + bolt}.get(tier, bolt)

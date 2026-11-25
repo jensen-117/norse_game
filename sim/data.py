@@ -599,12 +599,10 @@ COVERS_BY_TIER = {"Halv": 1, "Base": 1, "Mer": 2, "Jatte": 3}
 # ---------------------------------------------------------------- the Beinar pilot's kits (Nov 24; beinar_pilot.md Part 3)
 # The new game's Bein carry these hand-made kits (the old game keeps the generated rows in FAMILIES["Bein"]). Each row is
 # a family_move row whose options name its twin in the heroes' grammar (`twin`, for the library): the rules come from
-# the grammar, the power from the foe's tier, the cost is nothing. "@" is the Beinseidr's element; "quiver" is the
-# Beinorv's arrow, rolled when it's placed (QUIVER). No Calcify yet (it needs damage types on the affinity ladder),
+# the grammar, the power from the foe's tier, the cost is nothing. "@" is the Beinseidr's element. Every setup has a
+# telegraphed payoff (Nov 25, Joseph): Pin, then wind up Killing Shot; Ogn, then wind up Downward Slash. No Calcify yet (it needs damage types on the affinity ladder),
 # no Command (the brains' step), no Forn Beinbryn or Beinseidr (later).
 BOLT_NAME = {"Eld": "Fire Bolt", "Hrim": "Frost Bolt", "Blixt": "Lightning Bolt", "Natt": "Shadow Bolt", "Aska": "Grave Bolt"}
-QUIVER = [("Barbed Arrow", "Bleeding", "Blotskott"), ("Poison Arrow", "Poisoned", None)]   # each archer rolls one
-                # (the Poison Arrow has no hero twin: the grammar has no poisoned arrow yet)
 _bolt = lambda tier: ("spell", "@", tier, dict(twin="@"))
 _cover = lambda tier: ("cover", tier, dict(twin="Lya" if tier == "Base" else tier + "lya"))
 PILOT_KITS = {
@@ -614,27 +612,27 @@ PILOT_KITS = {
                      ("stat", "DEF", 1, "Base", dict(name="Fortify", target="self", twin="Aukskold"))],
     "Storbeinbryn": [_cover("Base"), ("strike", "Slash", "Carve", "Mer", dict(twin="Merskar")),
                      ("stat", "DEF", 1, "Base", dict(name="Fortify", target="self", twin="Aukskold"))],
-    # Beinorv: "Your Rear is mine." Mark, Pin, cash in; its quiver arrow fed on the focus.
+    # Beinorv: "Your Rear is mine." Mark, Pin, wind up the kill (x1.5 on the Pinned: 78; 109 at Mer); else harass.
     "Halvbeinorv":  [("strike", "Pierce", "Arrow", "Halv", dict(twin="Halvskott")),
                      ("status", "Marked", "Base", dict(name="Called Shot", twin="Peka"))],
     "Beinorv":      [("strike", "Pierce", "Arrow", "Base", dict(twin="Skott")),
                      ("status", "Pinned", "Base", dict(name="Pinning Shot", styng="Pierce", stacks=2, twin="Genomskott")),
-                     ("strike", "Pierce", "Killing Shot", "Base", dict(pays_on="Pinned", pays=1.5, twin="Fangskott")),
-                     "quiver"],
+                     ("strike", "Pierce", "Killing Shot", "Base", dict(pays_on="Pinned", pays=1.5, bide=True, twin="Bidfangskott"))],
     "Storbeinorv":  [("strike", "Pierce", "Rapid Arrows", "Mer", dict(manner="Drif", twin="Merdrifskott")),
                      ("status", "Pinned", "Base", dict(name="Pinning Shot", styng="Pierce", stacks=2, twin="Genomskott")),
-                     ("strike", "Pierce", "Killing Shot", "Mer", dict(pays_on="Pinned", pays=1.5, twin="Merfangskott")),
+                     ("strike", "Pierce", "Killing Shot", "Mer", dict(pays_on="Pinned", pays=1.5, bide=True, twin="Merbidfangskott")),
                      ("strike", "Pierce", "Volley", "Base", dict(shape="row", twin="Flokskott")),
-                     ("stat", "ACC", 1, "Base", dict(name="Sharpen Sight", twin="Aukhitt")),
-                     "quiver"],
+                     ("stat", "ACC", 1, "Base", dict(name="Sharpen Sight", twin="Aukhitt"))],
     # Beinseidr: "Everything gets worse while I live." Its element's bolt; Silence, Curse, Sunder.
     "Halvbeinseidr": [_bolt("Halv"), ("status", "Cursed", "Base", dict(name="Curse", twin="Nid"))],
     "Beinseidr":     [_bolt("Base"), ("status", "Silenced", "Base", dict(name="Silence", twin="Bann")),
                       ("status", "Cursed", "Base", dict(name="Curse", twin="Nid"))],
     "Storbeinseidr": [_bolt("Mer"), ("status", "Sundered", "Base", dict(name="Sunder", twin="Nedskold")),
                       ("status", "Cursed", "Mer", dict(name="Hi-Curse", twin="Mernid"))],
-    # Fornbein: "On my word." The Cleaver (a row wind-up), Great Carve, Rally (a window, D14), Ogn.
-    "Fornbein":      [("strike", "Slash", "Cleaver", "Base", dict(shape="row", bide=True, twin="Flokbidskar")),
+    # Fornbein: "On my word." Ogn, then Downward Slash (a wind-up, 99); the Cleaver for a row of two or three;
+    # Great Carve; Rally (a window, D14).
+    "Fornbein":      [("strike", "Slash", "Downward Slash", "Jatte", dict(bide=True, twin="Jattebidskar")),
+                      ("strike", "Slash", "Cleaver", "Base", dict(shape="row", bide=True, twin="Flokbidskar")),
                       ("strike", "Slash", "Great Carve", "Jatte", dict(twin="Jatteskar")),
                       ("stat", "ATK", 1, "Base", True, dict(name="Rally", stacks=2, window=dict(on="rounds", n=3, by="all"),
                                                             ai_rest=2, twin="Allmeraukraft")),
@@ -666,9 +664,10 @@ DESPERATE_LINES = {"Bein": "The bones break ranks!"}   # the family's last stand
 HEAD_FELL_LINE = "With {head} down, the order breaks!"
 
 # The Bein jobs' rules (Part 3, revised Nov 24), first fit wins, else the scorer (counted). A rule: `on` picks the
-# target, `when` checks the unit or the target, `move` names the move (a name; "best_strike"; "status:X", a move that
-# leaves X; "pays:X", one that pays on X; "quiver", its arrow; "bide", its wind-up; "cover"), `claim` spreads the work.
+# target, `when` checks the unit or the target, `move` names the move (a name; "best_strike", never a wind-up;
+# "status:X", a move that leaves X; "pays:X", one that pays on X; "cover"), `claim` spreads the work.
 # Rules whose move the rank lacks just don't fit (the Halv archer has no Pinning Shot). `say` is the intent's reason.
+# A `payoff` (the wound-up kill on a set-up hero) still fires when the unit or pack is Desperate; setups don't.
 BRAINS = {
     "Beinbryn": [
         dict(on="ward", when=("holds",), move="cover", claim="cover", say="covering {t}"),
@@ -678,9 +677,8 @@ BRAINS = {
     "Beinorv": [
         dict(on="killable", move="best_strike", say="finishing {t}"),
         dict(on="focus", when=("lacks:Marked",), move="status:Marked", claim="Marked", say="calling a shot on {t}"),
-        dict(on="focus", when=("has:Pinned",), move="pays:Pinned", say="cashing in: {t} is Pinned"),
+        dict(on="focus", when=("pin_set",), move="pays:Pinned", payoff=True, say="winding up Killing Shot on {t}"),
         dict(on="focus", when=("lacks:Pinned",), move="status:Pinned", claim="Pinned", say="pinning {t}"),
-        dict(on="focus", when=("unfed",), move="quiver", claim="feed", say="keeping {t} {status}"),
         dict(on="focus", move="best_strike", say="shooting at {t}"),
     ],
     "Beinseidr": [
@@ -690,9 +688,10 @@ BRAINS = {
         dict(on="cursed_hurt", move="best_strike", say="its bolt on {t}"),
     ],
     "Fornbein": [
+        dict(on="focus", when=("has:Reeling",), move="Downward Slash", payoff=True, say="winding up Downward Slash on {t}"),
         dict(on="self", when=("rally_ready",), move="Rally", say="rallying its side"),
-        dict(on="focus", when=("unsundered", "lacks:Feared"), move="status:Feared", say="frightening {t}"),
-        dict(on="focus", when=("row_crowded",), move="bide", say="winding up on {t}'s row"),
+        dict(on="focus", when=("unsundered", "lacks:Reeling"), move="status:Feared", say="frightening {t}"),
+        dict(on="crowded_row", move="Cleaver", say="winding up the Cleaver on {t}'s row"),
         dict(on="focus", move="best_strike", say="carving at {t}"),
     ],
 }
