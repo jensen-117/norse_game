@@ -588,3 +588,29 @@ The rules moved under this doc (Battle_Refactor_Current.md D1-D14); where these 
 - **Ogn stays on the Fornbein** at Base size: D11's want already means it only Frightens a hero with no Sundered.
 - **The Fornbein's kit:** Command (as head), Cleaver, Carve, Rally, Ogn.
 - **Order:** 1. Cover (built Nov 24: D10), 2. the kits as data with no brains, measured on the shared scorer, with D14's two fields (Rally first), 3. team plans, then the units' rules.
+
+## Step 2, built (Nov 24): the kits as data, no brains
+
+**What's in.** `data.PILOT_KITS` by rank (Halv, Regular and Stor Beinbryn, Beinorv and Beinseidr; the Fornbein), swapped in where the new game sets its foes up (`Battle.new_game_enemy`, `engine.pilot_kit`); the old game keeps the generated rows. Each row is a family move whose options name its hero twin (`twin`: Pinning Shot is Genomskott, Killing Shot Fangskott, Called Shot Peka, Silence Bann, Sunder Nedskold, Fortify Aukskold, Rally Allmeraukraft, Cleaver Flokbidskar, Cover Lya), with the foe's tier power and no cost; the library lists each foe move's twins. New family-move options: `stacks` (a printed size), `styng` (a bite of that element first), `pays_on`/`pays`, `bide` (a wind-up, x2.6), `window`, `ai_rest`, `target`; a `cover` row (Cover, Hi-Cover, Great Cover). The quiver (`QUIVER`: Barbed or Poison Arrow) is a coin flip from the fight's rng when the archer is set up (the Poison Arrow has no twin: the grammar has no poisoned arrow). Bolts by element (`BOLT_NAME`, Hi- for Mer); the Frost Bolt keeps its name through its Styng twist; the Grave Bolt is plain Aska. The Beinbryn is a guardian because it carries Cover; the Fornbein isn't. Not yet: Calcify, Command (step 3), the Forn Beinbryn and Beinseidr. The Lightning Bolt carries no Stun (the doc's "the stun rides the bolt" needs Lonnblixt's rider on a foe bolt: a call for later). `test_pilot.py`.
+
+**Two scorer fixes on the way:** foes raise their own side only to their want (D11 both ways: Fortify once, then strike); and a stat move that targets self is scored on self (the AI had been "Fortifying the Beinorv" while every cast landed on the Beinbryn; heroes' Aukskold had the same bug in the new game).
+
+**Measured** (the Dagskald, Skurmar and Vasara at leg 2; 150 fights a room):
+
+| Bein-only room (yardstick size) | Generated kits | Pilot kits |
+|---|---|---|
+| Regular (Beinbryn, Beinseidr, Beinorv) | 4.1 rounds; Vasara 29%, Skurmar 72%, Dagskald 98% | 4.6; 21%, 80%, 100% |
+| Elite (a Stor and two Halv) | 3.6; 53%, 70%, 90% | 3.5; 45%, 87%, 100% |
+| Boss (Fornbein and a Halv) | 3.4; 63%, 93%, 99% | 3.4; 62%, 94%, 100% |
+
+The gauntlet (mixed Barrow, Wildwood and Rapids rooms): Regulars 195 / 197 of 240, **Elite 50 of 195 / 73 of 197, Boss 26 of 50 / 47 of 73**; the calibration rooms barely moved (Elite: Vasara 27% / 29%, Dagskald 92% / 95%).
+
+**What it shows:**
+- **The pilot kits are easier on the shared scorer**, as expected without brains: setups (Pinning Shot 152 times in 75 Regular fights, Silence 102, Fortify) replace raw damage, and nothing follows them up on purpose. Killing Shot is cast often, Pinned or not.
+- **The fire still goes to the Vasara;** the Dagskald ends every pure Bein fight at 100%. Targeting is the brains' job (out-think: the formation's keystone).
+- **Cover:** 4 Covers in 75 Regular fights. Rule 1 of the Beinbryn's brain.
+- **Rally:** 8 casts in 75 Boss fights; the scorer prefers the Cleaver (151 wind-ups). In a bigger room (more strikers to lift) it's worth more; the Fornbein's brain decides it.
+- **The Beinbryn and the Vasara trade:** her Brakrosh Sunders it, it Fortifies back (64 lifts of 146 Fortifies): the anvil against the shield, as meant.
+- **Room size:** the room table above (Elite: two Stor and two Regulars; Boss: the Fornbein and three Regulars) is far heavier than the yardstick (an Elite and two Trash; a Boss and one Trash): even the generated kits lose there (1% and 34%). Pure Bein rooms at the yardstick's size are easy (the Bein are weak Oskorei). Room sizes are the adds dial's question, after the brains (Part 2 section 8).
+
+**Next: step 3,** the team plans (the head picks, Command spoken, the priority target as out-think), then the units' rules with claims, and the fallback counts.

@@ -60,10 +60,10 @@ class Pinning(unittest.TestCase):
         b, u, e = self.pinned(dict(tier="Mer"))
         self.assertEqual(e.status["Pinned"]["rounds"], 2)                # three rounds: 1, 2, 3
 
-    def test_a_refresh_never_shortens(self):                 # Nov 22: adding adds, to the cap (status rules 7)
+    def test_a_pin_is_a_window(self):                        # Nov 24 (Joseph): its printed rounds, no adding while on
         b, u, e = self.pinned(dict(tier="Mer"))
-        b.apply_status(u, e, "Pinned", 1.0, 1, "Base")
-        self.assertEqual(e.status["Pinned"]["rounds"], 3)
+        self.assertFalse(b.apply_status(u, e, "Pinned", 1.0, 1, "Base"))
+        self.assertEqual(e.status["Pinned"]["rounds"], 2)
 
     def test_the_pinned_hero_cant_move_or_be_swapped(self):
         v, d = hero("Vasara", "Krosh"), hero("Dagskald", "Sol"); b = fight([v, d], [dummy()])

@@ -712,7 +712,7 @@ const Screen = (() => {
       tiny(x0 + 6, y, "INTENDS " + (c.intent.shown + (c.intent.target ? " > " + c.intent.target : "")).slice(0, 44), C.white); y += 7;
     }
     const st = Object.entries(c.status).map(([k, v]) => `${k} ${v}`).concat(Object.entries(c.stages).map(([k, v]) => `${k} ${v > 0 ? "+" : ""}${v}`))
-      .concat(Object.entries(c.held || {}).map(([k, h]) => `${k}: ${h.stat} held, ${h.rounds} round${h.rounds === 1 ? "" : "s"}`));   // holds (D3)
+      .concat(Object.entries(c.held || {}).map(([k, h]) => `${k}: ${h.stat} ${h.window ? "raised" : "held"}, ${h.rounds} round${h.rounds === 1 ? "" : "s"}${h.window ? " (then it's taken back)" : ""}`));   // holds (D3)
     if (st.length) { tiny(x0 + 6, y, st.join("  ").slice(0, 56), C.hpMid); y += 7; }
     y += 2;
     const affs = Object.entries(c.affinities), cols = 4;

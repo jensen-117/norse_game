@@ -232,8 +232,21 @@ def enemy_words():
                                                      atoms=expand(decompose(a["name"], table) or [], table),
                                                      element=a.get("element"), status=a.get("status")))
                 m["families"].add(e["family"]); m["users"].add(u.name)
+    import random                                         # the Beinar pilot's hand-made kits (Nov 24), both quivers
+    for rank in PILOT_KITS:
+        for el in (BEINSEIDR_ELEMENTS if any("@" in m for m in PILOT_KITS[rank] if m != "quiver") else [None]):
+            for seed in (1, 2):
+                for a in [engine.Battle.twisted(type("B", (), {})(), x) for x in engine.pilot_kit(rank, el, random.Random(seed))]:
+                    m = moves.setdefault(a["name"], dict(name=a["name"], kind=a["kind"], families=set(), users=set(),
+                                                         english=" " in a["name"] or decompose(a["name"], table) is None,
+                                                         parts=decompose(a["name"], table), text=engine.plain(a),
+                                                         atoms=expand(decompose(a["name"], table) or [], table),
+                                                         element=a.get("element"), status=a.get("status")))
+                    m["families"].add("Bein"); m["users"].add(rank)
+                    if a.get("twin"): m.setdefault("twins", set()).add(a["twin"]); m["pilot"] = True
     for m in moves.values():
         m["families"], m["users"] = sorted(m["families"]), len(m["users"])
+        if "twins" in m: m["twins"] = sorted(m["twins"])
     return sorted(moves.values(), key=lambda m: m["name"]), sorted(units.values(), key=lambda u: u["name"])
 
 # ---------------------------------------------------------------- the atoms the code uses, and where

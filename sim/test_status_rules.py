@@ -91,9 +91,11 @@ class AilmentsAreRounds(unittest.TestCase):
         self.assertEqual(self.e.status["Bleeding"]["rounds"], STACK_CAP)
         self.assertTrue(self.b.capped(self.e, "Bleeding"))
 
-    def test_refuse_is_gone(self):
-        self.assertTrue(self.land("Silenced")); self.assertTrue(self.land("Silenced"))
-        self.assertEqual(self.e.status["Silenced"]["rounds"], 2)
+    def test_refuse_is_gone(self):                           # ...but not for a window (Nov 24, Joseph: Pinned, Silenced)
+        self.assertTrue(self.land("Poisoned")); self.assertTrue(self.land("Poisoned"))
+        self.assertEqual(self.e.status["Poisoned"]["rounds"], 2)
+        self.assertTrue(self.land("Silenced")); self.assertFalse(self.land("Silenced"))
+        self.assertEqual(self.e.status["Silenced"]["rounds"], 1)
 
     def test_the_old_game_keeps_its_rules(self):
         b = Battle([self.u], [self.e], random.Random(1), profile="legacy")

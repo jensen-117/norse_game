@@ -159,8 +159,8 @@ class C17_WholeMoveValue(unittest.TestCase):
     def test_it_extends_a_shorter_pin_not_a_longer_one(self):
         u = hero("Ullar", ("Naglskott", dict(tier="Mer"))); e = dummy(); b = Battle([u], [e], random.Random(1))
         ng = u.actions[1]
-        e.status["Pinned"] = dict(rounds=1); self.assertGreater(b.status_value(u, ng, e, 100), 0)
-        e.status["Pinned"] = dict(rounds=5); self.assertEqual(b.status_value(u, ng, e, 100), 0)
+        self.assertGreater(b.status_value(u, ng, e, 100), 0)                # a clean target
+        e.status["Pinned"] = dict(rounds=1); self.assertEqual(b.status_value(u, ng, e, 100), 0)   # Nov 24: a window: no adding
 
     def test_lonnpeka_on_the_fully_marked_still_sunders(self):
         u, v = hero("Ullar", ("Peka", dict(lonn=True))), hero("Vasara", "Krosh"); e = dummy()

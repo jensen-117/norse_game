@@ -595,6 +595,54 @@ GUARDIAN_COVER_HURT = 0.5
 # A whole move is one interception (a flurry, a Styng hit, the net); rows, columns and All aren't caught. Jatte is the
 # foes' (Great Cover): heroes carve Lya up to Mer. Lya, Merlya, Lonnlya; Cover, Hi-Cover, Great Cover, Bulwark.
 COVERS_BY_TIER = {"Halv": 1, "Base": 1, "Mer": 2, "Jatte": 3}
+
+# ---------------------------------------------------------------- the Beinar pilot's kits (Nov 24; beinar_pilot.md Part 3)
+# The new game's Bein carry these hand-made kits (the old game keeps the generated rows in FAMILIES["Bein"]). Each row is
+# a family_move row whose options name its twin in the heroes' grammar (`twin`, for the library): the rules come from
+# the grammar, the power from the foe's tier, the cost is nothing. "@" is the Beinseidr's element; "quiver" is the
+# Beinorv's arrow, rolled when it's placed (QUIVER). No Calcify yet (it needs damage types on the affinity ladder),
+# no Command (the brains' step), no Forn Beinbryn or Beinseidr (later).
+BOLT_NAME = {"Eld": "Fire Bolt", "Hrim": "Frost Bolt", "Blixt": "Lightning Bolt", "Natt": "Shadow Bolt", "Aska": "Grave Bolt"}
+QUIVER = [("Barbed Arrow", "Bleeding", "Blotskott"), ("Poison Arrow", "Poisoned", None)]   # each archer rolls one
+                # (the Poison Arrow has no hero twin: the grammar has no poisoned arrow yet)
+_bolt = lambda tier: ("spell", "@", tier, dict(twin="@"))
+_cover = lambda tier: ("cover", tier, dict(twin="Lya" if tier == "Base" else tier + "lya"))
+PILOT_KITS = {
+    # Beinbryn: "You'll have to go through me." Cover, Slash, raise the shield.
+    "Halvbeinbryn": [_cover("Base"), ("strike", "Slash", "Cut", "Halv", dict(twin="Halvskar"))],
+    "Beinbryn":     [_cover("Base"), ("strike", "Slash", "Hew", "Base", dict(twin="Skar")),
+                     ("stat", "DEF", 1, "Base", dict(name="Fortify", target="self", twin="Aukskold"))],
+    "Storbeinbryn": [_cover("Base"), ("strike", "Slash", "Carve", "Mer", dict(twin="Merskar")),
+                     ("stat", "DEF", 1, "Base", dict(name="Fortify", target="self", twin="Aukskold"))],
+    # Beinorv: "Your Rear is mine." Mark, Pin, cash in; its quiver arrow fed on the focus.
+    "Halvbeinorv":  [("strike", "Pierce", "Arrow", "Halv", dict(twin="Halvskott")),
+                     ("status", "Marked", "Base", dict(name="Called Shot", twin="Peka"))],
+    "Beinorv":      [("strike", "Pierce", "Arrow", "Base", dict(twin="Skott")),
+                     ("status", "Pinned", "Base", dict(name="Pinning Shot", styng="Pierce", stacks=2, twin="Genomskott")),
+                     ("strike", "Pierce", "Killing Shot", "Base", dict(pays_on="Pinned", pays=1.5, twin="Fangskott")),
+                     "quiver"],
+    "Storbeinorv":  [("strike", "Pierce", "Rapid Arrows", "Mer", dict(manner="Drif", twin="Merdrifskott")),
+                     ("status", "Pinned", "Base", dict(name="Pinning Shot", styng="Pierce", stacks=2, twin="Genomskott")),
+                     ("strike", "Pierce", "Killing Shot", "Mer", dict(pays_on="Pinned", pays=1.5, twin="Merfangskott")),
+                     ("strike", "Pierce", "Volley", "Base", dict(shape="row", twin="Flokskott")),
+                     ("stat", "ACC", 1, "Base", dict(name="Sharpen Sight", twin="Aukhitt")),
+                     "quiver"],
+    # Beinseidr: "Everything gets worse while I live." Its element's bolt; Silence, Curse, Sunder.
+    "Halvbeinseidr": [_bolt("Halv"), ("status", "Cursed", "Base", dict(name="Curse", twin="Nid"))],
+    "Beinseidr":     [_bolt("Base"), ("status", "Silenced", "Base", dict(name="Silence", twin="Bann")),
+                      ("status", "Cursed", "Base", dict(name="Curse", twin="Nid"))],
+    "Storbeinseidr": [_bolt("Mer"), ("status", "Sundered", "Base", dict(name="Sunder", twin="Nedskold")),
+                      ("status", "Cursed", "Mer", dict(name="Hi-Curse", twin="Mernid"))],
+    # Fornbein: "On my word." The Cleaver (a row wind-up), Great Carve, Rally (a window, D14), Ogn.
+    "Fornbein":      [("strike", "Slash", "Cleaver", "Base", dict(shape="row", bide=True, twin="Flokbidskar")),
+                      ("strike", "Slash", "Great Carve", "Jatte", dict(twin="Jatteskar")),
+                      ("stat", "ATK", 1, "Base", True, dict(name="Rally", stacks=2, window=dict(on="rounds", n=3, by="all"),
+                                                            ai_rest=2, twin="Allmeraukraft")),
+                      ("status", "Feared", "Base", dict(name="Ogn", twin="Ogn"))],
+}
+# Ailments that are windows in the new game (Nov 24, Joseph): they land for their printed rounds and can't be added to
+# while they're on; the clock runs them down. Pinned (Pinning Shot: 2) and Silenced.
+WINDOW_AILMENTS = ("Pinned", "Silenced")
 BEINSEIDR_ELEMENTS = ["Natt", "Aska", "Eld", "Hrim", "Blixt"]   # bone-mages that adopt an element (not Sol: bone hates it)
 BEIN_PILE_ROUNDS = 2          # a fallen Bein lies in a pile this many rounds, then stands again...
 BEIN_REASSEMBLE_HP = 0.5      # ...at this share of its HP, unless a Crush blow scatters the pile first. Once only.

@@ -528,6 +528,7 @@ class Battle:
         self.intents, self.no_flee, self.coin = {}, False, {}     # no_flee: the Hunt's top tiers can't be run from
         self.by_uid = {u.uid: u for u in self.units}
         self.profile = rules_profile(party, profile)        # "new" or "legacy", never a silent mix (review C15)
+        self.rested = {}                                    # D14: (side, window) -> the round it closed (Rally's wait)
         for u in list(party) + list(enemies): u.knots = 0   # knots are tied for this fight only (Nov 21, Joseph)
         self.new_game = self.profile == "new"
         for p in party: p.last_hp, p.overpaid = self.new_game, False   # the last-HP rule is the new game's (Nov 21)
@@ -545,6 +546,9 @@ class Battle:
         """Apply the new game's enemy settings to e, at full HP or at a share of it: ENEMY_DAMAGE, and its tier's HP
         (Nov 21: written, not scaled; a family's deviation from its tier comes in the enemy pass)."""
         tier = enemy_tier(e)                         # read before acting once changes what a 3-cost looks like
+        if getattr(e, "family", None) == "Bein" and getattr(e, "rank_name", None) in PILOT_KITS and not getattr(e, "pilot", False):
+            e.actions = pilot_kit(e.rank_name, getattr(e, "element", None), self.rng)   # the Beinar pilot (Nov 24)
+            e.guard = any(a["kind"] == "cover" for a in e.actions); e.pilot = True
         e.dmg_mult = ENEMY_DAMAGE
         e.maxhp = TIER_HP[tier]; e.hp = e.maxhp * hp_share
         e.actions_per_round = ENEMY_ACTIONS
@@ -558,7 +562,7 @@ class Battle:
         parts = ["Mark" if a.get("spot") else "All" if a.get("all") else None,
                  None if a.get("tier") in (None, "Base") else a["tier"], "Styng", a["element"]]
         return dict(a, power=a["power"] * STYNG_POWER, status=tw, rider_sure=True, styng_form=True,
-                    name=join_morphemes([p for p in parts if p]))
+                    name=a["name"] if a.get("twin") else join_morphemes([p for p in parts if p]))   # the pilot keeps "Frost Bolt"
 
     def wants_front(self, u):
         """Front-liners: martial heroes, and enemies whose damage is mostly martial (Mogel, Draugr...)."""
@@ -866,34 +870,44 @@ class Battle:
         are ATK and DEF (D2), and a hold blocks a push that would lower its stat (D3). Returns whether it moved."""
         if self.new_game:
             stat = COMBINED_STAT.get(stat, stat)
-            if n < 0 and stat in t.held: return False
+            if n < 0 and stat in t.held and t.held[stat].get("lock", True): return False   # a window doesn't (D14)
         t.stages[stat] = clamp(t.stages[stat] + n, -STACK_CAP, STACK_CAP); t.pushed.add(stat)
         return True
 
     # ------------------------------------------------------------ holds (D3, Nov 24)
     def hold_stat(self, status): return HOLDS[status]["stat"] if status in HOLDS else None
 
-    def hold(self, src, t, name, stat, level, rounds, harmful):
-        """Set t's stat to level (None: where it is) for rounds, recording the change to undo. A stat already held
-        takes no second hold: the move fizzles (aimed or landing, Joseph's heads-up: Cover, rows, two Disarms)."""
+    def hold(self, src, t, name, stat, level, rounds, harmful, lock=True, push=None, rest=0):
+        """Set t's stat to level (None: where it is), or push it (a window), for rounds, recording the change to undo.
+        A stat already held takes no second hold or window: the move fizzles (aimed or landing, Joseph's heads-up:
+        Cover, rows, two Disarms). A lock (D3) stops lowering pushes; a window (D14: Rally) only times its push."""
         stat = COMBINED_STAT.get(stat, stat)
         if stat in t.held:
             self.emit("held", f"      {t.name}'s {stat} is already held: {name} does nothing.", unit=t.name, status=name, src=src.name)
             return False
         before = t.stages[stat]
-        after = before if level is None else clamp(level, -STACK_CAP, STACK_CAP)
+        after = clamp(before + push, -STACK_CAP, STACK_CAP) if push is not None else \
+            before if level is None else clamp(level, -STACK_CAP, STACK_CAP)
         t.stages[stat] = after; t.pushed.add(stat)
         t.held[stat] = dict(name=name, rounds=max(1, rounds), delta=after - before, harmful=harmful, touched=True)
+        if not lock: t.held[stat].update(lock=False, rest=rest, side=src.side)
         src.stats["statuses"] += 1
-        self.emit("status", f"      {t.name} is {name}! ({t.counter_name(stat) or stat}, held {rounds})", unit=t.name,
-                  status=name, stat=stat, stacks=t.stage(stat), rounds=rounds, src=src.name)
+        how = f"held {rounds}" if lock else f"for {rounds} round{'s' if rounds != 1 else ''}"
+        self.emit("status", f"      {t.name} is {name}! ({t.counter_name(stat) or stat}, {how})", unit=t.name,
+                  status=name, stat=stat, stacks=t.stage(stat), rounds=rounds, src=src.name, **({} if lock else {"window": True}))
         return True
 
     def release(self, t, stat, why="fades"):
         """A hold ends (expiry, Skolja, Stabilize, a fall): its own change is undone, clamped."""
         h = t.held.pop(stat, None)
         if h is None: return
-        t.stages[stat] = clamp(t.stages[stat] - h["delta"], -STACK_CAP, STACK_CAP)
+        if h.get("lock", True):
+            t.stages[stat] = clamp(t.stages[stat] - h["delta"], -STACK_CAP, STACK_CAP)
+        else:                                            # D14: a window takes back what it gave, never past 0
+            d, cur = h["delta"], t.stages[stat]
+            back = min(d, max(0, cur)) if d > 0 else max(d, min(0, cur))
+            t.stages[stat] = cur - back
+            if h.get("rest"): self.rested[(h["side"], h["name"])] = self.round   # the AI waits before the next (Rally)
         self.emit("unheld", f"      {t.name}'s {h['name']} {why}.", unit=t.name, status=h["name"], stat=stat, stacks=t.stage(stat))
 
     def release_all(self, t, harmful=None, why="fades"):
@@ -909,6 +923,7 @@ class Battle:
                 stat, sign = COUNTER_OF[status]
                 if sign < 0 and COMBINED_STAT.get(stat, stat) in t.held: return True
         if status not in COUNTER_OF:
+            if self.stacked(status) and status in WINDOW_AILMENTS: return status in t.status
             if self.stacked(status): return t.status.get(status, {}).get("rounds", 0) >= self.cap_of(status)
             return status in t.status
         stat, sign = COUNTER_OF[status]
@@ -944,6 +959,8 @@ class Battle:
     def reapplied(self, status, old, new):
         """The one re-application policy, read by the engine and the AI alike (review C17). None: refused."""
         row = STATUSES.get(status, dict(reapply="refuse"))
+        if self.stacked(status) and status in WINDOW_AILMENTS:   # a window (Nov 24): its printed rounds, no adding
+            return new if old is None else None
         if self.stacked(status):                        # new game: adding adds, to the cap, and holds it this round
             return new if old is None else dict(old, rounds=min(self.cap_of(status), old["rounds"] + new["rounds"]), touched=True)
         if old is None or row["reapply"] == "overwrite": return new
@@ -1003,6 +1020,7 @@ class Battle:
             row = STATUSES.get(status, dict(duration=STATUS_DURATION, reapply="refuse"))
             if row["reapply"] == "refuse" and status in tgt.status and not self.stacked(status): return False
             inst = self.reapplied(status, tgt.status.get(status), self.status_instance(src, tgt, status, stacks, tier, move, self.rng))
+            if inst is None: return False                   # a window that's on (Pinned, Silenced): it can't be added to
             tgt.status[status] = inst
         src.stats["statuses"] += 1
         self.emit("status", f"      {tgt.name} is {status}!", unit=tgt.name, status=status, src=src.name)
@@ -1395,7 +1413,19 @@ class Battle:
                       targets=[t.name for t in tgts], stacks=[t.status["Song"]["stacks"] for t in tgts])
             return
         if a["kind"] == "stat":
-            n = STACKS_BY_TIER.get(a["tier"], 1)
+            n = a.get("stacks") or STACKS_BY_TIER.get(a["tier"], 1)
+            if self.new_game and a.get("window"):           # D14: a timed push (Rally), on the hold path, no lock
+                w = a["window"]; stat = COMBINED_STAT.get(a["stat"], a["stat"])
+                if any(x.held.get(stat, {}).get("name") == a["name"] for x in self.allies(u)):
+                    self.emit("held", f"    {u.name}'s {self.shown(u, a)} is still up: it does nothing.", unit=u.name, status=a["name"])
+                    return
+                self.emit("stat", f"    {u.name} casts {self.shown(u, a)} on {', '.join(t.name for t in tgts)}.{tag}", unit=u.name,
+                          move=a["name"], shown=self.shown(u, a), stat=a["stat"], direction=a["direction"], also=None,
+                          targets=[t.name for t in tgts])
+                for t in tgts:
+                    if t.alive: self.hold(u, t, a["name"], stat, None, w["n"], False, lock=False, push=a["direction"] * n,
+                                          rest=a.get("ai_rest", 0))
+                return
             # the move's own stat moves by its tier; in the new game a rider's printed size wins (Nov 22, Joseph)
             changes = [(a["stat"], a["direction"] * n)] + [(st, d if self.new_game else d * n) for st, d in a.get("also") or []]
             blocked = [(t, st) for t in tgts for st, d in changes if not self.push(t, st, d)]
@@ -1422,7 +1452,7 @@ class Battle:
             self.emit("act", f"    {said}{tag}", unit=u.name, move=a["name"], shown=self.shown(u, a), move_kind="status", element=a["element"], targets=[t.name for t in tgts], bonus=bonus, tier=a.get("tier"), all=a["all"])
             tgts, spot = self.intercept(u, a, tgts)        # the net, or an arrow that pins (Styng): Cover takes it whole
             for t in tgts:
-                stacks = STACKS_BY_TIER.get(a["tier"], 1)
+                stacks = a.get("stacks") or STACKS_BY_TIER.get(a["tier"], 1)   # a printed size wins (Pinning Shot: 2)
                 if self.new_game:
                     self.status_lands(u, a, t, tgts, spot, stacks, bonus); continue
                 if a.get("styng"):                          # Styng: a hit at 70% of the tier's power, then the status
@@ -1975,13 +2005,28 @@ class Battle:
                     if not getattr(self, "new_game", False) and self.capped(f, a["status"]): continue   # old fights: as before
                     s = self.status_value(u, a, f, ref)              # the whole move: a refresh, a rider, Styng (C17)
                     if s > 0: options.append((s - cost_pen, a, f))
+            elif a["kind"] == "stat" and a.get("window") and getattr(self, "new_game", False):
+                # D14: a window lifts the whole side for its rounds; none while it's up, and the caster waits its
+                # rest after one closes (Rally: 3 on, 2 off; Joseph: a behaviour, not a rule)
+                stat = COMBINED_STAT.get(a["stat"], a["stat"])
+                xs = self.allies(u) if a["all"] else [u]
+                if any(x.held.get(stat, {}).get("name") == a["name"] for x in self.allies(u)): continue
+                closed = self.rested.get((u.side, a["name"]))
+                if closed is not None and self.round - closed < a.get("ai_rest", 0): continue
+                n = a.get("stacks") or STACKS_BY_TIER.get(a["tier"], 1)
+                gain = sum(0.8 * ref * min(n, STACK_CAP - x.stage(stat)) / STACK_CAP * a["window"]["n"] / 2
+                           for x in xs if stat not in x.held and any(m["kind"] == "damage" for m in x.actions))
+                if gain > 0: options.append((gain - cost_pen, a, u if a["all"] else u))
             elif a["kind"] == "stat":
                 pool = self.allies(u) if a["direction"] > 0 else self.foes(u)
+                if getattr(self, "new_game", False) and a["target"] == "self": pool = [u]   # Aukskold, Fortify: on itself
                 for x in pool:
                     if x.stage(a["stat"]) * a["direction"] >= STACK_CAP: continue   # already as far as it goes
                     if getattr(self, "new_game", False):         # stats last (D2): lifting a drop is worth most, each
                         lvl = x.stage(a["stat"]) * a["direction"]   # step up after that less (no Aukskold to +3 on a whim)
                         if a["direction"] > 0:
+                            if u.side == "enemy" and lvl >= (getattr(u, "wants", None) or {}).get(STAT_NAMES[a["stat"]][1], DEFAULT_WANT):
+                                continue                    # D11 both ways: a foe raises its side to its want, then strikes
                             options.append(((0.9 if lvl < 0 else 0.8 * (1 - lvl / STACK_CAP)) * ref - cost_pen, a, x)); continue
                     if a["direction"] < 0 and getattr(self, "new_game", False) and COMBINED_STAT.get(a["stat"], a["stat"]) in x.held: continue
                     options.append((0.8 * ref - cost_pen, a, x))
@@ -2106,7 +2151,7 @@ class Battle:
         """A second status riding the first (Lamsveda's Feeble, Genomskoda's Sundered, Rodegga's Blinded)."""
         st = a["also_status"]
         if self.capped(f, st): return 0.0
-        if st in COUNTER_OF and getattr(self, "new_game", False): return self.counter_value(u, f, st, STACKS_BY_TIER.get(a["tier"], 1))
+        if st in COUNTER_OF and getattr(self, "new_game", False): return self.counter_value(u, f, st, a.get("stacks") or STACKS_BY_TIER.get(a["tier"], 1))
         return AI_ALSO_VALUE * ref
 
     def status_gain(self, u, a, f, stacks, ref):
@@ -2170,7 +2215,7 @@ class Battle:
         if getattr(self, "new_game", False):            # the roll is the only gamble: a clean hit lands it (Nov 22)
             w, g, _ = self.odds(u, f, a); chance = 1.0 if a.get("sure") else 1 - w - g
         else: chance = 1.0 if weak or a.get("sure") else STATUS_LINE_CHANCE[a["tier"]]
-        main, lands, share = self.status_gain(u, a, f, STACKS_BY_TIER.get(a["tier"], 1) + (1 if weak else 0), ref)
+        main, lands, share = self.status_gain(u, a, f, (a.get("stacks") or STACKS_BY_TIER.get(a["tier"], 1)) + (1 if weak else 0), ref)
         s = main * chance
         if a.get("also_status") and lands: s += self.also_value(u, f, a, ref) * chance
         if share and any(m.get("pays_on") == a["status"] for x in self.allies(u) for m in x.actions):
@@ -2695,7 +2740,8 @@ class Battle:
                     state=u.state, breaths=u.breaths, wounded=u.wounded, cell=list(u.cell) if getattr(u, "cell", None) else None,
                     piled=u in self.piles, crawling=getattr(u, "crawling", False),
                     status={k: v.get("stacks", v["rounds"]) for k, v in u.status.items()}, stages={k: v for k, v in u.stages.items() if v},
-                    held={h["name"]: dict(stat=st, rounds=h["rounds"], harmful=h["harmful"]) for st, h in getattr(u, "held", {}).items()},
+                    held={h["name"]: dict(stat=st, rounds=h["rounds"], harmful=h["harmful"], window=not h.get("lock", True))
+                          for st, h in getattr(u, "held", {}).items()},
                     affinities={e: u.affinity(e) for e in dtypes}, moves=[self.shown(u, a) for a in u.actions],
                     move_lines=[dict(name=self.shown(u, a), plain=self.plain(a)) for a in u.actions],
                     intent=self.intents.get(uid), winding=self.shown(u, u.bide[0]) if u.bide else None,
@@ -2822,8 +2868,14 @@ def family_move(m):
     if opts: m = m[:-1]
     a = _family_move(m, opts)
     if opts.get("name") and m[0] != "strike": a["english"] = opts["name"]
-    for k in ("shape", "falloff", "group", "once", "then", "sure", "thrown", "mp_share", "line"):
+    for k in ("shape", "falloff", "group", "once", "then", "sure", "thrown", "mp_share", "line",
+              "stacks", "pays_on", "pays", "window", "ai_rest", "twin", "target"):   # the pilot's (Nov 24)
         if k in opts: a[k] = opts[k]
+    if opts.get("styng"):                                                            # a bite first, at the foe's tier
+        a["styng"] = TIER_POWER[a["tier"]] * STYNG_POWER; a["styng_el"] = opts["styng"]
+    if opts.get("bide"):                                                             # a wind-up: it lands next round
+        from grammar import MANNERS
+        a["bide"] = True; a["power"] *= MANNERS["Bid"].get("power", 2.6)
     if opts.get("hits", 1) > 1: a["hits"] = opts["hits"]; a["power"] /= opts["hits"]
     if opts.get("manner") == "Drif":
         from grammar import MANNERS
@@ -2834,6 +2886,9 @@ def family_move(m):
 
 def _family_move(m, opts):
     k = m[0]
+    if k == "cover":                                     # D10: Cover, Hi-Cover, Great Cover (the pilot, Nov 24)
+        return act("cover", {"Base": "Cover", "Mer": "Hi-Cover", "Jatte": "Great Cover"}.get(m[1], "Cover"),
+                   target="ally", tier=m[1], cost=0)
     if k == "strike":
         all_ = len(m) > 4 and m[4]
         status = m[5] if len(m) > 5 else None
@@ -2852,6 +2907,26 @@ def _family_move(m, opts):
             return act("status", opts.get("name", m[1]), status=m[1], tier=m[2], cost=0)
         return status_spell(m[1], m[2], len(m) > 3 and m[3])
     if k == "stat": return stat_spell(m[1], m[2] > 0, m[3], all_=len(m) > 4 and m[4])
+
+def pilot_kit(rank_name, element, rng):
+    """A Bein rank's hand-made kit in the new game (PILOT_KITS): its element's bolt, its quiver arrow rolled now."""
+    out = []
+    for m in PILOT_KITS[rank_name]:
+        if m == "quiver":
+            name, status, twin = QUIVER[0 if rng.random() < 0.5 else 1]
+            m = ("strike", "Pierce", name, "Base", False, status, dict(twin=twin) if twin else {})
+        elif "@" in m:
+            el = element or BEINSEIDR_ELEMENTS[0]; tier = m[2]
+            bolt = BOLT_NAME.get(el, "Bolt")
+            shown = {"Mer": "Hi-" + bolt, "Jatte": "Great " + bolt}.get(tier, bolt)
+            m = ("spell", el, tier, dict(name=shown, twin=el if tier == "Base" else tier + el.lower()))
+        a = family_move(m)
+        opts = m[-1] if isinstance(m[-1], dict) else {}
+        if opts.get("name"): a["name"] = opts["name"]     # the foes' register: "Pinning Shot", "Fire Bolt"
+        if a["kind"] == "damage" and a["element"] in ("Aska",):
+            a["designated"] = True                        # the Grave Bolt is plain Aska: no Styng form (Nov 23, Joseph)
+        out.append(a)
+    return out
 
 def spawn_family(family, rank_name, level, element=None, job=None):
     fam = FAMILIES[family]

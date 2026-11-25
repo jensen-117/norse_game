@@ -174,7 +174,7 @@ Lya is intercession (I protect someone you might fire at); Egga is Taunt (I draw
 
 **The review of Wave D (Nov 24), fixed:** the AI's potions now read Withered (it would have used a Strong Life Draught on a Withered 3 ally: a 1000-HP wound); single-target Gyllenlykt's light counts only beside a real heal; Gyllenlykt holds nothing on an ally its heal just downed; the page draws a reversed heal as a wound (it showed a green `+-75`); the cap moved onto the top. Feel check for play: a Bleed 1 is 10-12 HP on a Regular, a primer until it's fed.
 
-### D14. How an effect lasts: two fields (Agreed Nov 24, Joseph; built with the pilot's kits)
+### D14. How an effect lasts: two fields (Agreed Nov 24, Joseph; the rounds row built with the pilot's kits)
 
 **The rule.** Not everything has to be permanent, or on the clock. A timed effect is customized for feel, as data, by answering two questions:
 
@@ -191,6 +191,8 @@ Lya is intercession (I protect someone you might fire at); Egga is Taunt (I draw
 - **A whole move is one use** (as with Cover): a flurry spends "until you attack" once.
 - **Every timed effect shows on the board** with its trigger and count, like the hold tags. A badge the player can't read is a rule they can't play around: the only real limit on how many shapes there are. New rows are added when a move needs them, not up front.
 - Rally, Pinned's window and the holds go through this one path (the pilot's step 2).
+
+**Built (Nov 24), the rounds-and-all-at-once cell:** a window is a hold without its lock (`Battle.hold(..., lock=False, push=n)`): the same record, tick, "no second while it's up" and board tag; `push` lets pushes against it land; `release` takes back what it gave, never past 0. The Inspect card says "raised, N rounds (then it's taken back)". A window's `ai_rest` is the AI's wait after one closes (`Battle.rested`; Rally 2: Joseph, a behaviour, not a rule). The other rows wait for a move that needs them. **Window ailments** (`WINDOW_AILMENTS`: Pinned, Silenced) land for their printed rounds and can't be added to while on, heroes' Pins too (Joseph). Silenced stacked before this (I'd said it didn't; it does now).
 
 ### D12. Already built under this direction
 
@@ -290,7 +292,7 @@ Ideas waiting their turn, each with an owner:
 - **The Lab's run (Nov 24, Joseph):** a gauntlet you play. The Run panel: a place, the adds (+2 Trash or Regular in every fight room but the Regular one, which has its own two), a run number (room i of run n is rolled from `Random(RUN_SEED + 10n + i)`). Trash, Regular, Elite, a camp (each hero Rests or not: D9's screen in miniature, carving waits for the dive), the Boss; HP, MP, the pouch, Wounded and the dead carry. Each room's record carries the party as it walked in (`carry`), and `replay.py` rebuilds it: every room replays exactly. `settle` moved into the engine (one rule for the gauntlet and the Lab). `test_lab_run.py`; `checks/s_run.py` plays a whole run in the browser.
 - **Wave D: built (Nov 24).** D13: the fuse (Poison 12 / 6 / 2.4%, Bleeding 14 / 7 / 2.8%, capped at a clean Krosh), one clock, Bleeding bites on action, Withered as Aska's twist, the Curse back on its own moves, the AI's fuse and Withered values, Lak's numbers in the log. 441 tests pass; old fights identical (regress 3bdf6771deb1, fingerprint 288, golden 4535).
    - **Measured** (Wave C / Wave D): the gauntlet's Regulars cleared 175 / 193 of 240, Elite 36 of 175 / 50 of 193, Boss 18 of 36 / 24 of 50 (after the review's fixes and the cap on the top: 195, 50, 26). Calibration rooms: Elite, the Vasara ends at 24% / 27%; Boss, Vasara 24% / 26%, Skurmar 48% / 50%. **The Regular room stops being a run killer** (Aska no longer leaves a lasting Sundered); the Elite is still where runs end.
-5. **The Beinar pilot resumes** (Nov 24: step 1, Cover, built: D10) (beinar_pilot.md, "What the build needs"): D10 intercession, the kits, the brains and team plans with D11's wants and the reset as Stabilize; then the gauntlet against Joseph's damage picture and his calibration fights *(scope calibration here to Leg 1, or pull O3 rider/`Gyllenlykt` costing ahead of Leg 2–3 calibration so Legs 2–3 aren't tuned twice)*.
+5. **The Beinar pilot resumes** (Nov 24: step 1, Cover, built: D10; step 2, the kits, built: beinar_pilot.md "Step 2, built") (beinar_pilot.md, "What the build needs"): D10 intercession, the kits, the brains and team plans with D11's wants and the reset as Stabilize; then the gauntlet against Joseph's damage picture and his calibration fights *(scope calibration here to Leg 1, or pull O3 rider/`Gyllenlykt` costing ahead of Leg 2–3 calibration so Legs 2–3 aren't tuned twice)*.
 6. **Then:** the enemy pass (O6), tile paint (O4), costing (O3), the Hunt clock (O5), and progression (Part 4: the Growth view, the Vasara and Brennumar webs).
 
 Each wave: old fights byte-identical, the tests, the gauntlet and sweep before and after, the Lab republished, then Joseph plays. D1 and D2 land before the brains because the brains' valuations and the calibration read them.
