@@ -12,7 +12,7 @@ S = dict(battle=None, memory=Memory(), know_all=False, seed=1, rng=random.Random
 def _engine_hash():
     import hashlib, os
     h, here = hashlib.sha1(), os.path.dirname(os.path.abspath(__file__))   # next to this file, wherever it's run from
-    for f in ("data.py", "words.py", "grammar.py", "engine.py"):
+    for f in ("data.py", "words.py", "grammar.py", "brains.py", "engine.py"):
         h.update(open(os.path.join(here, f), "rb").read())                 # a missing source is an error, not an empty stamp
     return h.hexdigest()[:10]
 ENGINE = _engine_hash()

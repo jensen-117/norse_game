@@ -14,6 +14,8 @@ from engine import *
 from composer import CALIB_PLACES, shaped_room, catalog, spawn
 
 CAT = catalog()
+from collections import Counter
+BRAIN = Counter()          # the brains' picks and fallbacks over every room (step 3: "every fallback is counted")
 STAGES = [("Fodder", "fodder", 3, None), ("Regulars", "fodder", 3, "Regular"), ("Elite", "elite", 4, None), ("Boss", "boss", 4, None)]
 CAMP_BEFORE = "Boss"       # D9 (Nov 24): the column before every boss is a camp (dive_spec); everyone rests (no carving here)
 POUCH = [[["strong_life", 1]], [["iron_hammer", 1]], [["thunderpot", 1]]]
@@ -36,6 +38,7 @@ def run(classes, leg, seed):
         picks = shaped_room(rng, CAT, rng.choice(CALIB_PLACES), kind, budget, add, mirrored=True)
         b = Battle(alive, spawn(picks, ENEMY_LEVEL), random.Random(rng.getrandbits(32)), profile="new")
         w = b.fight()
+        BRAIN.update(b.brain_stats)
         falls = sum(h.stats["downs"] for h in alive)
         items = sum(n for h in party for _, n in h.pouch)
         out.append(dict(stage=name, hp=hp, mp=mp, won=w == "party", falls=falls, rounds=b.round, items=items,
@@ -62,6 +65,13 @@ def report(n=100):
                          f"{statistics.mean(s['mp'] for s in at):.0%} | {statistics.mean(s['rounds'] for s in won) if won else 0:.1f} | "
                          f"{statistics.mean(s['falls'] for s in at):.2f} | {statistics.mean(s['items'] for s in at):.1f} |")
             L.append("")
+    L += ["## The brains (step 3)", "", "How often each pack plan was taken (picked or switched to), and each Bein job's picks by "
+          "rule; a fallback is a turn no rule fitted, so the shared scorer chose (weighing the plan's focus).", "",
+          "| Who | Rule | Times | Share |", "|---|---|---|---|"]
+    for who in sorted({k[0] for k in BRAIN}):
+        rows = {k[1]: v for k, v in BRAIN.items() if k[0] == who}; tot = sum(rows.values())
+        for rule, v in sorted(rows.items(), key=lambda x: -x[1]):
+            L.append(f"| {who} | {rule} | {v} | {v / tot:.0%} |")
     return "\n".join(L)
 
 if __name__ == "__main__":

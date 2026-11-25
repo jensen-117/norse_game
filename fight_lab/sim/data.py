@@ -643,6 +643,60 @@ PILOT_KITS = {
 # Ailments that are windows in the new game (Nov 24, Joseph): they land for their printed rounds and can't be added to
 # while they're on; the clock runs them down. Pinned (Pinning Shot: 2) and Silenced.
 WINDOW_AILMENTS = ("Pinned", "Silenced")
+
+# ---------------------------------------------------------------- the brains (step 3, Nov 25; beinar_pilot.md Part 2)
+# Team plans for every new-game pack (Joseph: everyone can plan); unit rules for the Bein jobs (the others later, as
+# their own: the Drattr's nets already spread). A pack's head (its boss, else its most expensive unit) picks a plan
+# in round 1, weighted by its family; units read the plan's focus and stance. Re-plans: at most one chosen switch every
+# 2 rounds (a head with `replan` 1 every round); forced ones (a Break's focus fell, Desperate) any time.
+PLAN_WEIGHTS = {"Bein": {"Hunt": 40, "Inflict": 35, "Break": 25},     # the Bein out-think you
+                None: {"Hunt": 1, "Inflict": 1, "Break": 1}}        # families without their own pass
+PLAN_HOLDS = ("Hunt", "Inflict", "Stabilize")     # the Front holds (Cover, Fortify); Break and Desperate press
+FOCUS_BONUS = 1.5            # the scorer's weight on the focus: a much better shot elsewhere (a kill, a weakness) still wins
+PLAN_ROUNDS = 3              # Hunt: the target above 60% this long (they're protecting it): re-plan. Inflict: at most this long
+STABILIZE_ROUNDS = 2
+HUNT_HURT = 0.6              # the priority target: anyone reachable at or under this share of HP, lowest first
+STABILIZE_HURT = 0.4         # the head or a key caster under this, while the heroes are healthier than the pack
+UNIT_DESPERATE = 0.5         # a unit in the Front at or under this: its strongest strike, no setups
+HEADS = {"Fornbein": dict(replan=1, says="{head} points at {focus}!")}   # Command: spoken, re-planned every round
+PLAN_LINES = {"Hunt": "{head} sets the pack on {focus}.", "Break": "{head} drives at {focus}, to break your line.",
+              "Inflict": "{head} sets them to weakening {focus}.", "Stabilize": "{head} pulls the pack together.",
+              "Desperate": "{head}'s pack fights for its life!", "refocus": "{head} turns the pack on {focus}."}
+DESPERATE_LINES = {"Bein": "The bones break ranks!"}   # the family's last stand; "the head fell" says so first
+HEAD_FELL_LINE = "With {head} down, the order breaks!"
+
+# The Bein jobs' rules (Part 3, revised Nov 24), first fit wins, else the scorer (counted). A rule: `on` picks the
+# target, `when` checks the unit or the target, `move` names the move (a name; "best_strike"; "status:X", a move that
+# leaves X; "pays:X", one that pays on X; "quiver", its arrow; "bide", its wind-up; "cover"), `claim` spreads the work.
+# Rules whose move the rank lacks just don't fit (the Halv archer has no Pinning Shot). `say` is the intent's reason.
+BRAINS = {
+    "Beinbryn": [
+        dict(on="ward", when=("holds",), move="cover", claim="cover", say="covering {t}"),
+        dict(on="self", when=("front", "below_want:DEF", "not_last"), move="Fortify", say="raising its shield"),
+        dict(on="focus", move="best_strike", say="striking at {t}"),
+    ],
+    "Beinorv": [
+        dict(on="killable", move="best_strike", say="finishing {t}"),
+        dict(on="focus", when=("lacks:Marked",), move="status:Marked", claim="Marked", say="calling a shot on {t}"),
+        dict(on="focus", when=("has:Pinned",), move="pays:Pinned", say="cashing in: {t} is Pinned"),
+        dict(on="focus", when=("lacks:Pinned",), move="status:Pinned", claim="Pinned", say="pinning {t}"),
+        dict(on="focus", when=("unfed",), move="quiver", claim="feed", say="keeping {t} {status}"),
+        dict(on="focus", move="best_strike", say="shooting at {t}"),
+    ],
+    "Beinseidr": [
+        dict(on="caster", when=("lacks:Silenced",), move="status:Silenced", claim="Silenced", say="silencing the caster, {t}"),
+        dict(on="focus", when=("unsundered", "lacks:Poisoned"), move="status:Cursed", claim="Cursed", say="cursing {t}"),
+        dict(on="toughest", when=("unsundered",), move="status:Sundered", claim="Sundered", say="sundering {t}"),
+        dict(on="cursed_hurt", move="best_strike", say="its bolt on {t}"),
+    ],
+    "Fornbein": [
+        dict(on="self", when=("rally_ready",), move="Rally", say="rallying its side"),
+        dict(on="focus", when=("unsundered", "lacks:Feared"), move="status:Feared", say="frightening {t}"),
+        dict(on="focus", when=("row_crowded",), move="bide", say="winding up on {t}'s row"),
+        dict(on="focus", move="best_strike", say="carving at {t}"),
+    ],
+}
+BRAIN_DESPERATE = [dict(on="most_hurt", move="best_strike", say="desperate: its strongest blow on {t}")]
 BEINSEIDR_ELEMENTS = ["Natt", "Aska", "Eld", "Hrim", "Blixt"]   # bone-mages that adopt an element (not Sol: bone hates it)
 BEIN_PILE_ROUNDS = 2          # a fallen Bein lies in a pile this many rounds, then stands again...
 BEIN_REASSEMBLE_HP = 0.5      # ...at this share of its HP, unless a Crush blow scatters the pile first. Once only.

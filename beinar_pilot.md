@@ -614,3 +614,42 @@ The gauntlet (mixed Barrow, Wildwood and Rapids rooms): Regulars 195 / 197 of 24
 - **Room size:** the room table above (Elite: two Stor and two Regulars; Boss: the Fornbein and three Regulars) is far heavier than the yardstick (an Elite and two Trash; a Boss and one Trash): even the generated kits lose there (1% and 34%). Pure Bein rooms at the yardstick's size are easy (the Bein are weak Oskorei). Room sizes are the adds dial's question, after the brains (Part 2 section 8).
 
 **Next: step 3,** the team plans (the head picks, Command spoken, the priority target as out-think), then the units' rules with claims, and the fallback counts.
+
+## Step 3, built (Nov 25): plans for every pack, rules for the Bein
+
+**Agreed first (Nov 25, Joseph):** every new-game pack plans (families get their own rules later, the Drattr's nets for one); the priority target is the out-think ladder below (with three heroes the likeliest keeps coming up: fine, other ways to pick come later); the Bein roll Hunt 40, Inflict 35, Break 25; units with rules follow the focus, the scorer weighs it x1.5.
+
+**What's in.** `sim/brains.py` (the vocabulary) and data (`PLAN_WEIGHTS`, `PLAN_LINES`, `HEADS`, `BRAINS`, `BRAIN_DESPERATE`).
+- **The plan.** The head (a boss, else the most expensive unit) picks in round 1 from the legal plans by its family's weights (families without a pass: even). Each round's start (not Bonus Rounds) it keeps, re-focuses or switches: at most one chosen switch every 2 rounds (the Fornbein, `HEADS`, every round); forced ones any time. Hunt: the focus fell, re-pick it; above 60% after 3 rounds, re-plan. Break: the focus fell, Hunt. Inflict: 2+ debuffs on the focus or 3 rounds, Hunt or Break. Stabilize: the head or a caster under 40% while the heroes are healthier, 2 rounds, then back. Desperate: half the pack's cost lost, or a **true head** fell (a boss, or a higher tier than all the rest; in a pack of peers the next steps up quietly). Every switch is said in the log, in gold on the page ("Fornbein points at Dagskald! (Hunt)", "With Fornbein down, the order breaks!", "The bones break ranks!").
+- **The priority target (out-think):** reachable at 60% or under, lowest first; then a healer (heal, Song or revive); then the coverer (Covered last round, or carries Cover or Taunt); then the lowest HP. Break's focus is the Front's weakest; Desperate's the most hurt.
+- **The Bein rules** (first fit; claims spread the work; a rank without the move skips the rule):
+  - Beinbryn: Cover a Beinseidr or the head that was struck last round or is under 50%, while the plan holds; Fortify in the Front below its want, not two turns running; its best strike on the focus.
+  - Beinorv: finish anyone in killing range; Called Shot the focus (Halv); Killing Shot a Pinned focus; Pin a clean focus (claimed); feed its quiver on the focus; its best strike.
+  - Beinseidr: Silence the hero whose kit spends the most MP (never a Martial); Curse the focus if it isn't Sundered (D11, Joseph); Sunder the Front's toughest if it isn't Sundered (Elite); its bolt on the most hurt Cursed hero, else the focus.
+  - Fornbein: Rally (none up, its rest over, most of its strikers not Mighty); Ogn the focus if not Sundered or Feared; the Cleaver on the focus's row if two heroes stand in it; its best strike.
+  - Desperate (the pack's, for the Bein: the break) and a unit's own (in the Front at 50% or under): its strongest strike, no setups.
+- Everything else falls back to the scorer, which weighs the focus x1.5. Every pick and fallback is counted (`Battle.brain_stats`); the gauntlet report has the table.
+- **Fixed on the way:** the pilot archers had **melee arrows** (the kit swap dropped the rank's bow: step 2's numbers had archers that couldn't reach the Rear). And in step 2 I said pilot moves cost nothing; the Beinseidr pays MP like the generated one (bolt 10, Curse 8), so Silencing it back works.
+
+**Measured** (the Dagskald, Skurmar and Vasara at leg 2):
+
+| | Step 2 (no brains) | Step 3 |
+|---|---|---|
+| Bein Regular room: Vasara, Skurmar, Dagskald end at | 21%, 80%, 100% | 61%, 100%, 70% |
+| Bein Elite room | 45%, 87%, 100% | 69%, 100%, 86% |
+| Bein Boss room (Fornbein and a Halv) | 62%, 94%, 100% | 72%, 100%, 98% |
+| Gauntlet: Regulars, Elite, Boss cleared | 197 of 240, 73 of 197, 47 of 73 | 193 of 240, 75 of 193, 39 of 75 |
+| Calibration Elite (mixed): Vasara, Skurmar, Dagskald | 29%, 76%, 95% | 30%, 80%, 89% |
+| Calibration Boss (mixed) | 27%, 52%, 79% | 25%, 74%, 78% |
+
+The gauntlet's rule counts (gauntlet_report.md): fallbacks 14% for the Beinbryn, 2% the Beinorv, none the Beinseidr, 3% the Fornbein. Plans: Hunt 33%, Break 32%, Desperate 26% (mostly the last round or two), Inflict 5%, Stabilize 3%.
+
+**What it shows:**
+- **In Bein rooms the fire spreads:** the Dagskald now takes it (70% in the Regular room), the Vasara keeps more (61%).
+- **The Skurmar is never struck in Bein rooms: it's Silenced instead,** every time it wears off (320 Silences in the gauntlet). A caster locked out while the Seidr lives is the chain-lock worry. **For Joseph:** keep it (the pest's job; kill it or Bannskott it back), or a rest between Silences ("not two turns running", like Fortify)?
+- **The Cleaver never fires:** parties stand one in the Front, two behind, and the Cleaver is melee, so the focus's row never holds two it can reach. A Front of two, or a reach Cleaver, would wake it.
+- **The quiver is barely fed** (11 times): marking, pinning and cashing in come first. Under claim and feed it may want to come before the payoff when the focus isn't Pinned.
+- **Mixed rooms barely move:** the plans run (Break on the Vasara, Hunt on the Dagskald), but most units alive at the end can't reach the Rear, so a Rear focus changes nothing for them. That's the mirror's and the adds dial's question, not the brains'.
+- **The calibration Elite is near Joseph's picture** (tank ~25%, others 60-90%): 30%, 80%, 89%. The Boss isn't ("a second hero near 25%, or someone falls"): 25%, 74%, 78%.
+
+**Next (the pilot's follow-ups):** settle the Silence lock and the Cleaver, then room sizes (the adds dial), the Draugr (Part 4) and Joseph's play in the Barrow.

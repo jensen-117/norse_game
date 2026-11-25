@@ -862,7 +862,7 @@ const Screen = (() => {
   }
   const HIT_FX = { Slash: "hit_slash", Crush: "hit_crush2", Pierce: "hit_pierce2" };
   const fxFor = el => HIT_FX[el] || (FX["burst:" + el] ? "burst:" + el : "burst:Martial");
-  const NARRATE = new Set(["held", "unheld", "withered", "act", "transform", "hit", "absorb", "heal", "stat", "status", "resist", "defend", "cover", "covered", "move", "windup", "bide_lost",
+  const NARRATE = new Set(["plan", "held", "unheld", "withered", "act", "transform", "hit", "absorb", "heal", "stat", "status", "resist", "defend", "cover", "covered", "move", "windup", "bide_lost",
     "paint", "skip", "silenced", "tick", "down", "reform", "crawl", "pile", "scatter", "reassemble", "dying", "breath", "dead", "revive",
     "stabilised", "item", "mp", "fled", "flee_failed", "retarget", "fizzle", "shatter", "flurry", "cleanse", "immune", "thaw",
     "taunt", "drawn", "flare", "rooted", "weak", "out_of_reach", "song", "song_fades", "knot", "follow", "wall", "spent", "whiff"]);
@@ -879,7 +879,7 @@ const Screen = (() => {
       if (e.kind === "round") say(`Round ${e.n}`, C.gold);
       else if (e.kind === "bonus") say("Bonus Round!", C.weak);
       else if (e.kind === "end") say({ party: "Victory.", enemy: "The party has fallen.", fled: "The party got away.", draw: "Neither side gives way." }[e.winner], C.white);
-      else if (NARRATE.has(e.kind) && e.text) say(e.text, e.kind === "hit" && e.affinity === "weak" ? C.weak : null);
+      else if (NARRATE.has(e.kind) && e.text) say(e.text, e.kind === "hit" && e.affinity === "weak" ? C.weak : e.kind === "plan" ? C.gold : null);   // the pack's plan: the tell (step 3)
       if (["act", "scatter", "defend", "move", "item", "windup", "skip", "cover"].includes(e.kind)) { acted++; trackSlideT = vt; }
       await step(e, ev[i + 1]);
       if (!live()) return;

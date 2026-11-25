@@ -1,6 +1,7 @@
 """Encounter v0 -- battle engine."""
 import random
 from data import *
+import brains
 from words import *        # naming, the move record, and the one compiler every builder below goes through
 
 # ================================================================ math
@@ -529,6 +530,8 @@ class Battle:
         self.by_uid = {u.uid: u for u in self.units}
         self.profile = rules_profile(party, profile)        # "new" or "legacy", never a silent mix (review C15)
         self.rested = {}                                    # D14: (side, window) -> the round it closed (Rally's wait)
+        self.pack_plan, self.brain_claims = None, set()     # the brains (step 3, Nov 25): the foes' plan and claims
+        self.brain_stats = __import__("collections").Counter()   # rule fires and fallbacks, for the gauntlet report
         for u in list(party) + list(enemies): u.knots = 0   # knots are tied for this fight only (Nov 21, Joseph)
         self.new_game = self.profile == "new"
         for p in party: p.last_hp, p.overpaid = self.new_game, False   # the last-HP rule is the new game's (Nov 21)
@@ -546,8 +549,11 @@ class Battle:
         """Apply the new game's enemy settings to e, at full HP or at a share of it: ENEMY_DAMAGE, and its tier's HP
         (Nov 21: written, not scaled; a family's deviation from its tier comes in the enemy pass)."""
         tier = enemy_tier(e)                         # read before acting once changes what a 3-cost looks like
+        e.cost = getattr(e, "cost", None) or e.actions_per_round    # the pack's head is its most expensive (step 3)
+        e.picks = {}                                 # move name -> the round its brain last picked it ("didn't last turn")
         if getattr(e, "family", None) == "Bein" and getattr(e, "rank_name", None) in PILOT_KITS and not getattr(e, "pilot", False):
             e.actions = pilot_kit(e.rank_name, getattr(e, "element", None), self.rng)   # the Beinar pilot (Nov 24)
+            wield(e, rank_row("Bein", e.rank_name)["opts"].get("weapon")); price_shares(e)   # the bow reaches (Nov 25)
             e.guard = any(a["kind"] == "cover" for a in e.actions); e.pilot = True
         e.dmg_mult = ENEMY_DAMAGE
         e.maxhp = TIER_HP[tier]; e.hp = e.maxhp * hp_share
@@ -1365,7 +1371,7 @@ class Battle:
                         self.emit("status", f"      {u.name} is {u.counter_name(st) or st}!", unit=u.name,
                                   status=STAT_NAMES[st][0 if d < 0 else 1], stat=st, stacks=u.stage(st), src=u.name)
                 t.cover_left = n
-            t.covered_by = u; u.stats["covers"] += 1
+            t.covered_by = u; u.stats["covers"] += 1; u.covered_round = self.round
             said = "" if n is None else (" (the next hit)" if n == 1 else f" (the next {n} hits)")
             self.emit("cover", f"    {u.name} covers {t.name}{said}.{tag}", unit=u.name, target=t.name, **({"covers": n} if n is not None else {})); return
         if a["kind"] == "defend":
@@ -1537,7 +1543,7 @@ class Battle:
             return
         t.hp -= total
         u.stats["dealt"] += total
-        if total > 0: t.hits_taken += 1
+        if total > 0: t.hits_taken += 1; t.struck = self.round
         label = "/".join(r.capitalize() for r in results)
         extra = " Weak!" if aff == "weak" else " Resist." if aff == "resist" else " Null!" if aff == "null" else ""
         self.emit("hit", f"      {label} on {t.name}: {total:.0f}.{extra} ({max(0, t.hp):.0f}/{t.maxhp:.0f})", src=u.name, unit=t.name, element=a["element"], results=results, affinity=aff, dmg=round(total), hp=max(0, round(t.hp)), maxhp=round(t.maxhp),
@@ -1826,7 +1832,7 @@ class Battle:
                 if not bonus: self.eligible.add(t)
                 self.emit("absorb", f"      {t.name} absorbs it, healing {dmg:.0f}!", unit=t.name, src=u.name, element=a["element"], amount=round(dmg), hp=round(t.hp)); return
             t.hp -= dmg; u.stats["dealt"] += dmg
-            if i == 0 and dmg > 0: t.hits_taken += 1                   # one attack, one hit taken (Hevn)
+            if i == 0 and dmg > 0: t.hits_taken += 1; t.struck = self.round   # one attack, one hit taken (Hevn)
             self.emit("hit", f"      {res.capitalize()} on {t.name}: {dmg:.0f}.{' Weak!' if aff == 'weak' else ''} ({max(0, t.hp):.0f}/{t.maxhp:.0f})", src=u.name, unit=t.name, element=a["element"], results=[res], affinity=aff, dmg=round(dmg), hp=max(0, round(t.hp)), maxhp=round(t.maxhp))
             if aff == "null": self.barred.add(u); return
             if aff == "weak" and not bonus and (not self.new_game or (res != "graze" and not t.defending)):   # D1, D5
@@ -1861,7 +1867,7 @@ class Battle:
         dmg = self.spot_damage(u, t, a, SPOT_IMPACT) * {"whiff": 0.0, "graze": GRAZE_MULT, "hit": 1.0, "crit": CRIT_MULT}[res]
         if t.defending: dmg *= 0.5
         t.hp -= dmg; u.stats["dealt"] += dmg
-        if dmg > 0: t.hits_taken += 1
+        if dmg > 0: t.hits_taken += 1; t.struck = self.round
         self.emit("hit", f"      {res.capitalize()} on {t.name}: {dmg:.0f}. ({max(0, t.hp):.0f}/{t.maxhp:.0f})", src=u.name, unit=t.name, element=a["element"], results=[res], affinity="normal", spot=True, dmg=round(dmg), hp=max(0, round(t.hp)), maxhp=round(t.maxhp))
         if not t.alive: self.downed(t, a["element"])
 
@@ -1888,6 +1894,10 @@ class Battle:
 
     # ------------------------------------------------------------ AI
     def declare(self, u):
+        if self.new_game and u.side == "enemy":           # a brain first (the Bein jobs), else the scorer (step 3)
+            u.brain_why = None
+            got = brains.pick(self, u)
+            if got is not None: return got
         ref = 20 * level_factor(u.level) * getattr(u, "dmg_mult", 1.0)   # one average blow, in the unit's own currency
         options = []
         for a in u.actions + self.item_actions(u):
@@ -2074,6 +2084,9 @@ class Battle:
                    for sc, a, t in options]
         if not options:                                          # nothing affordable: Guard (D7, Joseph), not a skipped turn
             return (act("defend", "Guard", target="self"), u) if self.new_game else (u.actions[0], None)
+        focus = brains.focus_of(self, u) if self.new_game else None
+        if focus is not None:                                # the plan's focus weighs more (step 3); a kill elsewhere still wins
+            options = [(sc * FOCUS_BONUS if t is focus and sc > 0 else sc, a, t) for sc, a, t in options]
         options.sort(key=lambda o: -o[0])
         pick = options[0] if self.rng.random() < 0.8 else self.rng.choice(options[:3])
         return pick[1], pick[2]
@@ -2268,6 +2281,7 @@ class Battle:
     def intent(self, u, a, t, ordered=False):
         if self.events is None: return
         code, why = ("order", "") if ordered else self.reason(u, a, t)   # a player's order carries no AI reasoning
+        if not ordered and getattr(u, "brain_why", None): code, why = u.brain_why; u.brain_why = None   # its brain's reason
                                                                            # (which reads true affinities)
         self.intents[u.uid] = dict(move=a["name"], shown=self.shown(u, a), plain=plain(a), move_kind=a["kind"],
                                    element=a.get("element"), item=a.get("item") or None, all=a["all"], shape=a.get("shape"),
@@ -2394,6 +2408,9 @@ class Battle:
                 rel = dict(ba, _release=True, cost=0, group=ba.get("release_group", 0), _charge=token)   # Bid + Tung lands Heavy
                 remaining.append((0, u, (rel, bt))); locked.add(u); self.intent(u, rel, bt)
         self.claimed, self.paint_claims, self.bind_claims, self.once_claims = set(), set(), set(), set()
+        if self.new_game:                                   # the brains (step 3): the pack's plan, then fresh claims
+            if not bonus: brains.plan_round(self)
+            self.brain_claims = set()
         self.waiting = []
         for u in actors:
             if not u.alive or (bonus and u.bide is not None): continue      # a unit winding up sits out bonus rounds
