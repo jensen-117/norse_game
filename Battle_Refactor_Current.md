@@ -155,6 +155,19 @@ Lya is intercession (I protect someone you might fire at); Egga is Taunt (I draw
 
 **Toward implementation.** With the pilot's brains: `wants` as a rule type; the pilot's kits checked against D1-D4; the generated Ande and Mogel kits reviewed in the enemy pass.
 
+### D13. The fuse, Withered, and one clock (Built Nov 24, Wave D)
+
+**Why.** Joseph's run lost the Regular room to an Aska twist (a Curse, so a lasting Sundered) on top of poison that only ever got worse. Damage ailments grew without limit and gave no reason to build or juggle them.
+
+**The rule.**
+- **One clock for every stacked ailment.** A stack nobody adds to drops one at round end, never the round it lands. The number is both how long it lasts untouched and, for the ones that escalate, how hot it burns.
+- **The fuse:** a tick is a top share of max HP through FADE (3: all of it, 2: half, 1: a fifth). **Poison 12 / 6 / 2.4%**, bites at round start. **Bleeding 14 / 7 / 2.8%**, bites only when its bearer acts (any action), and still drops at round end when they don't. **No tick is more than a clean Krosh (`KROSH_CLEAN`, 104), for anyone**, so a boss's size can't turn a poison into an execution.
+- **Withered is Aska's twist** (the Curse stays on dedicated Curse moves, seen and telegraphed: Aska's status move, Jattenid, Beinseidr). Withered 1: healing halved; 2: blocked; 3: reversed (healing hurts). Withered Bein piles don't rise.
+- **The AI values the fuse** (a tick's total over the rounds it will last, `fuse_total`) and Withered (worth most against a team that heals or a Bein team); its heals and songs are discounted by the target's Withered.
+- **Lak's log shows the numbers** (`Brennumar casts Lak, healing Vasara (+75)`), in the new game.
+
+**Built.** `data.FUSE_TOP`, `WITHERED_HEAL`, `CHILD_TWIST["Aska"]`, Withered in `STACKED_AILMENTS` and `STATUSES`. `Battle.fuse_tick`, `fuse_total`, `heal_factor`, `mend` (one door for every heal: Lak, songs, items; a reversed heal emits `withered` and can down). `tick_piles` skips Withered piles. Tests: `test_wave_d.py`. Old fights identical.
+
 ### D12. Already built under this direction
 
 - **The mirror** (Nov 23): packs reserve reach slots within budget; on for the new game's rooms. beinar_pilot Part 2 section 8.
@@ -202,6 +215,24 @@ Typed cell effects: the Mogel's empty-tile, occupied-tile and row paints with a 
 
 The gauntlet's per-hero Rest (D9). The enemy pass restores family bodies' HP (classes.md: "families are all plain for now; their deviations are the enemy pass"); the IDE ADR-10's family notes (the Draugr's telegraphed haymaker wind-ups waking up Guard, Cover and Stun; the Mogel's paint; the Ande as all-reach glue) fold into it beside beinar_pilot Parts 3 and 4.
 
+### O7. The ailment shapes (Nov 24, with Wave D)
+
+Every ailment should be one of **three shapes**, so a player reads it at a glance:
+
+| Shape | How it works | Today |
+|---|---|---|
+| **Escalating tick** | the fuse: hotter at 3, burns down | Poison, Bleeding |
+| **Threshold pop** | builds quietly, then something happens at a count | Frozen (a second chill) |
+| **Countdown window** | lasts N rounds, then something happens or ends | holds (D3), Withered's steps |
+
+Ideas waiting their turn, each with an owner:
+- **Skuld** (countdown debt): a mark that comes due after N rounds (the Norns' "what is owed"). A countdown window with a payoff.
+- **Drain** as a keyword: a third of the damage dealt comes back as HP. First home: the Draugr's **Death Bite**.
+- **Sleep** only with its own payoff and its own owner: **Svefnthorn** (the sleep-thorn). No free skip-a-turn; Sleep comes with a reason to wake it (a big hit) or to keep it.
+- **Charged**: goes to the Skurmar's card pass.
+- **Tangled**: the Leshi's.
+- **The missing hero dispel:** heroes can't remove a foe's helpful hold or buff. A gap for the class passes.
+
 ---
 
 ## Part 4: Progression notes (not locked)
@@ -233,6 +264,8 @@ The gauntlet's per-hero Rest (D9). The enemy pass restores family bodies' HP (cl
    - **Measured** (Wave B fixes / Wave C; fresh rooms, Dagskald, Skurmar, Vasara at leg 2): Elite 5.9 / 5.6 rounds, Vasara 29% / 24%, Skurmar 71% / 70%, Dagskald 92% / 92%; Boss won 89% / 91%, Vasara 26% / 24%, Skurmar 53% / 48%, Dagskald 77% / 79%. **The gauntlet** (the AI's floor, carrying HP and MP through four rooms): Regulars cleared 187 / 175 of 240, Elite 60 of 187 / 36 of 175, **Boss 4 of 60 / 18 of 36** (the camp before the boss). Sustain is now the run's problem, as D8 meant: the Elite room, met with no Rest since the start, is where runs end.
    - **What the AI does with it:** in 150 boss fights the Dagskald casts Sol 962 times, Lak 22, Lonnskolja 30; heroes still end boss fights at DEF −0.7. The answer is in the kit now, but the AI values lifting a lasting drop like a passing one (half a reference hit a step). Under persistence a lift is worth the rest of the fight: the brains' job (valuing a cleanse by the fight's remaining rounds), noted for the pilot.
 - **The Lab's run (Nov 24, Joseph):** a gauntlet you play. The Run panel: a place, the adds (+2 Trash or Regular in every fight room but the Regular one, which has its own two), a run number (room i of run n is rolled from `Random(RUN_SEED + 10n + i)`). Trash, Regular, Elite, a camp (each hero Rests or not: D9's screen in miniature, carving waits for the dive), the Boss; HP, MP, the pouch, Wounded and the dead carry. Each room's record carries the party as it walked in (`carry`), and `replay.py` rebuilds it: every room replays exactly. `settle` moved into the engine (one rule for the gauntlet and the Lab). `test_lab_run.py`; `checks/s_run.py` plays a whole run in the browser.
+- **Wave D: built (Nov 24).** D13: the fuse (Poison 12 / 6 / 2.4%, Bleeding 14 / 7 / 2.8%, capped at a clean Krosh), one clock, Bleeding bites on action, Withered as Aska's twist, the Curse back on its own moves, the AI's fuse and Withered values, Lak's numbers in the log. 441 tests pass; old fights identical (regress 3bdf6771deb1, fingerprint 288, golden 4535).
+   - **Measured** (Wave C / Wave D): the gauntlet's Regulars cleared 175 / 193 of 240, Elite 36 of 175 / 50 of 193, Boss 18 of 36 / 24 of 50. Calibration rooms: Elite, the Vasara ends at 24% / 27%; Boss, Vasara 24% / 26%, Skurmar 48% / 50%. **The Regular room stops being a run killer** (Aska no longer leaves a lasting Sundered); the Elite is still where runs end.
 5. **The Beinar pilot resumes** (beinar_pilot.md, "What the build needs"): D10 intercession, the kits, the brains and team plans with D11's wants and the reset as Stabilize; then the gauntlet against Joseph's damage picture and his calibration fights *(scope calibration here to Leg 1, or pull O3 rider/`Gyllenlykt` costing ahead of Leg 2–3 calibration so Legs 2–3 aren't tuned twice)*.
 6. **Then:** the enemy pass (O6), tile paint (O4), costing (O3), the Hunt clock (O5), and progression (Part 4: the Growth view, the Vasara and Brennumar webs).
 

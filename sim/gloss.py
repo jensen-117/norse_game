@@ -277,6 +277,7 @@ GLOSS = {
     "Reeling":  g("status", "acts no earlier than Late", state="planned"),
     "Steadfast": g("status", "a hold (Nov 24): DEF can't be lowered for its rounds", state="planned"),
     "Venom":    g("status", "shorthand: Poisoned and Bleeding at once", state="planned"),
+    "Withered": g("status", "Aska's twist (Nov 24): healing on them halved, then blocked, then reversed (it hurts); a fuse"),
     "Mending":  g("status", "heals a little at each round's start", state="planned"),
 
     # ------------------------------------------------------------------ counters (stages; −3 to +3; opposite ends pull against each other)

@@ -862,7 +862,7 @@ const Screen = (() => {
   }
   const HIT_FX = { Slash: "hit_slash", Crush: "hit_crush2", Pierce: "hit_pierce2" };
   const fxFor = el => HIT_FX[el] || (FX["burst:" + el] ? "burst:" + el : "burst:Martial");
-  const NARRATE = new Set(["held", "unheld", "act", "transform", "hit", "absorb", "heal", "stat", "status", "resist", "defend", "cover", "covered", "move", "windup", "bide_lost",
+  const NARRATE = new Set(["held", "unheld", "withered", "act", "transform", "hit", "absorb", "heal", "stat", "status", "resist", "defend", "cover", "covered", "move", "windup", "bide_lost",
     "paint", "skip", "silenced", "tick", "down", "reform", "crawl", "pile", "scatter", "reassemble", "dying", "breath", "dead", "revive",
     "stabilised", "item", "mp", "fled", "flee_failed", "retarget", "fizzle", "shatter", "flurry", "cleanse", "immune", "thaw",
     "taunt", "drawn", "flare", "rooted", "weak", "out_of_reach", "song", "song_fades", "knot", "follow", "wall", "spent", "whiff"]);

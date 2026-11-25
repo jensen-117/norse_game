@@ -813,16 +813,43 @@ class Battle:
         return KVAD_SHARE * self.heal_amount(singer, dict(power=TIER_POWER["Base"], all=a["all"], shape=a.get("shape"),
                                                           **({"all_power": a["all_power"]} if a.get("all_power") else {})))
 
+    def fuse_tick(self, u, status, n):
+        """One bite of a fuse at height n (Wave D): its top share of u's max HP through FADE, at most a clean Krosh."""
+        n = max(1, min(STACK_CAP, int(n)))
+        return min(KROSH_CLEAN, FUSE_TOP[status] * FADE[STACK_CAP - n] * u.maxhp)
+
+    def fuse_total(self, u, status, n):
+        """What a fuse at height n burns from here if nobody feeds it: n bites, n, n-1 ... 1 (Bleed: one act a round)."""
+        return sum(self.fuse_tick(u, status, k) for k in range(1, int(n) + 1))
+
+    def heal_factor(self, t):
+        """Withered (Aska's twist, Wave D): healing on t at 1/2 the strength, none, or reversed."""
+        if not getattr(self, "new_game", False): return 1.0
+        n = t.status.get("Withered", {}).get("rounds", 0)
+        return WITHERED_HEAL.get(min(int(n), STACK_CAP), 1.0) if n else 1.0
+
+    def mend(self, t, h, src=None):
+        """Healing lands through Withered: halved, blocked, or reversed into a wound. Returns the change (- hurts)."""
+        f = self.heal_factor(t)
+        if f >= 0:
+            got = min(h * f, t.maxhp - t.hp); t.hp += got; return got
+        hurt = h * -f; t.hp -= hurt
+        self.emit("withered", f"      {t.name} is Withered: the healing burns them for {hurt:.0f}!", unit=t.name, dmg=round(hurt),
+                  hp=max(0, round(t.hp)), src=src.name if src is not None else None)
+        if not t.alive: self.downed(t)
+        return -hurt
+
     def sing(self):
         """At each round's start, after the ticks, every Song heals its ally: stacks x the heal its last singer gave.
         The Dying carry none (falling clears statuses), so they need Vakna."""
         for t in self.units:
             inst = t.status.get("Song")
             if not t.alive or not inst: continue
-            h = min(inst["stacks"] * inst["heal"], t.maxhp - t.hp)
-            if h <= 0: continue
-            t.hp += h; src = inst.get("src")
-            if src is not None: src.stats["healed"] += h
+            src = inst.get("src")
+            if self.heal_factor(t) >= 0 and t.hp >= t.maxhp: continue
+            h = self.mend(t, inst["stacks"] * inst["heal"], src)
+            if h == 0: continue
+            if src is not None and h > 0: src.stats["healed"] += h
             self.emit("heal", f"    {t.name}'s Song ({inst['stacks']}) heals {h:.0f}.", unit=src.name if src else t.name, move="Kvad",
                       element="Lak", targets=[dict(unit=t.name, amount=round(h), hp=round(t.hp))], stacks=inst["stacks"])
 
@@ -1085,6 +1112,7 @@ class Battle:
 
     def tick_piles(self):
         for p in list(self.piles):
+            if self.new_game and "Withered" in p.status: continue   # Wave D: withered bones don't stand while it lasts
             self.piles[p] -= 1
             if self.piles[p] > 0: continue
             taken = {x.cell for x in self.team_of(p) if x.alive}
@@ -1143,6 +1171,8 @@ class Battle:
             if "power" in tk:                              # Scorched: the caster's blow, 100%, 50%, 20%, then out
                 dmg = max(1, int(inst["dmg"] * row["fade"][inst["step"]])); inst["step"] += 1
                 if inst["step"] >= len(row["fade"]): del u.status[s]
+            elif self.new_game and s in FUSE_TOP:          # Wave D: the fuse, capped at a clean Krosh
+                dmg = max(1, int(self.fuse_tick(u, s, inst.get("rounds", 1))))
             else:
                 dmg = max(1, int(u.maxhp * tk["share"]))
             u.hp -= dmg
@@ -1237,7 +1267,7 @@ class Battle:
             self.emit("mp", f"    {t.name} recovers {got:.0f} MP.", unit=t.name, amount=round(got)); return
         if a["kind"] == "heal" and a.get("item"):
             t = chosen if chosen is not None and chosen.alive else u
-            got = min(a["amount"] * t.maxhp, t.maxhp - t.hp); t.hp += got
+            got = self.mend(t, a["amount"] * t.maxhp, u)
             self.emit("heal", f"    {t.name} recovers {got:.0f} HP.", unit=u.name, move=a["name"], element=None,
                       targets=[dict(unit=t.name, amount=round(got), hp=round(t.hp))]); return
         chosen = self.drawn_to(u, a, chosen)               # Egga first: a finishing blow is an attack too (C12)
@@ -1307,9 +1337,12 @@ class Battle:
         if a["kind"] == "heal":
             healed = []
             for t in tgts:
-                h = min(self.heal_amount(u, a), t.maxhp - t.hp)
-                t.hp += h; u.stats["healed"] += h; healed.append(dict(unit=t.name, amount=round(h), hp=round(t.hp)))
-            self.emit("heal", f"    {u.name} casts {a['name']}, healing {', '.join(t.name for t in tgts)}.{tag}",
+                h = self.mend(t, self.heal_amount(u, a), u)
+                if h > 0: u.stats["healed"] += h
+                healed.append(dict(unit=t.name, amount=round(h), hp=round(max(0, t.hp))))
+            said = (", ".join(f"{d['unit']} ({'+' if d['amount'] >= 0 else ''}{d['amount']})" for d in healed)   # the numbers (Joseph)
+                    if self.new_game else ", ".join(t.name for t in tgts))
+            self.emit("heal", f"    {u.name} casts {a['name']}, healing {said}.{tag}",
                       unit=u.name, move=a["name"], element=a["element"], targets=healed)
             for st, d in a.get("also") or []:              # Gyllenlykt: the light makes them harder to hit
                 n = 1 if self.new_game else STACKS_BY_TIER.get(a["tier"], 1)   # new game: a printed size wins (Nov 22)
@@ -1861,12 +1894,12 @@ class Battle:
                                         if x.stage(st) * d < STACK_CAP and COMBINED_STAT.get(st, st) not in x.held)   # Gyllenlykt's Evasive
                 if a["all"]:
                     xs = self.allies(u)
-                    s = sum(min(self.heal_amount(u, a), x.maxhp - x.hp) for x in xs if x.hp < 0.7 * x.maxhp)
+                    s = sum(min(self.heal_amount(u, a) * self.heal_factor(x), x.maxhp - x.hp) for x in xs if x.hp < 0.7 * x.maxhp)
                     if a.get("also") and s > 0: s += bright(xs) / 1.2
                     options.append((1.2 * s - cost_pen, a, None))
                 for x in hurt:
                     row = self.shape_targets(u, a, x) if a.get("shape") else [x]   # Floklak: the hurt one's row
-                    s = sum(min(self.heal_amount(u, a), y.maxhp - y.hp) for y in row)
+                    s = sum(min(self.heal_amount(u, a) * self.heal_factor(y), y.maxhp - y.hp) for y in row)
                     if a.get("also"): s += bright(row) / 1.2
                     options.append((1.2 * s - cost_pen, a, x))
             elif a["kind"] == "knot":                           # Knyta: what the knots pay while held, and spells they unlock
@@ -1894,7 +1927,7 @@ class Battle:
                     for t in reach:
                         st = t.status.get("Song", {}).get("stacks", 0)
                         gain = (min(KVAD_CAP, st + n) - max(0, st - 1)) * per          # sung: up to the cap; not: one fades
-                        v += AI_SONG_VALUE * (min(gain, t.maxhp - t.hp) + AI_SONG_HOPE * gain)
+                        v += AI_SONG_VALUE * (min(gain, t.maxhp - t.hp) + AI_SONG_HOPE * gain) * self.heal_factor(t)   # Withered
                     return v
                 if a["all"]: options.append((song_value(xs) - cost_pen, a, None))
                 else:
@@ -2066,6 +2099,15 @@ class Battle:
         fresh = self.status_instance(u, f, st, stacks, a["tier"], a)
         new = self.reapplied(st, old, fresh)
         if new is None: return 0.0, False, 0.0
+        if ng and st in FUSE_TOP:                     # Wave D: what the fuse burns from here, before and after
+            old = old["rounds"] if old else 0; new_n = min(STACK_CAP, old + stacks)
+            gain = self.fuse_total(f, st, new_n) - self.fuse_total(f, st, old)
+            return AI_DOT_VALUE * min(f.hp, gain), new_n > old, (new_n - old) / max(1, stacks)
+        if ng and st == "Withered":                   # worth it where there's healing to spoil (heals, songs, bones)
+            old = old["rounds"] if old else 0; new_n = min(STACK_CAP, old + stacks)
+            heals = any(m["kind"] in ("heal", "song", "revive") for x in self.team_of(f) if x.alive for m in x.actions) \
+                or getattr(f, "family", None) == "Bein" or "Song" in f.status
+            return (0.35 if heals else 0.08) * ref * (new_n - old), new_n > old, (new_n - old) / max(1, stacks)
         if row.get("tick", {}).get("power"):
             total = new["dmg"] * sum(row["fade"])
             left = old["dmg"] * sum(row["fade"][old["step"]:]) if old else 0.0

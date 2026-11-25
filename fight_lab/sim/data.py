@@ -409,7 +409,14 @@ COUNTER_OF["AccDown"] = ("ACC", -1)            # the Reyk spirits' old rider: Bl
 # landing adds its stacks (one a stack), to STACK_CAP; a round nobody added to it, it drops by one (never the round it
 # lands). Reeling and Chilled join in step 3, the bundles in step 4; the bespoke ones (Scorched, Frozen, Stunned, Bound,
 # Song) keep their own rules.
-STACKED_AILMENTS = ("Poisoned", "Bleeding", "Pinned", "Silenced", "Reeling", "Chilled")
+STACKED_AILMENTS = ("Poisoned", "Bleeding", "Pinned", "Silenced", "Reeling", "Chilled", "Withered")
+# Wave D (Nov 24, Joseph): the fuse. A stacked ailment's number is both how many untouched rounds are left and, for the
+# ones that escalate, how hot it burns now; one clock for all of them (a stack nobody added to drops one at round end,
+# never the round it lands). Poison bites at round start, Bleeding when its bearer acts (no act, no bite; it still drops).
+# A tick is its top share of max HP through FADE (3: all of it, 2: half, 1: a fifth: Scorched's shape), and never more
+# than a clean Krosh (KROSH_CLEAN), for anyone.
+FUSE_TOP = {"Poisoned": 0.12, "Bleeding": 0.14}     # Poison 12 / 6 / 2.4%, Bleed 14 / 7 / 2.8% of max HP
+WITHERED_HEAL = {1: 0.5, 2: 0.0, 3: -1.0}         # Aska's twist: healing halved, blocked, then reversed (it hurts)
 # Step 3 (Nov 22): Late is one primitive, worn by several. In the new game each of these drops a unit's moves into the
 # Late group (no earlier than Late; Heavy and Last stay; protection moves, Guard, Cover and Taunt, are spared, as Fear
 # always spared them): Reeling is Late alone; Chilled is Late, and a second chill freezes (Frozen replaces it); Feared
@@ -447,7 +454,8 @@ HELPFUL_STATUSES = ("Song",)
 # element's plain spell is its twist, and a foe's child-element attack becomes its Styng form: a hit at STYNG_POWER of
 # the spell and the twist, certain on a clean hit (Allhrim becomes Allstynghrim). Blixt stays a parent's spike: its
 # stun is Stelblixt's (the designated rider), not the element's.
-CHILD_TWIST = {"Reyk": "Blinded", "Hrim": "Chilled", "Gro": "Poisoned", "Aska": "Cursed"}
+CHILD_TWIST = {"Reyk": "Blinded", "Hrim": "Chilled", "Gro": "Poisoned", "Aska": "Withered"}   # Aska withers (Nov 24, Wave D):
+                # the Curse (Sundered and Poison) stays on dedicated Curse moves (Aska's status move, Jattenid, Beinseidr), seen and telegraphed
 CHAIN_AT = 2   # Nov 22, after the gauntlet: a chill freezes only a target already Chilled 2 (the third chill), not the second;
                # and only a single-target chill freezes: a row or All chill only stacks Chilled (a wave chills, a punch freezes)
 NEW_GAME_STAT_SOURCES = {"Pinned": {}, "Chilled": {}}    # the new game's override of a status row's "stats"
@@ -500,6 +508,7 @@ STATUSES = {
     "Reeling":  dict(duration=1, reapply="refuse"),     # the new game's: Late alone (Vingla, Besk's crash); rounds
     "Steadfast": dict(duration=1, reapply="refuse"),    # the new game's bundle (BUNDLES); Mot
     "Venom":    dict(duration=1, reapply="refuse"),     # the new game's bundle (BUNDLES)
+    "Withered": dict(duration=1, reapply="refuse"),     # Aska's twist (Wave D): healing halved, blocked, reversed; Withered bones stay down
     "Disarmed": dict(duration=STATUS_DURATION, reapply="refuse", stats={"ATK": -1, "MAT": -1}),
     "Cursed":   dict(duration=STATUS_DURATION, reapply="refuse", pick=(["ATK", "MAT", "DEF", "MDF"], 2)),
     "Silenced": dict(duration=STATUS_DURATION, reapply="refuse", blocks_mp=True),
