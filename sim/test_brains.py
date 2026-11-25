@@ -115,6 +115,12 @@ class Rules(unittest.TestCase):
         b, h, (s,) = room(["Beinseidr"], party=("Vasara", "Ullar", "Brennumar")); self.focus(b, h["Vasara"])
         a, t = b.declare(s); self.assertEqual((a["name"], t), ("Silence", h["Brennumar"]))
 
+    def test_no_called_shot_past_the_want(self):          # Joseph's fight (Nov 25): Called Shot three times, Marked 3
+        b, h, (o,) = room(["Halvbeinorv"]); self.focus(b, h["Vasara"])
+        self.assertEqual(b.declare(o)[0]["name"], "Called Shot")
+        h["Vasara"].stages["EVA"] = -1; b.brain_claims = set()
+        self.assertNotEqual(b.declare(o)[0]["name"], "Called Shot")
+
     def test_no_curse_on_the_sundered(self):
         b, h, (s,) = room(["Halvbeinseidr"]); self.focus(b, h["Vasara"])
         h["Vasara"].stages["DEF"] = -1

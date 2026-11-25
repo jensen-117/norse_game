@@ -281,6 +281,9 @@ def pick(b, u):
         if t is None: continue
         a = move_for(b, u, r["move"], t)
         if a is None: continue
+        lowers = a.get("status") if a["kind"] == "status" else \
+            STAT_NAMES[a["stat"]][0] if a["kind"] == "stat" and a["direction"] < 0 else None
+        if lowers and t is not u and b.wanted(u, t, lowers): continue    # D11 for the brains too: Marked 1, not 3 (Nov 25)
         if not all(fits(b, u, c, t, r, a) for c in r.get("when", ())): continue
         key = None
         if r.get("claim"):
