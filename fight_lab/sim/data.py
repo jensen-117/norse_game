@@ -695,6 +695,18 @@ BRAINS = {
         dict(on="focus", move="best_strike", say="carving at {t}"),
     ],
 }
+# The Bein rooms to play in the Lab (Nov 25): (row, lane, rank); lanes top, middle, bottom. Joseph's full house first.
+PILOT_ROOMS = {
+    "Full house (Joseph)": [("front", 0, "Beinbryn"), ("front", 1, "Fornbein"), ("front", 2, "Beinbryn"),
+                            ("rear", 0, "Beinorv"), ("rear", 1, "Beinseidr"), ("rear", 2, "Beinorv")],
+    "Full house, Halv": [("front", 0, "Halvbeinbryn"), ("front", 1, "Fornbein"), ("front", 2, "Halvbeinbryn"),
+                         ("rear", 0, "Halvbeinorv"), ("rear", 1, "Halvbeinseidr"), ("rear", 2, "Halvbeinorv")],
+    "The doc's boss room": [("front", 0, "Beinbryn"), ("front", 1, "Fornbein"), ("rear", 0, "Beinorv"), ("rear", 1, "Beinseidr")],
+    "Boss, Halv Rear": [("front", 0, "Beinbryn"), ("front", 1, "Fornbein"), ("rear", 0, "Halvbeinorv"), ("rear", 1, "Halvbeinseidr")],
+    "Boss, three": [("front", 0, "Beinbryn"), ("front", 1, "Fornbein"), ("rear", 1, "Beinorv")],
+    "Regular triangle": [("front", 1, "Beinbryn"), ("rear", 0, "Beinorv"), ("rear", 2, "Beinseidr")],
+}
+
 BRAIN_DESPERATE = [dict(on="most_hurt", move="best_strike", say="desperate: its strongest blow on {t}")]
 BEINSEIDR_ELEMENTS = ["Natt", "Aska", "Eld", "Hrim", "Blixt"]   # bone-mages that adopt an element (not Sol: bone hates it)
 BEIN_PILE_ROUNDS = 2          # a fallen Bein lies in a pile this many rounds, then stands again...

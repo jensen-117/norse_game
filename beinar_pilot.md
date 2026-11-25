@@ -671,3 +671,24 @@ The gauntlet's rule counts (gauntlet_report.md): fallbacks 14% for the Beinbryn,
 - Bein Regular room: the Vasara, Skurmar and Dagskald end at 46%, 100%, 88% (step 3: 61%, 100%, 70%): a Pin, a wind-up and the shot take an archer two or three rounds, in fights under five.
 - Gauntlet: Regulars 191 of 240, Elite 78 of 191, Boss 38 of 78. Calibration Elite 30%, 80%, 91%; Boss 26%, 74%, 78%.
 - **The payoffs land where the boss lives long enough:** with the Fornbein and three Regulars (the room table's boss room), Killing Shot lands 237 of 239 wind-ups, Downward Slash 94 of 115 (the rest lost as the Fornbein falls), the Cleaver 6 of 7 (fronts of two); the party wins 29 of 100 there. With the Fornbein and one Halv (the yardstick's size), it's killed in about 3.4 rounds and loses 49 of 50 Downward Slashes: the counterplay (kill it before it lands) works too well when the boss is that soft. Room size is the lever (the adds dial).
+
+## Room size: Joseph's full house (Nov 25)
+
+**The room** (Joseph): Front Beinbryn, Fornbein, Beinbryn; Rear Beinorv, Beinseidr, Beinorv. The Beinbryn block for the Rear or disrupt the heroes' Front, the archers soften someone, the Seidr juggles debuffs and bolts. It's a preset in the Lab now (`PILOT_ROOMS`, "Bein room" under Enemies), with the ladder below it; `checks/s_pilot.py` loads it and fights it in the page.
+
+**Measured** (AI party, the hero AI a floor; leg 2 unless said; Vasara / Dagskald / Skurmar):
+
+| Room | Cost | Party wins | Heroes end at | Damage dealt by |
+|---|---|---|---|---|
+| Full house | 13.5 | 0% (leg 2 and 3, every party tried) | 0% | archers 69%, Beinbryn 16%, Fornbein 14% |
+| Five (one Beinbryn) | 11.5 | 0% | 0% | archers 72% |
+| Five (one Beinorv) | 11.5 | 0% | 0% | archers 49%, Fornbein 28% |
+| The doc's four (Beinbryn, Fornbein; Beinorv, Beinseidr) | 9.5 | 15% | 0%, 2%, 12% | archers 55%, Fornbein 29% |
+| Full house, all Halv but the Fornbein | 8.5 | 41% | 3%, 8%, 30% | archers 42%, Fornbein 33% |
+| Beinbryn, Fornbein; Beinorv | 7.5 | 95% | 6%, 61%, 86% | archer 67%, Fornbein 30% |
+| The doc's four, Halv Rear | 7.5 | 100% | 27%, 83%, 99% | Fornbein 63% |
+
+- **Every rhythm lands in the full house** (about 6 Killing Shot wind-ups a fight, 1 to 1.5 Downward Slashes, the Cleaver when two stand in the Front, 2 to 5 Covers), and the party leaves the pack at 71% of its HP when it falls.
+- **The Beinorv does most of the killing** wherever a Regular one stands (half to three quarters of the damage), kept alive by the Beinbryn's Covers (the Vasara can't reach the Rear; the casters' hits are taken).
+- **Killing Shot at 60 instead of 78** (no wind-up premium) doesn't save the full house (0%); the doc's four goes 15% to 29%, the Halv house 41% to 38% (noise). The full house's weight is its mass, not one move.
+- The step between losing and winning is sharp: about cost 8.5 to 7.5 at leg 2.

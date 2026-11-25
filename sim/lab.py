@@ -25,7 +25,7 @@ def menus():
         classes=[dict(key=k, kind=v["kind"], school=v.get("school"), dmg=v.get("dmg")) for k, v in CLASSES.items() if k in KITS],   # C15: the new game's
         items=[dict(key=k, name=v["name"], kind=v["kind"], stack=v["stack"]) for k, v in ITEMS.items()],
         habitats=["Barrow", "Wildwood", "Rapids"] + [f"Biome: {b}" for b in BIOMES],
-        pouch_slots=POUCH_SLOTS))
+        pouch_slots=POUCH_SLOTS, pilot_rooms=list(PILOT_ROOMS)))
 
 def set_seed(seed):
     S["seed"] = int(seed); S["rng"] = random.Random(S["seed"]); return _j(dict(seed=S["seed"]))
@@ -99,6 +99,19 @@ def calib_room(kind, budget, add, n):
                           calib=dict(kind=kind, budget=int(budget), add=add or None, room=n, where=where))
     return _j(dict(where=where, pack=[dict(cell=[r, l], name=describe(e), family=e["family"], rank=e["rank"], job=e.get("job"),
                                            element=e["element"], cost=e["cost"], art=e["art"]) for r, l, e in picks]))
+
+def pilot_room(name):
+    """A Bein room from PILOT_ROOMS (Nov 25), cell by cell; a Beinseidr's element is rolled from the Lab's seed."""
+    rng = S["rng"]
+    if name not in PILOT_ROOMS: return _j(dict(error=f"No Bein room called {name}."))
+    def entry(rank):
+        es = [e for e in CAT if e["family"] == "Bein" and e["rank"] == rank]
+        return rng.choice(es) if es else None
+    picks = [(row, lane, entry(rank)) for row, lane, rank in PILOT_ROOMS[name]]
+    if any(e is None for _, _, e in picks): return _j(dict(error="A rank in that room isn't in the catalog."))
+    S["pack_spec"] = dict(placed=picks, level=ENEMY_LEVEL, pilot=name)
+    return _j(dict(where=name, pack=[dict(cell=[r, l], name=describe(e), family=e["family"], rank=e["rank"], job=e.get("job"),
+                                          element=e["element"], cost=e["cost"], art=e["art"]) for r, l, e in picks]))
 
 # ------------------------------------------------------------ a run (Nov 24, Joseph): a gauntlet you play, room by room
 # Trash, Regular, Elite, a camp, then the Boss, in one place, carrying HP, MP, the pouch, Wounded and the dead between
