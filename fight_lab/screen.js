@@ -925,8 +925,9 @@ const Screen = (() => {
       case "absorb": if (u) { u.hp = e.hp; u.frac = Math.min(1, e.hp / ((u.maxhp || e.hp) || 1)); playFx("spark:" + (e.element || "Martial"), u); floatAt(e.unit_id, "+" + e.amount, C.absorb); floatAt(e.unit_id, "ABSORB", C.absorb, 140); } return sleep(B.hit);
       case "heal":
         if (u) pose(u, e);
-        (e.target_ids || []).forEach((id, i) => { const t = units[id], x = e.targets[i]; if (t && x) { t.hp = x.hp; t.frac = t.maxhp ? x.hp / t.maxhp : t.frac; playFx("spark:Gro", t); addFx(t, "hop", MOTION.hop.dur, { px: 2 }); floatAt(id, "+" + x.amount, C.heal); } });
+        (e.target_ids || []).forEach((id, i) => { const t = units[id], x = e.targets[i]; if (t && x) { t.hp = x.hp; t.frac = t.maxhp ? x.hp / t.maxhp : t.frac; if (x.amount > 0) { playFx("spark:Gro", t); addFx(t, "hop", MOTION.hop.dur, { px: 2 }); } x.amount > 0 ? floatAt(id, "+" + x.amount, C.heal) : floatAt(id, "0", C.hpMid); } });   // 0: Withered blocked it
         return sleep(B.heal);
+      case "withered": if (u) { u.hp = e.hp; u.frac = u.maxhp ? e.hp / u.maxhp : u.frac; playFx("spark:Natt", u); addFx(u, "flash", MOTION.flash.dur); floatAt(e.unit_id, String(e.dmg), C.hpMid); } return sleep(B.small);   // a reversed heal: a wound
       case "stat": case "cleanse":
         if (u) pose(u, e);
         (e.target_ids || []).forEach(id => { const t = units[id]; if (t) playFx(e.direction > 0 || e.kind === "cleanse" ? "spark:Gro" : "spark:Natt", t); });

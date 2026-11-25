@@ -23,8 +23,9 @@ class TheFuse(unittest.TestCase):
 
     def test_never_more_than_a_krosh(self):
         e = dummy(); u = hero("Ullar", "Skott"); b = ng(u, e, hp=[1700])
-        self.assertEqual(b.fuse_tick(e, "Poisoned", 3), KROSH_CLEAN)
-        self.assertEqual(round(b.fuse_tick(e, "Poisoned", 1)), round(0.12 * 0.2 * 1700))
+        self.assertEqual([b.fuse_tick(e, "Poisoned", n) for n in (3, 2, 1)],
+                         [KROSH_CLEAN, KROSH_CLEAN * 0.5, KROSH_CLEAN * 0.2])     # the cap on the top: the shape survives (review)
+        self.assertEqual(b.fuse_tick(e, "Bleeding", 2), KROSH_CLEAN * 0.5)
 
     def test_feeding_holds_it_at_three(self):
         e = dummy(); u = hero("Ullar", "Skott"); b = ng(u, e, hp=[500])
@@ -67,6 +68,42 @@ class Withered(unittest.TestCase):
     def test_aska_withers_and_curses_stay_dedicated(self):
         self.assertEqual(CHILD_TWIST["Aska"], "Withered")
         self.assertEqual(SHORTHAND["Cursed"], (("Sundered", 1), ("Poisoned", 1)))
+
+class WitheredReview(unittest.TestCase):
+    """The review of Wave D (Nov 24): a reversed heal is a wound, never a heal; the AI won't potion a Withered 3 ally;
+    Gyllenlykt holds nothing on one its heal downed."""
+    def test_a_reversed_lak_is_a_wound_told_after_the_cast(self):
+        d = hero("Dagskald", "Lak"); v = hero("Vasara", "Krosh"); b = ng(d, v, dummy()); b.begin("party")
+        v.hp = 300; v.status["Withered"] = dict(rounds=3)
+        orders(b, {d.uid: (key(d, "Lak"), v.uid), v.uid: ("guard", None)})
+        kinds = [e["kind"] for e in b.events if e["kind"] in ("heal", "withered")]
+        self.assertEqual(kinds[:2], ["heal", "withered"])
+        self.assertTrue(all(x["amount"] >= 0 for e in b.events if e["kind"] == "heal" for x in e["targets"]))
+
+    def test_a_blocked_heal_says_so(self):
+        d = hero("Dagskald", "Lak"); v = hero("Vasara", "Krosh"); b = ng(d, v, dummy()); b.begin("party")
+        v.hp = 300; v.status["Withered"] = dict(rounds=2)
+        orders(b, {d.uid: (key(d, "Lak"), v.uid), v.uid: ("guard", None)})
+        self.assertIn("Vasara (blocked)", next(e["text"] for e in b.events if e["kind"] == "heal"))
+
+    def test_a_reversed_potion_and_song_are_wounds(self):
+        v = hero("Vasara", "Krosh"); b = ng(v, dummy()); v.hp = 500
+        v.status["Song"] = dict(rounds=UNTIL_USED, stacks=2, heal=30); v.status["Withered"] = dict(rounds=3)
+        b.sing()
+        self.assertEqual([e["kind"] for e in b.events if e["kind"] in ("heal", "withered")], ["withered"])
+
+    def test_the_ai_wont_potion_a_withered_three(self):
+        d = hero("Dagskald", "Krosh"); v = hero("Vasara", "Krosh"); b = ng(d, v, dummy())
+        d.pouch = [["strong_life", 1]]; v.hp = 0.2 * v.maxhp; v.status["Withered"] = dict(rounds=3)
+        for _ in range(40):
+            a, t = b.declare(d)
+            self.assertFalse(a.get("item") and t is v)
+
+    def test_no_light_on_the_downed(self):
+        d = hero("Dagskald", ("Lak", dict(lonn=True))); v = hero("Vasara", "Krosh"); b = ng(d, v, dummy()); b.begin("party")
+        v.hp = 10; v.status["Withered"] = dict(rounds=3)
+        orders(b, {d.uid: (key(d, "Gyllenlykt"), v.uid), v.uid: ("guard", None)})
+        self.assertNotEqual(v.state, "up"); self.assertNotIn("EVA", v.held)
 
 class TheLogShowsTheHeal(unittest.TestCase):
     def test_numbers(self):

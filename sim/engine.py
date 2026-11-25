@@ -814,9 +814,10 @@ class Battle:
                                                           **({"all_power": a["all_power"]} if a.get("all_power") else {})))
 
     def fuse_tick(self, u, status, n):
-        """One bite of a fuse at height n (Wave D): its top share of u's max HP through FADE, at most a clean Krosh."""
+        """One bite of a fuse at height n (Wave D): its top (a share of u's max HP, at most a clean Krosh) through FADE.
+        The cap sits on the top, so every height keeps its shape: a big boss burns 104 / 52 / 21 (review, Nov 24)."""
         n = max(1, min(STACK_CAP, int(n)))
-        return min(KROSH_CLEAN, FUSE_TOP[status] * FADE[STACK_CAP - n] * u.maxhp)
+        return min(KROSH_CLEAN, FUSE_TOP[status] * u.maxhp) * FADE[STACK_CAP - n]
 
     def fuse_total(self, u, status, n):
         """What a fuse at height n burns from here if nobody feeds it: n bites, n, n-1 ... 1 (Bleed: one act a round)."""
@@ -828,16 +829,20 @@ class Battle:
         n = t.status.get("Withered", {}).get("rounds", 0)
         return WITHERED_HEAL.get(min(int(n), STACK_CAP), 1.0) if n else 1.0
 
-    def mend(self, t, h, src=None):
-        """Healing lands through Withered: halved, blocked, or reversed into a wound. Returns the change (- hurts)."""
+    def mend(self, t, h):
+        """Healing lands through Withered: halved, blocked, or reversed into a wound. Returns the change (- hurts).
+        A wound is told (and a fall taken) by burned, after the heal's own line."""
         f = self.heal_factor(t)
         if f >= 0:
             got = min(h * f, t.maxhp - t.hp); t.hp += got; return got
         hurt = h * -f; t.hp -= hurt
+        return -hurt
+
+    def burned(self, t, hurt, src=None):
+        """A reversed heal's wound (Withered 3): its own event, so the page draws a wound, not a heal."""
         self.emit("withered", f"      {t.name} is Withered: the healing burns them for {hurt:.0f}!", unit=t.name, dmg=round(hurt),
                   hp=max(0, round(t.hp)), src=src.name if src is not None else None)
-        if not t.alive: self.downed(t)
-        return -hurt
+        if t.hp <= 0 and getattr(t, "state", "up") == "up": self.downed(t)
 
     def sing(self):
         """At each round's start, after the ticks, every Song heals its ally: stacks x the heal its last singer gave.
@@ -847,9 +852,10 @@ class Battle:
             if not t.alive or not inst: continue
             src = inst.get("src")
             if self.heal_factor(t) >= 0 and t.hp >= t.maxhp: continue
-            h = self.mend(t, inst["stacks"] * inst["heal"], src)
+            h = self.mend(t, inst["stacks"] * inst["heal"])
             if h == 0: continue
-            if src is not None and h > 0: src.stats["healed"] += h
+            if h < 0: self.burned(t, -h, src); continue
+            if src is not None: src.stats["healed"] += h
             self.emit("heal", f"    {t.name}'s Song ({inst['stacks']}) heals {h:.0f}.", unit=src.name if src else t.name, move="Kvad",
                       element="Lak", targets=[dict(unit=t.name, amount=round(h), hp=round(t.hp))], stacks=inst["stacks"])
 
@@ -1267,7 +1273,10 @@ class Battle:
             self.emit("mp", f"    {t.name} recovers {got:.0f} MP.", unit=t.name, amount=round(got)); return
         if a["kind"] == "heal" and a.get("item"):
             t = chosen if chosen is not None and chosen.alive else u
-            got = self.mend(t, a["amount"] * t.maxhp, u)
+            got = self.mend(t, a["amount"] * t.maxhp)
+            if got < 0:
+                self.emit("act", f"    {u.name} uses {a['name']} on {t.name}.", unit=u.name, move=a["name"])
+                self.burned(t, -got, u); return
             self.emit("heal", f"    {t.name} recovers {got:.0f} HP.", unit=u.name, move=a["name"], element=None,
                       targets=[dict(unit=t.name, amount=round(got), hp=round(t.hp))]); return
         chosen = self.drawn_to(u, a, chosen)               # Egga first: a finishing blow is an attack too (C12)
@@ -1335,19 +1344,23 @@ class Battle:
             u.defending = True; self.pending_defend.discard(u); u.stats["defends"] += 1
             self.emit("defend", f"    {u.name} defends.{tag}", unit=u.name); return
         if a["kind"] == "heal":
-            healed = []
+            healed, burns = [], []
             for t in tgts:
-                h = self.mend(t, self.heal_amount(u, a), u)
-                if h > 0: u.stats["healed"] += h
+                h = self.mend(t, self.heal_amount(u, a))
+                if h < 0: burns.append((t, -h)); continue          # Withered 3: told after the cast, as a wound
+                u.stats["healed"] += h
                 healed.append(dict(unit=t.name, amount=round(h), hp=round(max(0, t.hp))))
-            said = (", ".join(f"{d['unit']} ({'+' if d['amount'] >= 0 else ''}{d['amount']})" for d in healed)   # the numbers (Joseph)
+                if self.new_game and self.heal_factor(t) == 0: healed[-1]["blocked"] = True   # Withered 2
+            said = (", ".join(f"{d['unit']} ({'blocked' if d.get('blocked') else '+' + str(d['amount'])})" for d in healed)   # the numbers (Joseph)
                     if self.new_game else ", ".join(t.name for t in tgts))
-            self.emit("heal", f"    {u.name} casts {a['name']}, healing {said}.{tag}",
+            self.emit("heal", f"    {u.name} casts {a['name']}" + (f", healing {said}" if said else "") + f".{tag}",
                       unit=u.name, move=a["name"], element=a["element"], targets=healed)
+            for t, hurt in burns: self.burned(t, hurt, u)
             for st, d in a.get("also") or []:              # Gyllenlykt: the light makes them harder to hit
                 n = 1 if self.new_game else STACKS_BY_TIER.get(a["tier"], 1)   # new game: a printed size wins (Nov 22)
                 if self.new_game:                           # D3: the light holds EVA at its printed size, then lifts
-                    for t in tgts: self.hold(u, t, "Gyllenlykt", st, d * n, HOLD_ROUNDS, False)
+                    for t in tgts:
+                        if t.alive: self.hold(u, t, "Gyllenlykt", st, d * n, HOLD_ROUNDS, False)   # not on one the heal downed
                     continue
                 for t in tgts:
                     self.push(t, st, d * n)
@@ -1847,6 +1860,8 @@ class Battle:
                 pool = [x for x in self.allies(u) if (x.hp < 0.4 * x.maxhp if a["kind"] == "heal" else x.mp < 0.25 * x.maxmp)]
                 for x in pool:
                     got = a["amount"] * (x.maxhp if a["kind"] == "heal" else x.maxmp)
+                    if a["kind"] == "heal": got *= self.heal_factor(x)       # Withered: halved, nothing, or a wound
+                    if got <= 0: continue
                     options.append((1.2 * got * thrift if a["kind"] == "heal" else 0.6 * ref * thrift, a, x))
                 continue
             if a["kind"] == "damage" and not a["all"] and not a.get("shape") and USE_DYING:
@@ -1900,7 +1915,7 @@ class Battle:
                 for x in hurt:
                     row = self.shape_targets(u, a, x) if a.get("shape") else [x]   # Floklak: the hurt one's row
                     s = sum(min(self.heal_amount(u, a) * self.heal_factor(y), y.maxhp - y.hp) for y in row)
-                    if a.get("also"): s += bright(row) / 1.2
+                    if a.get("also") and s > 0: s += bright(row) / 1.2
                     options.append((1.2 * s - cost_pen, a, x))
             elif a["kind"] == "knot":                           # Knyta: what the knots pay while held, and spells they unlock
                 if u.knots < KNOT_CAP:
