@@ -232,6 +232,7 @@ class Unit:
         self.bide = None          # (action, target) wound up last round, fires this round (Bid- moves)
         self.charge = None        # the token of a release already queued this round; an interruption clears it (C05)
         self.covered_by = None    # an ally who Covers this unit this round (combat_spec Part 8)
+        self.cover_left = 0       # the new game's Cover: interceptions left (D10); the old game's lasts the round
         self.once_used = set()    # once-per-fight moves already spent (Net Throw)
         self.hits_taken = 0       # attacks that hurt it since its last action (Hevn answers them)
         self.knots = 0            # the Skurmar's tied wind (Knyta): a pool, spent by the untie spells, never decaying
@@ -1338,8 +1339,17 @@ class Battle:
         if a["kind"] == "cover":
             t = tgts[0]
             if t is u or not t.alive: return
+            n = None
+            if self.new_game:                               # D10: a number of interceptions, then the stance ends
+                n = self.covers(a)
+                for st, d in a.get("also") or []:           # Lonnlya (Bulwark): Fortified 1 on the coverer first
+                    if self.push(u, st, d):
+                        self.emit("status", f"      {u.name} is {u.counter_name(st) or st}!", unit=u.name,
+                                  status=STAT_NAMES[st][0 if d < 0 else 1], stat=st, stacks=u.stage(st), src=u.name)
+                t.cover_left = n
             t.covered_by = u; u.stats["covers"] += 1
-            self.emit("cover", f"    {u.name} covers {t.name}.{tag}", unit=u.name, target=t.name); return
+            said = "" if n is None else (" (the next hit)" if n == 1 else f" (the next {n} hits)")
+            self.emit("cover", f"    {u.name} covers {t.name}{said}.{tag}", unit=u.name, target=t.name, **({"covers": n} if n is not None else {})); return
         if a["kind"] == "defend":
             u.defending = True; self.pending_defend.discard(u); u.stats["defends"] += 1
             self.emit("defend", f"    {u.name} defends.{tag}", unit=u.name); return
@@ -1530,8 +1540,17 @@ class Battle:
         if not (a["kind"] == "damage" or a.get("thrown") or a.get("styng")): return tgts, {}
         t = tgts[0]; c = t.covered_by
         if c is None or not c.alive or c is u or c.side != t.side: return tgts, {}
-        self.emit("covered", f"      {c.name} takes it for {t.name}!", unit=c.name, instead_of=t.name); c.stats["covered"] += 1
+        left = ""
+        if self.new_game:                                   # D10: one interception spent; the last ends the stance
+            t.cover_left -= 1
+            if t.cover_left <= 0: t.covered_by = None; left = f" The cover on {t.name} is spent."
+        self.emit("covered", f"      {c.name} takes it for {t.name}!{left}", unit=c.name, instead_of=t.name,
+                  **({"left": max(0, t.cover_left)} if self.new_game else {})); c.stats["covered"] += 1
         return [c], {c: t}
+
+    def covers(self, a):
+        """D10: how many interceptions a Cover takes in the new game (Lya 1, Merlya 2, a foe's Great Cover 3)."""
+        return a.get("covers") or COVERS_BY_TIER.get(a.get("tier") or "Base", 1)
 
     def shove_cell(self, t, push):
         """Where Kasta (push: a row back) or Svepa (pull: a row forward) sends t, in its lane; None past the edge."""
@@ -2261,6 +2280,7 @@ class Battle:
                 if guard: s *= GUARDIAN_COVER
                 own = next((m for m in u.actions if m["kind"] == "cover"), None)   # a new-game hero covers only with Lya
                 if getattr(u, "kit_leg", None) is not None and own is None: s = 0
+                if self.new_game: s *= 1 + 0.5 * (self.covers(own or {}) - 1)   # D10: Merlya takes two hits
                 if s > 0: out.append((s, dict(own, rescue=x) if own else act("cover", "Cover", target="ally", rescue=x), x))
         taken = {x.cell for x in team} | {x.cell for x in self.team_of(u) if getattr(x, "state", "up") == "dying"}   # C18
         sp = self.painted(u)
@@ -2433,7 +2453,7 @@ class Battle:
                     self.emit("mp", f"    {u.name}'s knots hum: {got:.0f} MP back.", unit=u.name, amount=round(got), move="Knots")
         self.tick_spots(); self.tick_piles()
         self.eligible, self.barred = set(), set()
-        for u in self.units: u.defending, u.covered_by, u.taunted_by = False, None, None
+        for u in self.units: u.defending, u.covered_by, u.taunted_by, u.cover_left = False, None, None, 0
         self.plan_phase([u for u in self.units if u.alive], bonus=False)
         self.phase = "declare"
 
@@ -2549,6 +2569,14 @@ class Battle:
             pool += [p for p in self.piles if self.pile_reach(u, a, p) is not None]
         return held(pool)
 
+    def plain(self, a):
+        """A move's plain text; the new game's Cover says how many hits it takes (D10)."""
+        if self.new_game and a["kind"] == "cover":
+            n = self.covers(a)
+            s = "Take the next hit meant for one ally this round" if n == 1 else f"Take the next {n} hits meant for one ally this round"
+            return s + (", after raising your shield (Fortified 1)" if a.get("also") else "") + ". Acts first."
+        return plain(a)
+
     def describe(self, u, a, key, slot):
         silenced = u.silenced and a["cost_type"] == "MP" and a["cost"] > 0
         afford = u.can_afford(a) and not silenced
@@ -2558,7 +2586,7 @@ class Battle:
                     cost=a["cost"], cost_type=a["cost_type"], afford=afford, why=None if afford else ("Silenced" if silenced else "cost"),
                     drops=bool(afford and getattr(u, "last_hp", False) and a["cost_type"] == "HP" and a["cost"] and a["cost"] >= u.hp),   # a last swing
                     group=self.group_of(u, a), aim=self.aim(a), targets=[x.uid for x in tg],
-                    card=dict(word=a["name"], plain=plain(a), english=a.get("english"), power=round(a.get("power") or 0, 1), tier=a.get("tier"),
+                    card=dict(word=a["name"], plain=self.plain(a), english=a.get("english"), power=round(a.get("power") or 0, 1), tier=a.get("tier"),
                               reach=a.get("reach") or (REACH_BY_TYPE.get(a["element"]) if a.get("element") in MARTIAL else "any"),
                               status=a.get("status"), shape=a.get("shape"), all=a["all"], bide=bool(a.get("bide")),
                               spot=bool(a.get("spot")), manner=parts.get("manner"), target_kind=parts.get("target"),
@@ -2669,9 +2697,10 @@ class Battle:
                     status={k: v.get("stacks", v["rounds"]) for k, v in u.status.items()}, stages={k: v for k, v in u.stages.items() if v},
                     held={h["name"]: dict(stat=st, rounds=h["rounds"], harmful=h["harmful"]) for st, h in getattr(u, "held", {}).items()},
                     affinities={e: u.affinity(e) for e in dtypes}, moves=[self.shown(u, a) for a in u.actions],
-                    move_lines=[dict(name=self.shown(u, a), plain=plain(a)) for a in u.actions],
+                    move_lines=[dict(name=self.shown(u, a), plain=self.plain(a)) for a in u.actions],
                     intent=self.intents.get(uid), winding=self.shown(u, u.bide[0]) if u.bide else None,
                     defending=u.defending, covered_by=u.covered_by.uid if u.covered_by else None,
+                    **({"cover_left": u.cover_left} if self.new_game and u.covered_by else {}),
                     pouch=[dict(item=k, name=ITEMS[k]["name"], count=n) for k, n in u.pouch])
 
     def fight(self, max_rounds=30):

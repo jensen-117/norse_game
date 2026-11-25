@@ -139,9 +139,13 @@ Each entry: **Direction** (what and why), **Today** (what the code and docs do n
 
 **Toward implementation.** A Rest step in `gauntlet.py` (per hero: the AI rests whoever is hurt) so caster parties are measured fairly. The screen waits for the dive's UI.
 
-### D10. Intercession (Decided Nov 23; recorded in beinar_pilot.md Part 3)
+### D10. Intercession (Decided Nov 23; Cover built Nov 24, the pilot's step 1)
 
-Lya is intercession (I protect someone you might fire at); Egga is Taunt (I draw your fire). In the new game, **Lya takes one interception, then the stance ends**; Merlya takes 2 (Jatte 3, foe bosses); Lonnlya is Fortified 1, then Cover (foes: Cover, Hi-Cover, Great Cover, Bulwark, Hi-Bulwark). One coverer per ally; a whole move is one interception; rows and All aren't caught. Lya keeps 8 HP. **Foes get intercession, never Taunt.** Not built (step 2 of the pilot's list).
+Lya is intercession (I protect someone you might fire at); Egga is Taunt (I draw your fire). In the new game, **Lya takes one interception, then the stance ends**; Merlya takes 2 (Jatte 3, foe bosses); Lonnlya is Fortified 1, then Cover (foes: Cover, Hi-Cover, Great Cover, Bulwark, Hi-Bulwark). One coverer per ally; a whole move is one interception; rows and All aren't caught. Lya keeps 8 HP. **Foes get intercession, never Taunt.**
+
+**Built (Nov 24).** `data.COVERS_BY_TIER` (Halv and Base 1, Mer 2, Jatte 3: the foes' Great Cover; heroes carve Lya up to Mer); `Unit.cover_left`; `Battle.covers`; `intercept` spends one a move and the last ends the stance ("The cover on Dagskald is spent."); the round's start clears it. **Lonnlya** compiles: Lya's designated rider is Fortified 1, pushed on the coverer first (16 HP, the Lonn step's doubling: check with the costing pass, O3). The card and the cover line say how many hits ("covers Dagskald (the next hit)"). The AI values a Merlya a half more. Old game: the round-long Cover, untouched. `test_cover.py`.
+
+**What it showed:** nothing moved (the gauntlet 195 / 50 / 26, the calibration rooms the same), because **almost nobody Covers**: in 300 Elite and Boss fights the heroes Covered 0 times and the foes 27. The shared scorer only Covers an ally under 30% from a healthy front-liner. Using Cover is the Beinbryn brain's job (the pilot's step 3); heroes' Lya is the player's.
 
 ### D11. Foes are characters (Decided; Nov 24)
 
@@ -169,6 +173,24 @@ Lya is intercession (I protect someone you might fire at); Egga is Taunt (I draw
 **Built.** `data.FUSE_TOP`, `WITHERED_HEAL`, `CHILD_TWIST["Aska"]`, Withered in `STACKED_AILMENTS` and `STATUSES`. `Battle.fuse_tick`, `fuse_total`, `heal_factor`, `mend` (one door for every heal: Lak, songs, items) and `burned` (a reversed heal is its own `withered` event, told after the cast, and can down; a heal event never carries a negative amount; a blocked one says `(blocked)` and the page floats a grey 0). `tick_piles` skips Withered piles. Tests: `test_wave_d.py`. Old fights identical.
 
 **The review of Wave D (Nov 24), fixed:** the AI's potions now read Withered (it would have used a Strong Life Draught on a Withered 3 ally: a 1000-HP wound); single-target Gyllenlykt's light counts only beside a real heal; Gyllenlykt holds nothing on an ally its heal just downed; the page draws a reversed heal as a wound (it showed a green `+-75`); the cap moved onto the top. Feel check for play: a Bleed 1 is 10-12 HP on a Regular, a primer until it's fed.
+
+### D14. How an effect lasts: two fields (Agreed Nov 24, Joseph; built with the pilot's kits)
+
+**The rule.** Not everything has to be permanent, or on the clock. A timed effect is customized for feel, as data, by answering two questions:
+
+| What makes it fade | All at once | One step at a time |
+|---|---|---|
+| **Never (the fight)** | a plain stat move (D2) | |
+| **Rounds** | **Rally**: Mighty 2 for 3 rounds | the ailment clock (D13) |
+| **Its bearer's attack** | "Mighty 3 until you swing" | "Fortified 3, one off per attack you make" |
+| **Being hit** | a ward that breaks | a shell that chips |
+
+- **What it gave is what it takes back,** never past 0: an opposing push eats into it first. Rally on Mighty 0 Nedkraft'd to 1 ends at 0; Rally on Mighty 1 (to 3) ends at Mighty 1.
+- **No second one while it's up** (no Rally while a Rally is on), unless its data says otherwise.
+- **A window isn't a hold:** a D3 hold locks a stat (lowering pushes fail); a window only times a push, and pushes against it land.
+- **A whole move is one use** (as with Cover): a flurry spends "until you attack" once.
+- **Every timed effect shows on the board** with its trigger and count, like the hold tags. A badge the player can't read is a rule they can't play around: the only real limit on how many shapes there are. New rows are added when a move needs them, not up front.
+- Rally, Pinned's window and the holds go through this one path (the pilot's step 2).
 
 ### D12. Already built under this direction
 
@@ -268,7 +290,7 @@ Ideas waiting their turn, each with an owner:
 - **The Lab's run (Nov 24, Joseph):** a gauntlet you play. The Run panel: a place, the adds (+2 Trash or Regular in every fight room but the Regular one, which has its own two), a run number (room i of run n is rolled from `Random(RUN_SEED + 10n + i)`). Trash, Regular, Elite, a camp (each hero Rests or not: D9's screen in miniature, carving waits for the dive), the Boss; HP, MP, the pouch, Wounded and the dead carry. Each room's record carries the party as it walked in (`carry`), and `replay.py` rebuilds it: every room replays exactly. `settle` moved into the engine (one rule for the gauntlet and the Lab). `test_lab_run.py`; `checks/s_run.py` plays a whole run in the browser.
 - **Wave D: built (Nov 24).** D13: the fuse (Poison 12 / 6 / 2.4%, Bleeding 14 / 7 / 2.8%, capped at a clean Krosh), one clock, Bleeding bites on action, Withered as Aska's twist, the Curse back on its own moves, the AI's fuse and Withered values, Lak's numbers in the log. 441 tests pass; old fights identical (regress 3bdf6771deb1, fingerprint 288, golden 4535).
    - **Measured** (Wave C / Wave D): the gauntlet's Regulars cleared 175 / 193 of 240, Elite 36 of 175 / 50 of 193, Boss 18 of 36 / 24 of 50 (after the review's fixes and the cap on the top: 195, 50, 26). Calibration rooms: Elite, the Vasara ends at 24% / 27%; Boss, Vasara 24% / 26%, Skurmar 48% / 50%. **The Regular room stops being a run killer** (Aska no longer leaves a lasting Sundered); the Elite is still where runs end.
-5. **The Beinar pilot resumes** (beinar_pilot.md, "What the build needs"): D10 intercession, the kits, the brains and team plans with D11's wants and the reset as Stabilize; then the gauntlet against Joseph's damage picture and his calibration fights *(scope calibration here to Leg 1, or pull O3 rider/`Gyllenlykt` costing ahead of Leg 2–3 calibration so Legs 2–3 aren't tuned twice)*.
+5. **The Beinar pilot resumes** (Nov 24: step 1, Cover, built: D10) (beinar_pilot.md, "What the build needs"): D10 intercession, the kits, the brains and team plans with D11's wants and the reset as Stabilize; then the gauntlet against Joseph's damage picture and his calibration fights *(scope calibration here to Leg 1, or pull O3 rider/`Gyllenlykt` costing ahead of Leg 2–3 calibration so Legs 2–3 aren't tuned twice)*.
 6. **Then:** the enemy pass (O6), tile paint (O4), costing (O3), the Hunt clock (O5), and progression (Part 4: the Growth view, the Vasara and Brennumar webs).
 
 Each wave: old fights byte-identical, the tests, the gauntlet and sweep before and after, the Lab republished, then Joseph plays. D1 and D2 land before the brains because the brains' valuations and the calibration read them.

@@ -591,6 +591,10 @@ NET_BIDE = 1.0                # ...plus x its wind-up's expected damage (netting
 BEIN_GUARDIANS = {"Halvbeinbryn", "Beinbryn", "Storbeinbryn", "Fornbein"}   # shield-bearers: Cover is their job
 GUARDIAN_COVER = 2.0          # x a guardian's Cover value, and it covers allies under this much HP:
 GUARDIAN_COVER_HURT = 0.5
+# D10 (Nov 23-24): in the new game a Cover takes this many interceptions, then the stance ends (or the round does).
+# A whole move is one interception (a flurry, a Styng hit, the net); rows, columns and All aren't caught. Jatte is the
+# foes' (Great Cover): heroes carve Lya up to Mer. Lya, Merlya, Lonnlya; Cover, Hi-Cover, Great Cover, Bulwark.
+COVERS_BY_TIER = {"Halv": 1, "Base": 1, "Mer": 2, "Jatte": 3}
 BEINSEIDR_ELEMENTS = ["Natt", "Aska", "Eld", "Hrim", "Blixt"]   # bone-mages that adopt an element (not Sol: bone hates it)
 BEIN_PILE_ROUNDS = 2          # a fallen Bein lies in a pile this many rounds, then stands again...
 BEIN_REASSEMBLE_HP = 0.5      # ...at this share of its HP, unless a Crush blow scatters the pile first. Once only.
@@ -679,7 +683,8 @@ VERBS = {
     # Vasara (Hammer; martial)
     "Krosh":    dict(cost=16, halv=True, targets=("Flok", "All"), cls="Vasara", kind="damage", root="Krosh", element="Crush", rider=("Sundered", "Brak")),
     "Egga":     dict(cost=8, targets=("Flok",), cls="Vasara", kind="taunt", root="Krosh", target="enemy", rider=("Blinded", "Rod"), styng=True),   # taunts one foe, or a row; Rodegga: blind with rage (Nov 21)
-    "Lya":      dict(cost=8, cls="Vasara", kind="cover", target="ally"),   # Nov 21: 8, to test (a stance you also pay for in hits)
+    "Lya":      dict(cost=8, cls="Vasara", kind="cover", target="ally", rider=(("DEF", 1), "Lonn")),   # Nov 21: 8, to test;
+                # Lonnlya (D10): Fortified 1 on the coverer, then Cover (the foes' Bulwark)
     "Aukskold": dict(cost=8, targets=("Flok", "All"), cls="Vasara", kind="stat", stat="DEF", up=True, target="self"),   # herself; Flok her row; All everyone
     "Hevn":     dict(cost=16, cls="Vasara", kind="damage", answer=True, root="Krosh", element="Crush", halv=True,
                      manner_power={"Bid": 2.0}),   # +HEVN_PER_HIT a hit taken; Bidhevn releases double (Nov 20)

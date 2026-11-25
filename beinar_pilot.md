@@ -519,7 +519,7 @@ Knot (the Skurmar's identity: fine) and Bound beyond the Drattr's net (rare by d
 
 *Revised Nov 23 for the pilot (the built four: Beinbryn, Beinorv, Beinseidr, Fornbein).*
 
-**Status (Nov 23, late):** step 3 (the mirror) is built; the rest waits on the `battle_system_adr.md` review. **Nov 24:** the review is recorded in `Battle_Refactor_Current.md`; Waves A-C there come first, then this list resumes. Resume at the intercession ladder (step 4's Cover), then the kits, then the brains (refactor_plan.md, "Where we paused").
+**Status (Nov 23, late):** step 3 (the mirror) is built; the rest waits on the `battle_system_adr.md` review. **Nov 24:** the review is recorded in `Battle_Refactor_Current.md`; Waves A-C there come first, then this list resumes. Resume at the intercession ladder (step 4's Cover), then the kits, then the brains (refactor_plan.md, "Where we paused"). **Nov 24:** Cover built (Battle_Refactor_Current.md D10); next, the kits ("Decided (Nov 24)" below).
 
 1. **The status rules** (Part 1): **built** (Nov 22). Still to come: the affinity ladder over damage types (for Calcify; the Elite and Boss can ship without it).
 2. **The brains** (Part 2, sections 1-3): the units' rules, with claims and the fallback counts; **the team plans** (section 7), with the priority target, legality, re-planning and the announced switch.
@@ -573,3 +573,18 @@ They don't protect each other (no Cover): a Gandraugr in a pure Draugr room is e
 ## Decided (Nov 23, later)
 
 The Grave Bolt is plain Aska damage, full size, no curse; the Aska Seidr keeps Curse. The intercession ladder (Lya, Merlya, Lonnlya, Merlonnlya; Cover, Hi-Cover, Great Cover, Bulwark, Hi-Bulwark), one coverer per ally. Foes get intercession, never Taunt. The Beinlur is the foes' necromancer-healer on the Seidr's body, held back; no Rise! for the Draugr. **The mirror counts reach wherever a unit stands** (a Mogel or a Spettbein reaches from the Front) and seats units by their role; it's a composer rule, on for the new game's rooms, so old checks keep their packs.
+
+## Decided (Nov 24, Joseph: the pilot after Waves A-D)
+
+The rules moved under this doc (Battle_Refactor_Current.md D1-D14); where these lines and the older ones disagree, these win.
+
+- **Stale above:** a Curse is Sundered and Poisoned (no Hexed); Disarm is a D3 hold (no Waning); nothing whiffs (D1: a Blinded archer grazes; each Rapid Arrows hit rolls the crit and graze ladder); a status's stacks ride one clock (D13).
+- **Stats stick, ailments decay** (the Nov 22 split, unchanged): a Curse's Sundered stays until pushed back, its Poison burns out.
+- **Pinned is a window:** it lands for its printed rounds (1, 2 or 3) and can't be reapplied while it's on; the archer needs a clean target, or waits. No topping up (the Beinorv rule above is replaced). Pinning Shot is 2; 3 is a Mer or hero form. Silenced already works this way.
+- **The quiver: claim and feed.** Each archer keeps its own ailment fed on the focus (the fuse wants 3), so two quivers put both fuses on one hero.
+- **Targeting:** the Bein **out-think** you: their Hunt goes for the hero holding the formation together (the healer, the coverer). The Draugr chase whoever hurt them (the grudge). Settled with fights in the brains step.
+- **Command isn't a move:** it's the head's role, free and spoken. The Fornbein as head re-plans every round (a headless pack every two), says its focus out loud, and its death breaks the order (Desperate).
+- **Rally is a window** (D14): Mighty 2 on its side for 3 rounds, no Rally while one is up, then what it gave is taken back; a hero's Nedkraft eats into it first.
+- **Ogn stays on the Fornbein** at Base size: D11's want already means it only Frightens a hero with no Sundered.
+- **The Fornbein's kit:** Command (as head), Cleaver, Carve, Rally, Ogn.
+- **Order:** 1. Cover (built Nov 24: D10), 2. the kits as data with no brains, measured on the shared scorer, with D14's two fields (Rally first), 3. team plans, then the units' rules.
